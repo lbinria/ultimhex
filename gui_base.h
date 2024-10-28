@@ -41,7 +41,7 @@ public:
 
     // A list of points with the same color and size
     struct PointsGroup {
-        std::vector<vec3> points;
+        std::vector<GEO::vec3> points;
         const float* color = nullptr; // storing a pointer allows for direct color modification from the GUI
         const float* size = nullptr;
         bool* show = nullptr;
@@ -51,7 +51,7 @@ public:
 
     // A list of edges with the color and width
     struct EdgesGroup {
-        std::vector<std::pair<vec3,vec3>> edges;
+        std::vector<std::pair<GEO::vec3,GEO::vec3>> edges;
         unsigned int colormap_index = 0;
         double texture_coordinate = 0.0;
         int* width = nullptr;
@@ -109,17 +109,27 @@ public:
 
     index_t pick(MeshElementsFlags what);
 
+	/**
+	 * Pickup a cell edge
+	 */
+	index_t pickup_cell_edge(GEO::vec3 p0, index_t c_idx);
+
+	/**
+	 * Pickup a cell facet
+	 */
+	std::tuple<index_t, index_t> pickup_cell_facet(GEO::vec3 p0, index_t c_idx);
+
     void init_rgba_colormap(const std::string& name, int width, int height, unsigned char * data);
 
     void update_GL_texture(unsigned int texture_index, int width, int height, unsigned char * data);
 
 protected:
 
-    vec2 cursor_pos_; // cursor position, in pixels from top-left corner
+    GEO::vec2 cursor_pos_; // cursor position, in pixels from top-left corner
     
     double picked_depth_;
     // vec2 picked_ndc_;
-    vec3 picked_point_;
+    GEO::vec3 picked_point_;
 
 private:
     vector<PointsGroup> points_groups_;

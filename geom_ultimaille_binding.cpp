@@ -23,7 +23,6 @@ namespace um_bindings {
 		}
 	}
 
-	// Check !
 	void um_tri_from_geo_mesh(GEO::Mesh &m, UM::Triangles &m_out) {
 		m_out.clear();
 
@@ -40,7 +39,6 @@ namespace um_bindings {
 		}
 	}
 
-	// Check !
 	void um_tet_from_geo_mesh(GEO::Mesh &m, UM::Tetrahedra &m_out) {
 		m_out.clear();
 
@@ -57,7 +55,25 @@ namespace um_bindings {
 		}
 	}
 
+	void um_hex_from_geo_mesh(GEO::Mesh &m, UM::Hexahedra &m_out) {
+		m_out.clear();
 
+		m_out.points.create_points(m.vertices.nb());
+		m_out.create_cells(m.cells.nb());
+
+		set_um_vertices_from_geo_vertices(m, m_out);
+
+		for (auto c : m.cells) {
+			m_out.vert(c, 0) = m.cells.vertex(c, 0);
+			m_out.vert(c, 1) = m.cells.vertex(c, 1);
+			m_out.vert(c, 2) = m.cells.vertex(c, 2);
+			m_out.vert(c, 3) = m.cells.vertex(c, 3);
+			m_out.vert(c, 4) = m.cells.vertex(c, 4);
+			m_out.vert(c, 5) = m.cells.vertex(c, 5);
+			m_out.vert(c, 6) = m.cells.vertex(c, 6);
+			m_out.vert(c, 7) = m.cells.vertex(c, 7);
+		}
+	}
 
 	// Check !
 	void geo_mesh_from_um_tri(UM::Triangles &m, GEO::Mesh &m_out, bool clear) {

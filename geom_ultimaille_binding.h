@@ -62,6 +62,11 @@ namespace um_bindings {
 	void um_tet_from_geo_mesh(GEO::Mesh &m, UM::Tetrahedra &m_out);
 
 	/**
+	 * Get ultimaille hex from geogram mesh
+	 */
+	void um_hex_from_geo_mesh(GEO::Mesh &m, UM::Hexahedra &m_out);
+
+	/**
 	 * Get geogram mesh from ultimaille tri
 	 */
 	void geo_mesh_from_um_tri(UM::Triangles &m, GEO::Mesh &m_out, bool clear = true);
@@ -192,7 +197,7 @@ namespace um_bindings {
 		// TODO complete !
 		using GEO_Attr_T = std::conditional_t<
 			std::is_same_v<TAttr, double>, GEO::Numeric::float64,
-			std::conditional_t<std::is_same_v<TAttr, int>, GEO::Numeric::uint32,
+			std::conditional_t<std::is_same_v<TAttr, int>, GEO::signed_index_t,
 			std::conditional_t<std::is_same_v<TAttr, bool>, GEO::Numeric::uint8, TAttr>>>;
 
 		// TODO complete !
@@ -230,7 +235,7 @@ namespace um_bindings {
 		// TODO complete !
 		using GEO_Attr_T = std::conditional_t<
 			std::is_same_v<TAttr, double>, GEO::Numeric::float64,
-			std::conditional_t<std::is_same_v<TAttr, int>, GEO::Numeric::uint32,
+			std::conditional_t<std::is_same_v<TAttr, int>, GEO::signed_index_t,
 			std::conditional_t<std::is_same_v<TAttr, bool>, GEO::Numeric::uint8, TAttr>>>;
 
 		// TODO complete !

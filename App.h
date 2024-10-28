@@ -13,6 +13,11 @@
 
 #include "geom_ultimaille_binding.h"
 
+#include "mesh_metadata.h"
+
+// std libs
+#include <optional>
+
 class App : public SimpleMeshApplicationExt {
 public:
 
@@ -21,21 +26,6 @@ public:
 	void ImGui_initialize() override;
 
 protected:
-
-	/**
-	 * Pickup a cell edge
-	 */
-	index_t pickup_cell_edge(GEO::vec3 p0, index_t c_idx);
-
-	/**
-	 * Pickup a cell facet
-	 */
-	std::tuple<index_t, index_t> pickup_cell_facet(GEO::vec3 p0, index_t c_idx);
-
-	// OpenGL drawing functions
-	void draw_path(std::vector<UM::vec3> &path, GEO::vec4f color, bool arrow = false);
-	void draw_axis();
-	void draw_grid();
 
 	void draw_scene() override;
 
@@ -50,6 +40,7 @@ protected:
     bool load(const std::string& filename) override;
 
 	std::string supported_write_file_extensions() override;
+	std::string supported_read_file_extensions() override;
 
 	bool save(const std::string& filename) override;
 
@@ -63,7 +54,11 @@ protected:
 
 	void labeling_visu_mode_transition();
 
+	void reset();
+
 protected:
+
+
 
 	enum MeshVolumeType {
 		Tet,
@@ -80,8 +75,11 @@ protected:
 	bool is_loading = false;
 
 	// TODO move to gui_base
-	bool display_grid_ = true;
-	bool display_axes_ = true;
+	bool show_grid_ = true;
+	bool show_axes_ = true;
+
+	// Option
+	bool tool_preview = true;
 
 	// List of current meshes
 	std::map<std::string, Mesh> meshes;
@@ -144,6 +142,8 @@ protected:
 
 	UM::Tetrahedra tet;
 	UM::Hexahedra hex;
+
+	MeshMetadata mesh_metadata;
 
 	// int he_n = 0;
 	// um_bindings::MeshBinding mesh_binding;

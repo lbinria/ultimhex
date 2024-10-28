@@ -192,6 +192,65 @@ index_t SimpleMeshApplicationExt::pick(MeshElementsFlags what) {
             (index_t(buffer[3]) << 24);
 }
 
+index_t SimpleMeshApplicationExt::pickup_cell_edge(GEO::vec3 p0, index_t c_idx) {
+	// Search nearest edge
+	double min_dist = std::numeric_limits<double>().max();
+	index_t e_idx = -1;
+
+	// Search nearest edge
+	for (int i = 0; i < mesh_.cells.nb_edges(c_idx); i++) {
+		// Get points from current edge
+		index_t v0_idx = mesh_.cells.edge_vertex(c_idx, i, 0);
+		index_t v1_idx = mesh_.cells.edge_vertex(c_idx, i, 1);
+		GEO::vec3 &p1 = mesh_.vertices.point(v0_idx);
+		GEO::vec3 &p2 = mesh_.vertices.point(v1_idx);
+
+		// Compute dist from mouse point to edge points
+		double dist = distance(p0, (p1 + p2) / 2.);
+
+		// Keep min dist
+		if (dist < min_dist) {
+			min_dist = dist;
+			e_idx = i;
+			// posA = p1;
+			// posB = p2;
+		}
+	}
+
+	return e_idx;
+}
+
+std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
+	// Search if point is on facet
+	double min_dist = std::numeric_limits<double>().max();
+	index_t f_idx = NO_FACET;
+	index_t lf_idx = NO_FACET;
+
+	for (index_t lf = 0; lf < mesh_.cells.nb_facets(c_idx); lf++) {
+
+		auto a = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 0));
+		auto b = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 1));
+		auto c = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 2));
+		auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 3));
+
+		auto bary = (a + b + c + d) / 4.;
+
+		auto n = normalize(cross(b - a, c - b));
+		double dist = dot(p0 - a, n);
+		
+		if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-4)
+			continue;
+
+		if (dist < min_dist) {
+			min_dist = dist;
+			f_idx = mesh_.cells.facet(c_idx, lf);
+			lf_idx = lf;
+		}
+	}
+
+	return std::tuple<index_t, index_t>(f_idx, lf_idx);
+}
+
 void SimpleMeshApplicationExt::init_rgba_colormap(const std::string& name, int width, int height, unsigned char * data) {
     // like SimpleApplication::init_colormap() but without XPM data, just an u8 array of RGBA values
     colormaps_.push_back(ColormapInfo());

@@ -39,6 +39,8 @@ FetchContent_MakeAvailable(ultimaille)
 # Add ultimaille directory to get ultimaille CMakeLists
 include_directories(${ultimaille_SOURCE_DIR})
 
+include_directories(ext)
+
 # # Get development version of ultimaille directly from git repository 
 # include(FetchContent)
 # FetchContent_Declare(

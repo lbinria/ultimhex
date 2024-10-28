@@ -1,15 +1,24 @@
+// Internal libs
 #include <ultimaille/all.h>
 #include <geogram_gfx/full_screen_effects/ambient_occlusion.h>
+#include <nicostuff/algo/framework/benjamin_API.h>
 
 #include "App.h"
 
 #include "geom_ultimaille_binding.h"
 #include "tag_face.h"
 
-#include <nicostuff/algo/framework/benjamin_API.h>
 #include "my_tet_boundary.h"
+#include "gl_draw.h"
+#include "mesh_metadata.h"
 
+// JSON !!
+#include <json.hpp>
+
+// std libs
 #include <queue>
+
+using json = nlohmann::json;
 
 App::App(const std::string name) : SimpleMeshApplicationExt(name)/*, mesh_binding(mesh_)*/ {
 
@@ -25,186 +34,6 @@ void App::ImGui_initialize() {
     }
 }
 
-inline Quaternion align_with_uv(UM::vec3 u, UM::vec3 v) {
-	v.normalize();
-	u.normalize();
-	
-	if (u * v < -.99999) { 
-		Quaternion res;  
-		res.v = {1.0, 0., 0.}; 
-		res.w = 0;
-		return res; 
-	}
-	
-	if (std::abs(u * v) > .99999)
-		return Quaternion();
-
-	UM::vec3 inbetwen_uv(v + u);
-	inbetwen_uv.normalize();
-
-	Quaternion res;
-	res.w = v * inbetwen_uv; // scalar product with (1,0,0) divided by norm
-	res.v = cross(inbetwen_uv, v); // cross product with (1,0,0) 
-	
-	return res;
-}
-
-void draw_arrow(UM::vec3 A, UM::vec3 B, double r, int res, double cone_tube_ratio, GEO::vec4f color) {
-	
-	if (r == -1) 
-		r = (B - A).norm() / 10.;
-
-	UM::vec3 n = B - A;
-	double l = std::max(1e-5, n.norm());
-	n = n / l;
-
-	Quaternion quat = align_with_uv({0, 0, 1}, n);
-	auto M = quat.rotation_matrix();
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, color.data());
-	auto mesh_width = glupGetMeshWidth();
-	glupSetMeshWidth(0.);
-
-	// Set temporary picking mode to constant to deactivate picking on GL primitive
-	auto picking_mode = glupGetPickingMode();
-	glupPickingMode(GLUP_PICK_CONSTANT);
-
-	glupBegin(GLUP_TRIANGLES);
-
-	for (int v = 0; v < res; v++) {
-		// circle parametric equation
-		auto pt = r * UM::vec3{cos(2. * M_PI * double(v) / double(res)), sin(2. * M_PI * double(v) / double(res)), 0.};
-		auto pt_nxt = r * UM::vec3{cos(2. * M_PI * double(v + 1) / double(res)), sin(2. * M_PI * double(v + 1) / double(res)), 0.};
-
-		auto pt_base = (r * cone_tube_ratio) * UM::vec3{cos(2. * M_PI * double(v) / double(res)), sin(2. * M_PI * double(v) / double(res)), 0.};
-		auto pt_nxt_base = (r * cone_tube_ratio) * UM::vec3{cos(2. * M_PI * double(v + 1) / double(res)), sin(2. * M_PI * double(v + 1) / double(res)), 0.};
-
-		auto apex = UM::vec3{0, 0, l};
-
-		auto h = UM::vec3{0, 0, std::max(0., l - 2.5 * r)};
-		auto pt_cone_base = pt + h;
-		auto pt_nxt_cone_base = pt_nxt + h;
-
-		// Cone
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_cone_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_nxt_cone_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * apex + A).data());
-
-		// Cone base
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_nxt_cone_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_cone_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * h + A).data());
-
-		// Tube base
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_nxt_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * UM::vec3{0,0,0} + A).data());
-
-		// Tube
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_nxt_base + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * (pt_nxt_base + h) + A).data());
-
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * (pt_nxt_base + h) + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * (pt_base + h) + A).data());
-		glupPrivateVertex3dv(um_bindings::geo_vec(M * pt_base + A).data());
-
-	}
-
-	glupEnd();
-	glupSetMeshWidth(mesh_width);
-	glupPickingMode(picking_mode);
-}
-
-void App::draw_path(std::vector<UM::vec3> &path, GEO::vec4f color, bool arrow) {
-
-	auto picking_mode = glupGetPickingMode();
-	glupPickingMode(GLUP_PICK_CONSTANT);
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, color.data());
-	glupBegin(GLUP_POINTS);
-	for (auto p : path) {
-		double pp[3] = {p.x, p.y, p.z};
-		glupPrivateVertex3dv(pp);
-	}
-	glupEnd();
-
-	glupPickingMode(picking_mode);
-
-	if (!arrow) {
-		glupBegin(GLUP_LINES);
-		for (int i = 0; i < path.size(); i+=2) {
-			auto pA = path[i];
-			auto pB = path[i + 1];
-			double ppA[3] = {pA.x, pA.y, pA.z};
-			double ppB[3] = {pB.x, pB.y, pB.z};
-			glupPrivateVertex3dv(ppA);
-			glupPrivateVertex3dv(ppB);
-		}
-		glupEnd();
-	} else {
-		for (int i = 0; i < path.size(); i+=2) {
-			draw_arrow(path[i], path[i + 1], -1, 10, 0.5, color);
-		}
-	}
-
-}
-
-void App::draw_axis() {
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(1.f,0.f,0.f).data());
-	glupBegin(GLUP_LINES);
-	glupPrivateVertex3dv(GEO::vec3(0, 0, 0).data());
-	glupPrivateVertex3dv(GEO::vec3(1, 0, 0).data());
-	glupEnd();
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(0.f,1.f,0.f).data());
-	glupBegin(GLUP_LINES);
-	glupPrivateVertex3dv(GEO::vec3(0, 0, 0).data());
-	glupPrivateVertex3dv(GEO::vec3(0, 1, 0).data());
-	glupEnd();
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(0.f,0.f,1.f).data());
-	glupBegin(GLUP_LINES);
-	glupPrivateVertex3dv(GEO::vec3(0, 0, 0).data());
-	glupPrivateVertex3dv(GEO::vec3(0, 0, 1).data());
-	glupEnd();
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(1.f, 1.f, 1.f).data());
-	glupBegin(GLUP_POINTS);
-	glupPrivateVertex3dv(GEO::vec3(0, 0, 0).data());
-	glupEnd();
-}
-
-void App::draw_grid() {
-	double scale = 10.;
-	int n_lines = 9;
-	double y = -.1;
-
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(0.2f,0.2f,0.2f).data());
-	glupBegin(GLUP_LINES);
-	for (int i = 0; i < n_lines; i++) {
-		double j = i * (scale / n_lines) - scale * .5;
-		double k = scale * .5;
-
-		GEO::vec3 a(j, y, k);
-		GEO::vec3 b(j, y, -k);
-		
-		glupPrivateVertex3dv(a.data());
-		glupPrivateVertex3dv(b.data());
-	}
-	for (int i = 0; i < n_lines; i++) {
-		double j = i * (scale / n_lines) - scale * .5;
-		double k = scale * .5;
-
-		GEO::vec3 a(k, y, j);
-		GEO::vec3 b(-k, y, j);
-		
-		glupPrivateVertex3dv(a.data());
-		glupPrivateVertex3dv(b.data());
-	}
-	glupEnd();
-}
-
 void App::draw_scene() {
     SimpleMeshApplicationExt::draw_scene();
 
@@ -214,29 +43,29 @@ void App::draw_scene() {
 
 	glupSetPointSize(10.0);
 
-	if (display_axes_)
-		draw_axis();
-	if (display_grid_)
-		draw_grid();
+	if (show_axes_)
+		gl_draw::draw_axis();
+	if (show_grid_)
+		gl_draw::draw_grid();
 
 	
 
-	// Display hovered halfedge
+	// // Display hovered halfedge
 
-	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(1.f,0.3f,0.6f, 1.f).data());
-	glupBegin(GLUP_LINES);
-	glupPrivateVertex3dv(posA.data());
-	glupPrivateVertex3dv(posB.data());
-	glupEnd();
+	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(1.f,0.3f,0.6f, 1.f).data());
+	// glupBegin(GLUP_LINES);
+	// glupPrivateVertex3dv(posA.data());
+	// glupPrivateVertex3dv(posB.data());
+	// glupEnd();
 
-	glupBegin(GLUP_POINTS);
-	glupPrivateVertex3dv(posA.data());
-	glupPrivateVertex3dv(posB.data());
-	glupEnd();
+	// glupBegin(GLUP_POINTS);
+	// glupPrivateVertex3dv(posA.data());
+	// glupPrivateVertex3dv(posB.data());
+	// glupEnd();
 
 	// PATH
-	draw_path(hovered_path, GEO::vec4f(1.f,0.3f,0.6f, 1.f), true);
-	draw_path(selected_path, GEO::vec4f(1.f,0.2f,0.0f, 1.f), false);
+	gl_draw::draw_path(hovered_path, GEO::vec4f(1.f,0.3f,0.6f, 1.f), true);
+	gl_draw::draw_path(selected_path, GEO::vec4f(1.f,0.2f,0.0f, 1.f), true);
 
 
 	// Display UM halfedges to remove !
@@ -262,6 +91,7 @@ void App::draw_scene() {
 	// glupPrivateVertex3dv(pN);
 	// glupEnd();
 
+	// Last click position as point
 	glupBegin(GLUP_POINTS);
 	glupPrivateVertex3dv(click_pos.data());
 	glupEnd();
@@ -343,8 +173,12 @@ void App::draw_menu_bar() {
 void App::draw_viewer_properties() {
     SimpleMeshApplicationExt::draw_viewer_properties();
 
-	ImGui::Checkbox("Display grid", &display_grid_);
-	ImGui::Checkbox("Display axes", &display_axes_);
+	ImGui::Checkbox("Show grid", &show_grid_);
+	ImGui::Checkbox("Show axes", &show_axes_);
+	ImGui::Separator();
+	ImGui::Checkbox("Show vertices", &show_vertices_);
+	ImGui::Checkbox("Show surface", &show_surface_);
+	ImGui::Checkbox("Show volume", &show_volume_);
 }
 
 void App::GL_initialize() {
@@ -352,93 +186,6 @@ void App::GL_initialize() {
     // init_rgba_colormap("labeling",6,1,labeling_colors_.as_chars());
     // init_rgba_colormap("validity",2,1,validity_colors_.as_chars());
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
-}
-
-// TODO move in gui_base !
-// index_t App::pickup_cell_edge(GEO::vec3 p0, index_t c_idx) {
-// 	// Search nearest edge
-// 	double min_dist = std::numeric_limits<double>().max();
-// 	index_t e_idx = -1;
-
-// 	// Search nearest edge
-// 	for (int i = 0; i < mesh_.cells.nb_edges(c_idx); i++) {
-// 		// Get points from current edge
-// 		index_t v0_idx = mesh_.cells.edge_vertex(c_idx, i, 0);
-// 		index_t v1_idx = mesh_.cells.edge_vertex(c_idx, i, 1);
-// 		GEO::vec3 &p1 = mesh_.vertices.point(v0_idx);
-// 		GEO::vec3 &p2 = mesh_.vertices.point(v1_idx);
-
-// 		// Compute dist from mouse point to edge points
-// 		double dist = length(cross(p0 - p1, p0 - p2)) / length(p2 - p1);
-
-// 		// Keep min dist
-// 		if (dist < min_dist) {
-// 			min_dist = dist;
-// 			e_idx = i;
-// 			posA = p1;
-// 			posB = p2;
-// 		}
-// 	}
-
-// 	return e_idx;
-// }
-index_t App::pickup_cell_edge(GEO::vec3 p0, index_t c_idx) {
-	// Search nearest edge
-	double min_dist = std::numeric_limits<double>().max();
-	index_t e_idx = -1;
-
-	// Search nearest edge
-	for (int i = 0; i < mesh_.cells.nb_edges(c_idx); i++) {
-		// Get points from current edge
-		index_t v0_idx = mesh_.cells.edge_vertex(c_idx, i, 0);
-		index_t v1_idx = mesh_.cells.edge_vertex(c_idx, i, 1);
-		GEO::vec3 &p1 = mesh_.vertices.point(v0_idx);
-		GEO::vec3 &p2 = mesh_.vertices.point(v1_idx);
-
-		// Compute dist from mouse point to edge points
-		double dist = distance(p0, (p1 + p2) / 2.);
-
-		// Keep min dist
-		if (dist < min_dist) {
-			min_dist = dist;
-			e_idx = i;
-			posA = p1;
-			posB = p2;
-		}
-	}
-
-	return e_idx;
-}
-
-std::tuple<index_t, index_t> App::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
-	// Search if point is on facet
-	double min_dist = std::numeric_limits<double>().max();
-	index_t f_idx = NO_FACET;
-	index_t lf_idx = NO_FACET;
-
-	for (index_t lf = 0; lf < mesh_.cells.nb_facets(c_idx); lf++) {
-
-		auto a = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 0));
-		auto b = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 1));
-		auto c = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 2));
-		auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 3));
-
-		auto bary = (a + b + c + d) / 4.;
-
-		auto n = normalize(cross(b - a, c - b));
-		double dist = dot(p0 - a, n);
-		
-		if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-4)
-			continue;
-
-		if (dist < min_dist) {
-			min_dist = dist;
-			f_idx = mesh_.cells.facet(c_idx, lf);
-			lf_idx = lf;
-		}
-	}
-
-	return std::tuple<index_t, index_t>(f_idx, lf_idx);
 }
 
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
@@ -731,6 +478,19 @@ bool App::save(const std::string& filename) {
 	return SimpleMeshApplication::save(filename);
 }
 
+void App::reset() {
+	// Reset all values
+	gui_mode = Camera;
+	// Clear selections
+	reset_hovered_selected();
+	// Clear path
+	hovered_path.clear();
+	selected_path.clear();
+	// Clear UM meshes
+	tet.clear();
+	hex.clear();
+}
+
 bool App::load(const std::string& filename) {
     
 	mesh_gfx_.set_mesh(nullptr);
@@ -740,29 +500,44 @@ bool App::load(const std::string& filename) {
 	
 	is_loading = true;
 
-    if(!mesh_load(filename, mesh_, flags)) {
+	std::string mesh_filename = filename;
+	std::filesystem::path filename_path(filename);
+
+
+	// Load mesh metadata from json file ?
+	if (filename_path.extension() == ".json") {
+		std::ifstream ifs(filename);
+		std::string content;
+		ifs >> content;
+		ifs.close();
+
+		auto json = json::parse(content);
+		mesh_metadata = MeshMetadata::from_json(json);
+		mesh_filename = mesh_metadata.filename;
+	} else {
+		mesh_metadata.filename = filename;
+		mesh_metadata.cell_type = MESH_TET;
+	}
+
+    if(!mesh_load(mesh_filename, mesh_, flags)) {
 		// TODO clear all here too !
         return false;
     }
 
-	// Reset all values
-	// gui_mode = Camera;
-	// Clear selections
-	reset_hovered_selected();
-	// Clear path
-	hovered_path.clear();
-	selected_path.clear();
-
-	// Clear UM meshes
-	tet.clear();
-	hex.clear();
+	reset();
 
 	is_loading = false;
 
-	// Init UM tet from GEO mesh
-	um_bindings::um_tet_from_geo_mesh(mesh_, tet);
-	tet.connect();
 
+	// Init UM tet from GEO mesh
+	if (mesh_metadata.cell_type == GEO::MESH_TET) {
+		um_bindings::um_tet_from_geo_mesh(mesh_, tet);
+		tet.connect();
+	}
+	else if (mesh_metadata.cell_type == GEO::MESH_HEX) {
+		um_bindings::um_hex_from_geo_mesh(mesh_, hex);
+		hex.connect();
+	}
 
 
 	// Display info
@@ -770,9 +545,8 @@ bool App::load(const std::string& filename) {
     mesh_.vertices.set_dimension(3);
     mesh_.vertices.set_double_precision(); // added
     mesh_gfx_.set_mesh(&mesh_);
-    current_file_ = filename;
+    current_file_ = mesh_filename;
 
-	// TODO see if useless
     labeling_visu_mode_transition();
 
     clear_scene_overlay();
@@ -785,17 +559,15 @@ bool App::load(const std::string& filename) {
 
 void App::draw_object_properties() {
 
+	ImGui::Checkbox("Tool preview", &tool_preview);
+
 	ImGui::Text("Hovered vertex: %i", hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", hovered_edge);
 	ImGui::Text("Hovered cell facet: %i", hovered_facet);
 	ImGui::Text("Hovered cell local facet: %i", hovered_lfacet);
 	ImGui::Text("Hovered cell: %i", hovered_cell);
+
 	// ImGui::Text("Hen: %i", he_n);
-
-	ImGui::Checkbox("Show vertices", &show_vertices_);
-	ImGui::Checkbox("Show surface", &show_surface_);
-	ImGui::Checkbox("Show volume", &show_volume_);
-
 	// if(ImGui::Button("Next!")) {
 	// 	he_n++;
 	// }
@@ -810,312 +582,176 @@ void App::draw_object_properties() {
 
 	ImGui::Separator();
 
-	if(ImGui::Button("Paint X")) {
-		paint_value = 0;
-		gui_mode = Painting;
-	}
-	if(ImGui::Button("Paint Y")) {
-		paint_value = 1;
-		gui_mode = Painting;
-	}
-	if(ImGui::Button("Paint Z")) {
-		paint_value = 2;
-		gui_mode = Painting;
-	}	
-	if(ImGui::Button("Paint -X")) {
-		paint_value = 3;
-		gui_mode = Painting;
-	}
-	if(ImGui::Button("Paint -Y")) {
-		paint_value = 4;
-		gui_mode = Painting;
-	}
-	if(ImGui::Button("Paint -Z")) {
-		paint_value = 5;
-		gui_mode = Painting;
-	}	
+	bool is_visible_compute_flag_tool = (mesh_metadata.cell_type == MESH_TET);
 
-	if(ImGui::Button("Layer view !")) {
-		gui_mode = LoopCutPad;
-	}	
+	if (is_visible_compute_flag_tool) {
 
-	ImGui::Separator();
+
+		// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
+		// ImGui::ColorButton("+X", ImVec4(1,0,0,1));
+
+		if(ImGui::Button("Paint X")) {
+			paint_value = 0;
+			gui_mode = Painting;
+		}
+		if(ImGui::Button("Paint Y")) {
+			paint_value = 1;
+			gui_mode = Painting;
+		}
+		if(ImGui::Button("Paint Z")) {
+			paint_value = 2;
+			gui_mode = Painting;
+		}	
+		if(ImGui::Button("Paint -X")) {
+			paint_value = 3;
+			gui_mode = Painting;
+		}
+		if(ImGui::Button("Paint -Y")) {
+			paint_value = 4;
+			gui_mode = Painting;
+		}
+		if(ImGui::Button("Paint -Z")) {
+			paint_value = 5;
+			gui_mode = Painting;
+		}	
+
+		ImGui::Separator();
+
+	}
+
+	bool is_visible_padding_tools = (mesh_metadata.cell_type == MESH_HEX);
+
+	if (is_visible_padding_tools) {
+		if(ImGui::Button("Loop padding")) {
+			gui_mode = LoopCutPad;
+		}	
+	}
+
 
 	// TODO Add checking of mesh type ! Maybe a class that derives from TetBoundary to rewrite with check() override...
 	// TODO Add view mode for mesh type to switch view
 
-	if (ImGui::Button("Compute flags !")) {
-		
-		// Compute flag on tet and tri
-		TetBoundary tet_bound(tet);
-		
-		// To GEO mesh
-		um_bindings::geo_mesh_from_tetboundary(tet_bound, mesh_);
+	
 
-		UM::CellFacetAttribute<int> tet_flag(tet, -1);
-		UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
+	if (is_visible_compute_flag_tool) {
 
-		// Compute flag
-		algo::naive_tag(tet, tet_flag);
-		// Transfert flag from tet to tri for display
-		tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
-		// Update GEO mesh attribute "flag"
-		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet, tet_flag.ptr, "tet_flag", mesh_);
-		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(tet_bound.tri, tri_flag.ptr, "flag", mesh_);
+		if (ImGui::Button("Compute flags !")) {
+			
+			// Compute flag on tet and tri
+			TetBoundary tet_bound(tet);
+			
+			// To GEO mesh
+			um_bindings::geo_mesh_from_tetboundary(tet_bound, mesh_);
 
-		labeling_visu_mode_transition();
-		show_surface_ = true;
-		show_volume_ = false;
+			UM::CellFacetAttribute<int> tet_flag(tet, -1);
+			UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
+
+			// Compute flag
+			algo::naive_tag(tet, tet_flag);
+			// Transfert flag from tet to tri for display
+			tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
+			// Update GEO mesh attribute "flag"
+			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet, tet_flag.ptr, "tet_flag", mesh_);
+			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(tet_bound.tri, tri_flag.ptr, "flag", mesh_);
+
+			labeling_visu_mode_transition();
+			show_surface_ = true;
+			show_volume_ = false;
+
+			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
+			// Write mesh
+			write_by_extension("flagged.geogram", tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
+
+			// Save mesh metadata in json !!!!
+			mesh_metadata = { 
+				.filename = "flagged.geogram", 
+				.cell_type = GEO::MESH_TET, 
+				.attributes = {
+					{
+						.name = "tet_flag", 
+						.type = "int", 
+						.where = MESH_CELL_FACETS
+					}
+				} 
+			};
+
+			std::string json_metadata_str = mesh_metadata.to_json().dump();
+			
+			std::ofstream ofs("flagged.geogram.json");
+			ofs << json_metadata_str;
+			ofs.close();
+		}
+
+		ImGui::Separator();
+
 	}
 
-	ImGui::Separator();
-	int nhex_wanted = 3000;
 
-	if (ImGui::Button("Polycubify !")) {
+	// Criteria to display polycubify tool
+	auto mesh_metadata_attr = mesh_metadata.get_attr("tet_flag");
+	
+	bool is_visible_polycubify_tool = (mesh_metadata.cell_type == MESH_TET) && (mesh_metadata_attr.has_value() && mesh_metadata_attr.value().where == GEO::MESH_CELL_FACETS);
+	
+	if (is_visible_polycubify_tool) {
+		int nhex_wanted = 3000;
+		if (ImGui::Button("Polycubify !")) {
 
-		// Get UM cell facet attribute tet_flag from GEO mesh
-		UM::CellFacetAttribute<int> tet_flag(tet, -1);
-		um_bindings::um_attr_from_geo_attr<GEO::MESH_CELL_FACETS>(mesh_, "tet_flag", tet, tet_flag.ptr);
+			// Get UM cell facet attribute tet_flag from GEO mesh
+			UM::CellFacetAttribute<int> tet_flag(tet, -1);
+			um_bindings::um_attr_from_geo_attr<GEO::MESH_CELL_FACETS>(mesh_, "tet_flag", tet, tet_flag.ptr);
 
-		// UM::Hexahedra hex;
+			// UM::Hexahedra hex;
 
-		BenjaminAPI::polycubify(tet, tet_flag, hex, nhex_wanted);
-		std::cout << "polycubify..." << std::endl;
+			BenjaminAPI::polycubify(tet, tet_flag, hex, nhex_wanted);
+			std::cout << "polycubify..." << std::endl;
 
-		HexBoundary hex_bound(hex);
-		// Replace current GEO mesh by UM Hex
-		um_bindings::geo_mesh_from_hexboundary(hex_bound, mesh_);
-		mesh_gfx_.set_mesh(&mesh_);
+			HexBoundary hex_bound(hex);
+			// Replace current GEO mesh by UM Hex
+			um_bindings::geo_mesh_from_hexboundary(hex_bound, mesh_);
 
-		labeling_visu_mode_transition();
-		show_surface_ = false;
-		// show_surface_borders_ = true;
-		show_volume_ = true;
-		// show_hexes_ = true;
 
-		// GEO::Attribute<int> geo_attr(
-		// 	mesh_.cells.attributes(), "test"
-		// );
+			// write_by_extension("input.geogram", tet);
+			// write_by_extension("polycubify_hex.geogram", hex);
+			// write_by_extension("polycubify_quad.geogram", hex_bound.quad);
+			// mesh_save(mesh_, "polycubify2.geogram");
+			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
-		// for (int i = 0; i < geo_attr.size(); i++)
-		// 	geo_attr[i] = rand() % 100;
+			// Write mesh
+			write_by_extension("polycubified.geogram", hex_bound.hex, {{}, {}, {}, {}});
 
-		// // attribute_ = "cells.test";
-		// // attribute_subelements_ = MESH_CELLS;
-		// // attribute_name_ = "test";
-		// // attribute_min_ = 0;
-		// // attribute_max_ = 100;
+			// Save mesh metadata in json !!!!
+			mesh_metadata = { 
+				.filename = "polycubified.geogram", 
+				.cell_type = GEO::MESH_HEX, 
+				.attributes = {} 
+			};
 
-		// // attribute_ = "cell_facets.tet_flag";
-		// // attribute_subelements_ = MESH_CELL_FACETS;
-		// // attribute_name_ = "tet_flag";
-		// // attribute_min_ = -1;
-		// // attribute_max_ = 5;
+			std::string json_metadata_str = mesh_metadata.to_json().dump();
+			
+			std::ofstream ofs("polycubified.geogram.json");
+			ofs << json_metadata_str;
+			ofs.close();
 
-		write_by_extension("input.geogram", tet);
-		write_by_extension("polycubify_hex.geogram", hex);
-		write_by_extension("polycubify_quad.geogram", hex_bound.quad);
-		mesh_save(mesh_, "polycubify2.geogram");
+			// View
+			mesh_gfx_.set_mesh(&mesh_);
+			labeling_visu_mode_transition();
+			show_surface_ = false;
+			show_volume_ = true;
+
+		}
 
 	}
 
 }
-
-
-
-// void App::draw_object_properties() {
-
-// 	ImGui::Checkbox("Show vertices", &show_vertices_);
-// 	ImGui::Checkbox("Show surface", &show_surface_);
-// 	ImGui::Checkbox("Show volume", &show_volume_);
-
-// 	if(ImGui::Button("Camera tool")) {
-// 		gui_mode = Camera;
-// 	}
-
-// 	ImGui::Separator();
-
-// 	if(ImGui::Button("Paint X")) {
-// 		paint_value = 0;
-// 		gui_mode = Painting;
-// 	}
-// 	if(ImGui::Button("Paint Y")) {
-// 		paint_value = 1;
-// 		gui_mode = Painting;
-// 	}
-// 	if(ImGui::Button("Paint Z")) {
-// 		paint_value = 2;
-// 		gui_mode = Painting;
-// 	}	
-// 	if(ImGui::Button("Paint -X")) {
-// 		paint_value = 3;
-// 		gui_mode = Painting;
-// 	}
-// 	if(ImGui::Button("Paint -Y")) {
-// 		paint_value = 4;
-// 		gui_mode = Painting;
-// 	}
-// 	if(ImGui::Button("Paint -Z")) {
-// 		paint_value = 5;
-// 		gui_mode = Painting;
-// 	}	
-
-// 	ImGui::Separator();
-
-// 	// TODO Add checking of mesh type ! Maybe a class that derives from TetBoundary to rewrite with check() override...
-// 	// TODO Add view mode for mesh type to switch view
-
-// 	if(ImGui::Button("Compute flags !")) {
-		
-// 		um_bindings::combinatorial_update(mesh_, [&](TetBoundary& tet_bound, SurfaceAttributes& surf_attr, VolumeAttributes& vol_attr) {
-
-// 			// Declare flag attribute
-// 			UM::CellFacetAttribute<int> tet_flag(tet_bound.tet, -1);
-// 			UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
-
-// 			// Compute flag on tet and tri
-// 			algo::naive_tag(tet_bound.tet, tet_flag);
-// 			// Transfert cell facet attribute of tet to tri surface
-// 			tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
-
-// 			// Return attributes i would like to transfert to mesh
-// 			return std::pair<SurfaceAttributes, VolumeAttributes>{{{}, {{"flag", tri_flag.ptr}}, {}}, {{}, {}, {{"flag", tet_flag.ptr}}, {}}};
-// 		});
-		
-// 		labeling_visu_mode_transition();
-// 	}
-
-
-
-// 	if(ImGui::Button("Integrate !")) {
-
-// 		um_bindings::combinatorial_update(mesh_, [&](TetBoundary& tet_bound, SurfaceAttributes& surf_attr, VolumeAttributes& vol_attr) {
-
-// 			write_by_extension("integrated_tri.geogram", tet_bound.tri);
-
-// 			UM::PointAttribute<UM::vec3> U(tet_bound.tet);
-
-// 			UM::FacetAttribute<int> tri_flag("flag", surf_attr, tet_bound.tri);
-// 			UM::CellFacetAttribute<int> tet_flag("flag", vol_attr, tet_bound.tet);
-
-
-// 			BenjaminAPI::integrate(tet_bound.tet, tet_flag, U);
-// 			// Update vertices pos
-// 			for (auto v : tet_bound.tet.iter_vertices()) {
-// 				v.pos() = U[v];
-// 			}
-// 			for (auto v : tet_bound.tri.iter_vertices()) {
-// 				v.pos() = U[v];
-// 			}
-
-// 			// write_by_extension("integrated_tet.geogram", tet_bound.tet, {{}, {}, {{"flag", tet_flag.ptr}}, {}});
-// 			// write_by_extension("integrated_tri.geogram", tet_bound.tri, {{}, {{"flag", tri_flag.ptr}}, {}});
-
-
-// 			// Transfert cell facet attribute of tet to tri surface
-// 			// UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
-// 			// tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
-
-// 			// write_by_extension("integrated_tet.geogram", tet_bound.tet);
-// 			// write_by_extension("integrated_tri.geogram", tet_bound.tri);
-
-// 			std::cout << "integrated !!!" << std::endl;
-
-// 			// TODO should return tri_flag for refreshing view ! 
-// 			// return std::pair<SurfaceAttributes, VolumeAttributes>{{{}, {}, {}}, {{}, {}, {}, {}}};
-// 			return std::pair<SurfaceAttributes, VolumeAttributes>{{{}, {{"flag", tri_flag.ptr}}, {}}, {{}, {}, {{"flag", tet_flag.ptr}}, {}}};
-// 		});
-
-// 		labeling_visu_mode_transition();
-// 	}
-
-
-// 	// if(ImGui::Button("Randomize !")) {
-
-// 	// 	um_bindings::combinatorial_update(mesh_, [&](TetBoundary& tet_bound, SurfaceAttributes& surf_attr, VolumeAttributes& vol_attr) {
-
-// 	// 		for (auto v : tet_bound.tri.iter_vertices()) {
-// 	// 			v.pos() += {rand()%100/10000., rand()%100/10000., rand()%100/10000.};
-// 	// 		}
-
-// 	// 		UM::CellFacetAttribute<int> tet_flag(tet_bound.tet, -1);
-// 	// 		UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
-
-// 	// 		return std::pair<SurfaceAttributes, VolumeAttributes>{{{}, {{"flag", tri_flag.ptr}}, {}}, {{}, {}, {{"flag", tet_flag.ptr}}, {}}};
-// 	// 	});
-// 	// }
-
-// 	// if(ImGui::Button("Compute flags !")) {
-
-// 	// 	// Extract surface
-// 	// 	TetBoundary tet_b(tet);
-
-// 	// 	// Compute flag on tet and tri
-// 	// 	UM::CellFacetAttribute<int> tet_flag(tet_b.tet, -1);
-// 	// 	algo::naive_tag(tet, tet_flag);		
-
-// 	// 	// Transfert cell facet attribute of tet to tri surface
-// 	// 	UM::FacetAttribute<int> tri_flag(tet_b.tri, -1);
-// 	// 	tet_b.set_attribute_to_surface(tet_flag, tri_flag);
-
-// 	// 	// UM surface to mesh
-// 	// 	// um_bindings::geo_mesh_from_um_tri(tet_b.tri, mesh_);
-// 	// 	// um_bindings::geo_attr_from_um_attr(tet_b.tri, "flag", tri_flag, mesh_);
-
-		
-// 	// 	UM::PointAttribute<UM::vec3> U(tet);
-// 	// 	BenjaminAPI::integrate(tet, tet_flag, U);
-// 	// 	for (auto v : tet.iter_vertices()) {
-// 	// 		v.pos() = U[v];
-// 	// 	}
-// 	// 	tet_b.set(tet);
-// 	// 	um_bindings::geo_mesh_from_um_tri(tet_b.tri, mesh_);
-// 	// 	um_bindings::geo_attr_from_um_attr(tet_b.tri, "flag", tri_flag, mesh_);
-
-// 	// 	// std::cout << "integrated..." << std::endl;
-// 	// 	// UM::write_by_extension("integrated.geogram", tet, {});
-// 	// 	// UM::write_by_extension("integrated_tri.geogram", tet_b.tri, {{}, {{"flag", tri_flag.ptr}}, {}});
-
-// 	// 	// labeling_visu_mode_transition();
-
-// 	// 	/*
-// 	// 	UM::Hexahedra hex;
-// 	// 	BenjaminAPI::polycubify(tet, tet_flag, hex, 1000);
-// 	// 	std::cout << "polycubify..." << std::endl;
-
-// 	// 	UM::write_by_extension("polycubify.geogram", hex, {});
-// 	// 	*/
-
-// 	// 	// std::cout << "Mesh writed by ultimaille" << std::endl;
-// 	// }
-
-// 	// if(ImGui::Button("Polycubify !")) {
-
-// 	// 	std::cout << "polycubify..." << std::endl;
-
-// 	// 	// Need to retransform mesh to tet
-
-// 	// 	UM::CellFacetAttribute<int> tet_flag(tet);
-// 	// 	um_bindings::um_attr_from_geo_attr(mesh_, "flag", tet, tet_flag);
-// 	// 	std::cout << "polycubify..." << std::endl;
-		
-// 	// 	for (auto v : tet.iter_vertices()) {
-// 	// 		std::cout << "vertices: " << v << std::endl;
-// 	// 	}
-
-// 	// 	UM::Hexahedra hex;
-// 	// 	BenjaminAPI::polycubify(tet, tet_flag, hex, 1000);
-// 	// 	std::cout << "polycubify..." << std::endl;
-
-// 	// 	UM::write_by_extension("polycubify.geogram", hex, {});
-// 	// 	std::cout << "polycubified !" << std::endl;
-// 	// }
-
-// }
 
 std::string App::supported_write_file_extensions() {
-    return SimpleMeshApplication::supported_write_file_extensions() + ";txt"; // add .txt in supported write file extensions
+    return SimpleMeshApplication::supported_write_file_extensions() + ";json"; // add .json in supported write file extensions
 }
+
+std::string App::supported_read_file_extensions() {
+    return SimpleMeshApplication::supported_read_file_extensions() + ";json"; // add .json in supported write file extensions
+}
+
 
 void App::labeling_visu_mode_transition() {
     if(colormaps_.empty()) {
