@@ -145,6 +145,8 @@ protected:
 
 	MeshMetadata mesh_metadata;
 
+	std::vector<UM::Segment3> flag_dirs;
+
 	// int he_n = 0;
 	// um_bindings::MeshBinding mesh_binding;
 

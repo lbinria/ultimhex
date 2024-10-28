@@ -27,5 +27,6 @@ struct MeshMetadata {
 	static MeshMetadata from_json(json &json);
 	bool has_attr(std::string attr_name);
 	std::optional<MetadataAttribute> get_attr(std::string attr_name);
+	void save();
 
 };

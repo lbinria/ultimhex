@@ -72,3 +72,13 @@ std::optional<MeshMetadata::MetadataAttribute> MeshMetadata::get_attr(std::strin
 
 	return std::nullopt;
 }
+
+void MeshMetadata::save() {
+	// TODO check with filesystem::path if its valid path
+	assert(filename != "");
+
+	std::string j = to_json().dump();
+	std::ofstream ofs(filename + ".json");
+	ofs << j;
+	ofs.close();
+}

@@ -20,7 +20,7 @@
 
 using json = nlohmann::json;
 
-App::App(const std::string name) : SimpleMeshApplicationExt(name)/*, mesh_binding(mesh_)*/ {
+App::App(const std::string name) : SimpleMeshApplicationExt(name) {
 
 }
 
@@ -48,113 +48,20 @@ void App::draw_scene() {
 	if (show_grid_)
 		gl_draw::draw_grid();
 
-	
-
-	// // Display hovered halfedge
-
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(1.f,0.3f,0.6f, 1.f).data());
-	// glupBegin(GLUP_LINES);
-	// glupPrivateVertex3dv(posA.data());
-	// glupPrivateVertex3dv(posB.data());
-	// glupEnd();
-
-	// glupBegin(GLUP_POINTS);
-	// glupPrivateVertex3dv(posA.data());
-	// glupPrivateVertex3dv(posB.data());
-	// glupEnd();
-
 	// PATH
 	gl_draw::draw_path(hovered_path, GEO::vec4f(1.f,0.3f,0.6f, 1.f), true);
 	gl_draw::draw_path(selected_path, GEO::vec4f(1.f,0.2f,0.0f, 1.f), true);
-
-
-	// Display UM halfedges to remove !
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(1.f,0.0f,0.0f, 1.f).data());
-	// glupBegin(GLUP_POINTS);
-	// double ppA[3] = {posAb.x, posAb.y, posAb.z};
-	// glupPrivateVertex3dv(ppA);
-	// glupEnd();
-
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(0.f,1.0f,0.0f, 1.f).data());
-	// glupBegin(GLUP_POINTS);
-	// double ppB[3] = {posBb.x, posBb.y, posBb.z};
-	// glupPrivateVertex3dv(ppB);
-	// glupEnd();
-
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(0.f,1.0f,0.0f, 1.f).data());
-	// glupBegin(GLUP_LINES);
-	// auto mid = (posAb + posBb) * .5;
-	// auto n = mid + posN;
-	// double pMid[3] = {mid.x, mid.y, mid.z};
-	// double pN[3] = {n.x, n.y, n.z};
-	// glupPrivateVertex3dv(pMid);
-	// glupPrivateVertex3dv(pN);
-	// glupEnd();
 
 	// Last click position as point
 	glupBegin(GLUP_POINTS);
 	glupPrivateVertex3dv(click_pos.data());
 	glupEnd();
 
+	// Just test
 
-
-	// if (hovered_facet != NO_FACET && hovered_facet < mesh_.cell_facets.nb()) {
-	// 	glupSetPointSize(5.0);
-	// 	glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(0.f, 0.2f, 0.6f, 0.2f).data());
-	// 	glupBegin(GLUP_POINTS);
-		
-	// 	auto facet_n_verts = mesh_.cells.facet_nb_vertices(hovered_cell, hovered_lfacet);
-
-	// 	for (int lv = 0; lv < facet_n_verts; lv++) {
-	// 		auto a = mesh_.cells.facet_vertex(hovered_cell, hovered_lfacet, lv);
-	// 		glupPrivateVertex3dv(mesh_.vertices.point(a).data());
-	// 	}
-	// 	// for (int lv = 0; lv < facet_n_verts; lv++) {
-			
-	// 	// 	auto a = mesh_.cells.facet_vertex(hovered_cell, hovered_lfacet, lv);
-	// 	// 	auto b = mesh_.cells.facet_vertex(hovered_cell, hovered_lfacet, (lv + 1) % facet_n_verts);
-	// 	// 	auto c = mesh_.cells.facet_vertex(hovered_cell, hovered_lfacet, (lv + 2) % facet_n_verts);
-	// 	// 	glupPrivateVertex3dv(mesh_.vertices.point(a).data());
-	// 	// 	glupPrivateVertex3dv(mesh_.vertices.point(b).data());
-	// 	// 	glupPrivateVertex3dv(mesh_.vertices.point(c).data());
-	// 	// }
-	// 	glupEnd();
-	// }
-
-
-	// EXAMPLE TRIANGLES
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(rand()% 100 / 100.,rand()% 100 / 100.,rand()% 100 / 100.).data());
-	// glupBegin(GLUP_TRIANGLES);
-	// for (int i = 0; i < 20; i++) {
-	// 	glupPrivateVertex3dv(GEO::vec3(i / 10., 0, 0).data());
-	// 	glupPrivateVertex3dv(GEO::vec3(i / 10., 1, 0).data());
-	// 	glupPrivateVertex3dv(GEO::vec3(i / 10., 1, 1).data());
-	// }
-	// glupEnd();
-
-
-
-	// EXAMPLE LINES TEXTURED
-	// if (tet.connected()) {
-	// 	glupEnable(GLUP_TEXTURING);
-	// 	glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
-	// 	glBindTexture(GL_TEXTURE_2D, colormaps_[COLORMAP_PARULA].texture);
-	// 	glupTextureType(GLUP_TEXTURE_2D);
-	// 	glupTextureMode(GLUP_TEXTURE_REPLACE);
-	// 	glupPrivateTexCoord1d(0.0);
-	// 	// glupSetMeshWidth(2.);
-
-	// 	glupBegin(GLUP_LINES);
-	// 	for(auto he : tet.iter_halfedges()) {
-	// 		auto f = he.from().pos();
-	// 		auto t = he.to().pos();
-
-	// 		glupPrivateVertex3dv(GEO::vec3(f.x, f.y, f.z).data()); // draw first vertex
-	// 		glupPrivateVertex3dv(GEO::vec3(t.x, t.y, t.z).data()); // draw second vertex
-	// 	}
-	// 	glupDisable(GLUP_TEXTURING);
-	// 	glupEnd();
-	// }
+	for (auto x : flag_dirs) {
+		gl_draw::draw_arrow(x.a, x.b, 0.1, 8, 0.8, GEO::vec4f(1,0,0,1));
+	}
 
 }
 
@@ -186,6 +93,64 @@ void App::GL_initialize() {
     // init_rgba_colormap("labeling",6,1,labeling_colors_.as_chars());
     // init_rgba_colormap("validity",2,1,validity_colors_.as_chars());
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
+}
+
+std::vector<UM::Segment3> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
+
+	DisjointSet ds(tri.nfacets());
+
+    for (auto h : tri.iter_halfedges()) {
+		auto f = h.facet();
+		auto opp_f = h.opposite().facet();
+
+		if (tri_flag[f] != tri_flag[opp_f])
+			continue;
+
+        ds.merge(h.facet(), h.opposite().facet());
+    }
+
+    // Get associate facet id to group id
+    std::vector<int> setIds;
+    ds.get_sets_id(setIds);
+
+	// Extract by groups
+	std::map<int, std::vector<int>> element_by_group;
+    for (long unsigned int i = 0; i < setIds.size(); i++) {
+		element_by_group[setIds[i]].push_back(i);
+    }
+
+	std::vector<UM::Segment3> flag_dirs;
+
+	// Get bary of each group
+	for (auto kv : element_by_group) {
+		// Compute bary of all facets
+		UM::vec3 bary{0,0,0};
+		for (auto f_idx : kv.second) {
+			Triangle3 t = UM::Surface::Facet(tri, f_idx);
+			bary += t.bary_verts();
+		}
+
+		UM::vec3 dir{0,0,0};
+		// UGLY but just for testing !
+		if (kv.first == 0)
+			dir = {-1,0,0};
+		else if (kv.first == 1)
+			dir = {0,-1,0};
+		else if (kv.first == 2)
+			dir = {0,0,-1};
+		else if (kv.first == 3)
+			dir = {1,0,0};
+		else if (kv.first == 4)
+			dir = {0,1,0};
+		else if (kv.first == 5)
+			dir = {0,0,1};
+
+		bary /= kv.second.size();
+		flag_dirs.push_back({bary, bary + dir});
+	}
+
+    std::cout << "n set: " << ds.nsets() << std::endl;
+	return flag_dirs;
 }
 
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
@@ -324,9 +289,9 @@ void App::cursor_pos_callback(double x, double y, int source) {
 	// Try to pick cell
 	hovered_cell = pick(MESH_CELLS);
 
-
 	// If a cell is hovered, try to pick cell edge / cell facet 
-	if (is_cell_hovered()) {
+	// TODO mesh_metadata.cell_type == MESH_HEX is a quick fix, I should modfy pickup_cell_facet that just hold QUAD !
+	if (is_cell_hovered() && mesh_metadata.cell_type == MESH_HEX) {
 		index_t e_idx = pickup_cell_edge(picked_point_, hovered_cell);
 		auto [f_idx, lf_idx] = pickup_cell_facet(picked_point_, hovered_cell);
 
@@ -335,7 +300,6 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		hovered_lfacet = lf_idx;
 	}
 
-	// TODO check MESH TYPE !!
 	if (gui_mode == LoopCutPad) {
 
 		hovered_path.clear();
@@ -372,13 +336,22 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		return;
 	}
 
+	if (action == EVENT_ACTION_DOWN && button == 0) {
+		selected_vertex = hovered_vertex;
+		selected_edge = hovered_edge;
+		selected_facet = hovered_facet;
+		selected_lfacet = hovered_lfacet;
+		selected_cell = hovered_cell;
+	}
+
 	// If left click
     if (gui_mode == Painting && action == EVENT_ACTION_DOWN && button == 0) {
 
 		index_t f_idx = pick(MESH_FACETS);
+
 		if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
 			std::cout << "facet: " << f_idx << std::endl;
-			GEO::Attribute<GEO::Numeric::uint32> flag(
+			GEO::Attribute<GEO::signed_index_t> flag(
 				mesh_.facets.attributes(), "flag"
 			);
 
@@ -396,14 +369,8 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 	}
 	else if (gui_mode == LoopCutPad && action == EVENT_ACTION_DOWN && button == 0) {
 
-		// TODO move because it will be useful in other mode than Layer
-		selected_vertex = hovered_vertex;
-		selected_edge = hovered_edge;
-		selected_facet = hovered_facet;
-		selected_lfacet = hovered_lfacet;
-		selected_cell = hovered_cell;
-
 		selected_path = hovered_path;
+
 
 		// Test extract layer
 		// Quads q_out;
@@ -444,7 +411,7 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 		switch_mode = Camera;
 	}
 
-	// Validate layer
+	// Validate loop pad
 	if (gui_mode == LoopCutPad && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && is_cell_selected()) {
 		
 		CellFacetAttribute<bool> pad_face(hex);
@@ -458,7 +425,6 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 
 		BenjaminAPI::pad(hex, pad_face);
 
-		// TODO here use hexboundary
 		um_bindings::geo_mesh_from_um_hex(hex, mesh_);
 		mesh_gfx_.set_mesh(&mesh_);
 
@@ -526,7 +492,6 @@ bool App::load(const std::string& filename) {
 
 	reset();
 
-	is_loading = false;
 
 
 	// Init UM tet from GEO mesh
@@ -538,6 +503,8 @@ bool App::load(const std::string& filename) {
 		um_bindings::um_hex_from_geo_mesh(mesh_, hex);
 		hex.connect();
 	}
+
+	is_loading = false;
 
 
 	// Display info
@@ -625,13 +592,7 @@ void App::draw_object_properties() {
 		if(ImGui::Button("Loop padding")) {
 			gui_mode = LoopCutPad;
 		}	
-	}
-
-
-	// TODO Add checking of mesh type ! Maybe a class that derives from TetBoundary to rewrite with check() override...
-	// TODO Add view mode for mesh type to switch view
-
-	
+	}	
 
 	if (is_visible_compute_flag_tool) {
 
@@ -654,15 +615,10 @@ void App::draw_object_properties() {
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet, tet_flag.ptr, "tet_flag", mesh_);
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(tet_bound.tri, tri_flag.ptr, "flag", mesh_);
 
-			labeling_visu_mode_transition();
-			show_surface_ = true;
-			show_volume_ = false;
+
 
 			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
-			// Write mesh
-			write_by_extension("flagged.geogram", tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
-
-			// Save mesh metadata in json !!!!
+			// Save mesh metadata
 			mesh_metadata = { 
 				.filename = "flagged.geogram", 
 				.cell_type = GEO::MESH_TET, 
@@ -674,12 +630,21 @@ void App::draw_object_properties() {
 					}
 				} 
 			};
+			// Write mesh
+			write_by_extension(mesh_metadata.filename, tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
+			mesh_metadata.save();
 
-			std::string json_metadata_str = mesh_metadata.to_json().dump();
-			
-			std::ofstream ofs("flagged.geogram.json");
-			ofs << json_metadata_str;
-			ofs.close();
+			labeling_visu_mode_transition();
+			show_surface_ = true;
+			show_volume_ = false;
+		}
+
+		if (ImGui::Button("Compute patches !")) {
+			// Compute flag on tet and tri
+			TetBoundary tet_bound(tet);
+			UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
+			um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(mesh_, "flag", tet_bound.tri, tri_flag.ptr);
+			flag_dirs = compute_patches(tet_bound.tri, tri_flag);
 		}
 
 		ImGui::Separator();
@@ -717,7 +682,6 @@ void App::draw_object_properties() {
 			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
 			// Write mesh
-			write_by_extension("polycubified.geogram", hex_bound.hex, {{}, {}, {}, {}});
 
 			// Save mesh metadata in json !!!!
 			mesh_metadata = { 
@@ -725,12 +689,8 @@ void App::draw_object_properties() {
 				.cell_type = GEO::MESH_HEX, 
 				.attributes = {} 
 			};
-
-			std::string json_metadata_str = mesh_metadata.to_json().dump();
-			
-			std::ofstream ofs("polycubified.geogram.json");
-			ofs << json_metadata_str;
-			ofs.close();
+			write_by_extension(mesh_metadata.filename, hex_bound.hex, {{}, {}, {}, {}});
+			mesh_metadata.save();
 
 			// View
 			mesh_gfx_.set_mesh(&mesh_);
@@ -761,11 +721,14 @@ void App::labeling_visu_mode_transition() {
         return;
     }
 
+	// TODO Add view mode for mesh type to switch view
+
 	show_attributes_ = true;
     show_vertices_ = false;
 	show_volume_ = true;
 	show_surface_ = true;
 	show_hexes_ = true;
+	
 	current_colormap_index_ = COLORMAP_RAINBOW;
 	attribute_ = "facets.flag";
 	attribute_subelements_ = MESH_FACETS;
