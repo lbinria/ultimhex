@@ -225,6 +225,13 @@ namespace GEO {
 	 */
 	void drop_callback(int nb, const char** f) override;
 	
+	struct ColormapInfo {
+		ColormapInfo() : texture(0) {
+		}
+		GLuint texture;
+		std::string name;
+	};
+
       protected:
 
 	/**
@@ -487,6 +494,8 @@ namespace GEO {
 	virtual const char* default_layout_android_vertical() const;
 	virtual const char* default_layout_android_horizontal() const;		
 
+
+
       protected:
         static void replay_latest_command();
         
@@ -548,14 +557,9 @@ namespace GEO {
 	std::map< std::string, std::function<void()> > key_funcs_;
 	std::map< std::string, std::string > key_funcs_help_;
 
-        struct ColormapInfo {
-            ColormapInfo() : texture(0) {
-            }
-            GLuint texture;
-            std::string name;
-        };
 
-        vector<ColormapInfo> colormaps_;
+
+	vector<ColormapInfo> colormaps_;
 	FullScreenEffectImpl_var full_screen_effect_;
 
 	lua_State* lua_state_;

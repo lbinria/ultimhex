@@ -69,7 +69,8 @@ protected:
 		Camera,
 		Hover,
 		Painting,
-		LoopCutPad
+		LoopPadding,
+		BlocPadding
 	};
 
 	bool is_loading = false;
@@ -100,12 +101,12 @@ protected:
 
 	// TODO Please refactor this !
 	bool is_cell_hovered() { return (hovered_cell != NO_CELL && hovered_cell < mesh_.cells.nb()); }
-	bool is_cell_facet_hovered() { return (hovered_facet != NO_FACET && hovered_facet < mesh_.facets.nb()); }
+	bool is_cell_facet_hovered() { return (hovered_facet != NO_FACET && hovered_facet < mesh_.cell_facets.nb()); }
 	bool is_cell_lfacet_hovered() { return (hovered_lfacet != NO_FACET && hovered_lfacet < 6); }
 	bool is_cell_edge_hovered() { return (hovered_edge != NO_EDGE && hovered_edge < 12); }
 
 	bool is_cell_selected() { return (selected_cell != NO_CELL && selected_cell < mesh_.cells.nb()); }
-	bool is_cell_facet_selected() { return (selected_facet != NO_FACET && selected_facet < mesh_.facets.nb()); }
+	bool is_cell_facet_selected() { return (selected_facet != NO_FACET && selected_facet < mesh_.cell_facets.nb()); }
 	bool is_cell_lfacet_selected() { return (selected_lfacet != NO_FACET && selected_lfacet < 6); }
 	bool is_cell_edge_selected() { return (selected_edge != NO_EDGE && selected_edge < 12); }
 
@@ -122,7 +123,8 @@ protected:
 		selected_cell = NO_CELL;
 	}
 
-
+	GEO::vec3 click_pos;
+	bool left_mouse_pressed = false;
 	GUIMode gui_mode = Camera;
 	GUIMode switch_mode = Camera;
 	int paint_value = 0;
@@ -138,14 +140,14 @@ protected:
 	// UM::vec3 posBb;
 	// UM::vec3 posN;
 
-	GEO::vec3 click_pos;
 
 	UM::Tetrahedra tet;
 	UM::Hexahedra hex;
+	TetBoundary tet_bound;
 
 	MeshMetadata mesh_metadata;
 
-	std::vector<UM::Segment3> flag_dirs;
+	std::vector<std::pair<int, UM::vec3>> flag_dirs;
 
 	// int he_n = 0;
 	// um_bindings::MeshBinding mesh_binding;

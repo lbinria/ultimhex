@@ -118,6 +118,7 @@ public:
 	 * Pickup a cell facet
 	 */
 	std::tuple<index_t, index_t> pickup_cell_facet(GEO::vec3 p0, index_t c_idx);
+	std::tuple<index_t, index_t> pickup_cell_facet2(GEO::vec3 p0, index_t c_idx);
 
     void init_rgba_colormap(const std::string& name, int width, int height, unsigned char * data);
 

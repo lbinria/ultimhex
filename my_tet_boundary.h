@@ -37,21 +37,8 @@ struct HexBoundary {
 struct TetBoundary {
 
 	inline TetBoundary(Tetrahedra& tet) : tet(tet), tri_facet_(tet), tri(), tet_facet_(tri) {
-		// set(tet);
 		update();
 	}
-
-	// inline void reset() {
-	// 	for (auto f : tri.facets) {
-	// 		tri_facet_[f] = -1;
-	// 	}
-	// 	for (int i = 0; i < tet.nfacets(); i++) {
-	// 		tet_facet_[i] = -1;
-	// 	}
-
-	// 	tri.resize_attrs();
-
-	// }
 
 	inline void update() {
 		
@@ -75,21 +62,6 @@ struct TetBoundary {
 		tri.connect();
 	}
 
-	// inline void set(Tetrahedra &tet) {
-
-	// 	tri.disconnect();
-
-	// 	tri.points = tet.points;
-	// 	for (auto f_tet : tet.iter_facets()) if (!f_tet.opposite().active()) {
-	// 		int f_tri = tri.create_facets(1);
-	// 		tet_facet_[f_tri] = f_tet;
-	// 		tri_facet_[f_tet] = f_tri;
-	// 		for (int lv = 0; lv < 3; lv++) tri.vert(f_tri, lv) = f_tet.vertex(lv);
-	// 	}
-
-	// 	tri.connect();
-	// }
-
 	inline Volume::Facet tet_facet(int f_tri) { return Volume::Facet(tet, tet_facet_[f_tri]); }
 
 	inline Volume::Halfedge	tet_halfedge(int h_tri) { return Volume::Facet(tet, tet_facet_[h_tri / 3]).halfedge(h_tri % 3); }
@@ -104,6 +76,12 @@ struct TetBoundary {
 				continue;
 			
 			tri_attr[tri_facet(f)] = tet_attr[f];
+		}
+	}
+
+	inline void set_attribute_to_volume(FacetAttribute<int> &tri_attr, CellFacetAttribute<int> &tet_attr) {
+		for (auto f : tri.iter_facets()) {			
+			tet_attr[tet_facet(f)] = tri_attr[f];
 		}
 	}
 

@@ -20,7 +20,7 @@
 
 using json = nlohmann::json;
 
-App::App(const std::string name) : SimpleMeshApplicationExt(name) {
+App::App(const std::string name) : SimpleMeshApplicationExt(name), tet_bound(tet) {
 
 }
 
@@ -37,6 +37,9 @@ void App::ImGui_initialize() {
 void App::draw_scene() {
     SimpleMeshApplicationExt::draw_scene();
 
+	auto hovered_color = GEO::vec4f(1.f,0.3f,0.6f, 1.f);
+	auto selected_color = GEO::vec4f(1.f,0.2f,0.0f, 1.f);
+
 	// GLUPfloat *view;
 	// glupGetMatrixfv(GLUP_MODELVIEW_MATRIX, view);
 	// ImGuizmo::ViewManipulate(view, 2.f, ImVec2(100,100), ImVec2(20,20), ImU32(100));
@@ -49,8 +52,25 @@ void App::draw_scene() {
 		gl_draw::draw_grid();
 
 	// PATH
-	gl_draw::draw_path(hovered_path, GEO::vec4f(1.f,0.3f,0.6f, 1.f), true);
-	gl_draw::draw_path(selected_path, GEO::vec4f(1.f,0.2f,0.0f, 1.f), true);
+	gl_draw::draw_path(hovered_path, hovered_color, true);
+	gl_draw::draw_path(selected_path, selected_color, true);
+
+	// Overlays 
+	// Cell facet
+	if (is_cell_hovered() && is_cell_facet_hovered()) {
+		gl_draw::draw_cell_facet_overlay(mesh_, hovered_cell, hovered_lfacet, hovered_color);	
+	}
+	if (is_cell_selected() && is_cell_lfacet_selected()) {
+		gl_draw::draw_cell_facet_overlay(mesh_, selected_cell, selected_lfacet, selected_color);
+	}
+
+	// Cell
+	if (is_cell_hovered()) {
+		gl_draw::draw_cell_overlay(mesh_, hovered_cell, colormaps_[current_colormap_index_]);
+	}
+	if (is_cell_selected()) {
+		gl_draw::draw_cell_overlay(mesh_, selected_cell, colormaps_[current_colormap_index_], 0.5);
+	}
 
 	// Last click position as point
 	glupBegin(GLUP_POINTS);
@@ -60,7 +80,25 @@ void App::draw_scene() {
 	// Just test
 
 	for (auto x : flag_dirs) {
-		gl_draw::draw_arrow(x.a, x.b, 0.1, 8, 0.8, GEO::vec4f(1,0,0,1));
+		int flag = x.first;
+		auto p = x.second;
+
+		UM::vec3 dir{0,0,0};
+		// UGLY but just for testing !
+		if (flag == 0)
+			dir = {-1,0,0};
+		else if (flag == 1)
+			dir = {0,-1,0};
+		else if (flag == 2)
+			dir = {0,0,-1};
+		else if (flag == 3)
+			dir = {1,0,0};
+		else if (flag == 4)
+			dir = {0,1,0};
+		else if (flag == 5)
+			dir = {0,0,1};
+
+		gl_draw::draw_arrow(p, (p + dir * 0.05), 0.01, 8, 0.75, GEO::vec4f(1,0,0,1));
 	}
 
 }
@@ -95,7 +133,7 @@ void App::GL_initialize() {
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
 }
 
-std::vector<UM::Segment3> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
+std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
 
 	DisjointSet ds(tri.nfacets());
 
@@ -119,7 +157,7 @@ std::vector<UM::Segment3> compute_patches(UM::Triangles &tri, FacetAttribute<int
 		element_by_group[setIds[i]].push_back(i);
     }
 
-	std::vector<UM::Segment3> flag_dirs;
+	std::vector<std::pair<int, UM::vec3>> flag_dirs;
 
 	// Get bary of each group
 	for (auto kv : element_by_group) {
@@ -129,27 +167,16 @@ std::vector<UM::Segment3> compute_patches(UM::Triangles &tri, FacetAttribute<int
 			Triangle3 t = UM::Surface::Facet(tri, f_idx);
 			bary += t.bary_verts();
 		}
-
-		UM::vec3 dir{0,0,0};
-		// UGLY but just for testing !
-		if (kv.first == 0)
-			dir = {-1,0,0};
-		else if (kv.first == 1)
-			dir = {0,-1,0};
-		else if (kv.first == 2)
-			dir = {0,0,-1};
-		else if (kv.first == 3)
-			dir = {1,0,0};
-		else if (kv.first == 4)
-			dir = {0,1,0};
-		else if (kv.first == 5)
-			dir = {0,0,1};
-
 		bary /= kv.second.size();
-		flag_dirs.push_back({bary, bary + dir});
+		std::cout << kv.first << ", bary: " << bary << std::endl;
+
+		// Get flag of group
+		int flag = tri_flag[kv.second.front()];
+		flag_dirs.push_back({flag, bary});
 	}
 
     std::cout << "n set: " << ds.nsets() << std::endl;
+    std::cout << "n set: " << element_by_group.size() << std::endl;
 	return flag_dirs;
 }
 
@@ -300,7 +327,21 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		hovered_lfacet = lf_idx;
 	}
 
-	if (gui_mode == LoopCutPad) {
+	if (gui_mode == Painting && left_mouse_pressed) {
+		index_t f_idx = pick(MESH_FACETS);
+		// auto [cf_idx, _] = pickup_cell_facet2(click_pos, hovered_cell);
+
+		if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
+
+			GEO::Attribute<GEO::signed_index_t> flag(
+				mesh_.facets.attributes(), "flag"
+			);
+
+			flag[f_idx] = paint_value;
+
+		}
+	}
+	else if (gui_mode == LoopPadding) {
 
 		hovered_path.clear();
 
@@ -327,6 +368,15 @@ void App::cursor_pos_callback(double x, double y, int source) {
 			}
 		}
 	}
+	else if (gui_mode == BlocPadding) {
+		GEO::Attribute<GEO::signed_index_t> cell_filter(
+			mesh_.cells.attributes(), "filter"
+		);
+
+		if (is_cell_hovered())
+			cell_filter[hovered_cell] = true;
+
+	}
 }
 
 void App::mouse_button_callback(int button, int action, int mods, int source) {
@@ -335,6 +385,15 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
     	SimpleMeshApplication::mouse_button_callback(button,action,mods,source);
 		return;
 	}
+
+	if (action == EVENT_ACTION_DOWN && button == 0) {
+		left_mouse_pressed = true;
+		click_pos = picked_point_;
+	}
+	else if (action == EVENT_ACTION_UP && button == 0) {
+		left_mouse_pressed = false;
+	}
+
 
 	if (action == EVENT_ACTION_DOWN && button == 0) {
 		selected_vertex = hovered_vertex;
@@ -347,27 +406,18 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 	// If left click
     if (gui_mode == Painting && action == EVENT_ACTION_DOWN && button == 0) {
 
-		index_t f_idx = pick(MESH_FACETS);
-
-		if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
-			std::cout << "facet: " << f_idx << std::endl;
-			GEO::Attribute<GEO::signed_index_t> flag(
-				mesh_.facets.attributes(), "flag"
-			);
-
-			flag[f_idx] = paint_value;
-
-			index_t f_idx = pick(MESH_FACETS);
-			std::cout << "pos: " << picked_point_ << std::endl;
-			click_pos = picked_point_;
-
-		}
 
     }
 	else if (gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
-		// um_bindings::um_tet_from_geo_mesh(mesh_, tet);
+		// Transfert attribute from surface tri to volume tet
+		FacetAttribute<int> tri_flag(tet_bound.tri, -1);
+		CellFacetAttribute<int> tet_flag(tet_bound.tet, -1);
+		um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(mesh_, "flag", tet_bound.tri, tri_flag.ptr);
+
+		tet_bound.set_attribute_to_volume(tri_flag, tet_flag);
+		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet_bound.tet, tet_flag.ptr, "tet_flag", mesh_);
 	}
-	else if (gui_mode == LoopCutPad && action == EVENT_ACTION_DOWN && button == 0) {
+	else if (gui_mode == LoopPadding && action == EVENT_ACTION_DOWN && button == 0) {
 
 		selected_path = hovered_path;
 
@@ -412,7 +462,7 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 	}
 
 	// Validate loop pad
-	if (gui_mode == LoopCutPad && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && is_cell_selected()) {
+	if (gui_mode == LoopPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && is_cell_selected()) {
 		
 		CellFacetAttribute<bool> pad_face(hex);
 
@@ -556,28 +606,31 @@ void App::draw_object_properties() {
 
 		// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
 		// ImGui::ColorButton("+X", ImVec4(1,0,0,1));
-
-		if(ImGui::Button("Paint X")) {
+		if(ImGui::Button("No Paint")) {
+			paint_value = -1;
+			gui_mode = Painting;
+		}
+		if(ImGui::Button("Paint -X")) {
 			paint_value = 0;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint Y")) {
+		if(ImGui::Button("Paint -Y")) {
 			paint_value = 1;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint Z")) {
+		if(ImGui::Button("Paint -Z")) {
 			paint_value = 2;
 			gui_mode = Painting;
 		}	
-		if(ImGui::Button("Paint -X")) {
+		if(ImGui::Button("Paint +X")) {
 			paint_value = 3;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint -Y")) {
+		if(ImGui::Button("Paint +Y")) {
 			paint_value = 4;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint -Z")) {
+		if(ImGui::Button("Paint +Z")) {
 			paint_value = 5;
 			gui_mode = Painting;
 		}	
@@ -590,8 +643,11 @@ void App::draw_object_properties() {
 
 	if (is_visible_padding_tools) {
 		if(ImGui::Button("Loop padding")) {
-			gui_mode = LoopCutPad;
-		}	
+			gui_mode = LoopPadding;
+		}
+		if(ImGui::Button("Bloc padding")) {
+			gui_mode = BlocPadding;
+		}
 	}	
 
 	if (is_visible_compute_flag_tool) {
@@ -599,9 +655,11 @@ void App::draw_object_properties() {
 		if (ImGui::Button("Compute flags !")) {
 			
 			// Compute flag on tet and tri
-			TetBoundary tet_bound(tet);
+			// TetBoundary tet_bound(tet);
+			tet_bound.update();
 			
 			// To GEO mesh
+			// TODO maybe move under tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
 			um_bindings::geo_mesh_from_tetboundary(tet_bound, mesh_);
 
 			UM::CellFacetAttribute<int> tet_flag(tet, -1);
@@ -614,7 +672,6 @@ void App::draw_object_properties() {
 			// Update GEO mesh attribute "flag"
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet, tet_flag.ptr, "tet_flag", mesh_);
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(tet_bound.tri, tri_flag.ptr, "flag", mesh_);
-
 
 
 			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
@@ -665,10 +722,13 @@ void App::draw_object_properties() {
 			UM::CellFacetAttribute<int> tet_flag(tet, -1);
 			um_bindings::um_attr_from_geo_attr<GEO::MESH_CELL_FACETS>(mesh_, "tet_flag", tet, tet_flag.ptr);
 
-			// UM::Hexahedra hex;
-
-			BenjaminAPI::polycubify(tet, tet_flag, hex, nhex_wanted);
-			std::cout << "polycubify..." << std::endl;
+			try {
+				BenjaminAPI::polycubify(tet, tet_flag, hex, nhex_wanted);
+			} catch (const std::runtime_error &e) {
+				Logger::warn("An error occur when trying to polycubify. Detail: " + std::string(e.what()));
+				std::cout << "polycubify fail" << std::endl;
+				return;
+			}
 
 			HexBoundary hex_bound(hex);
 			// Replace current GEO mesh by UM Hex

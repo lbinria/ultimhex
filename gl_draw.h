@@ -162,6 +162,65 @@ namespace gl_draw {
 		glupEnd();
 	}
 
+	/**
+	 * Draw overlay on cell facet
+	 */
+	static void draw_cell_facet_overlay(Mesh &mesh, index_t c, index_t lfacet, GEO::vec4f color, GLUPint thickness = 3.) {
+		// glupSetMeshWidth(thickness);
+		glupSetColor4fv(GLUP_FRONT_COLOR, color.data());
+		glupBegin(GLUP_LINES);
+
+		index_t facet_nb_verts = mesh.cells.facet_nb_vertices(c, lfacet);
+		for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+			index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
+			index_t v1_idx = mesh.cells.facet_vertex(c, lfacet, (lv + 1) % facet_nb_verts);
+			GEO::vec3 &a = mesh.vertices.point(v0_idx);
+			GEO::vec3 &b = mesh.vertices.point(v1_idx);
+			glupPrivateVertex3dv(a.data());
+			glupPrivateVertex3dv(b.data());
+		}
+
+		glupEnd();
+
+		// TODO refactor boilerplate code
+		glupBegin(GLUP_POINTS);
+
+		for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+			index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
+			GEO::vec3 &a = mesh.vertices.point(v0_idx);
+			glupPrivateVertex3dv(a.data());
+		}
+
+		glupEnd();
+	}
+
+	/**
+	 * Draw overlay on cell
+	 */
+	static void draw_cell_overlay(Mesh &mesh, index_t c, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
+
+		glupBegin(GLUP_LINES);
+
+		for(index_t e = 0; e < mesh.cells.nb_edges(c); e++) {
+			index_t v0_idx = mesh.cells.edge_vertex(c, e, 0);
+			index_t v1_idx = mesh.cells.edge_vertex(c, e, 1);
+			GEO::vec3 &a = mesh.vertices.point(v0_idx);
+			GEO::vec3 &b = mesh.vertices.point(v1_idx);
+			glupPrivateVertex3dv(a.data());
+			glupPrivateVertex3dv(b.data());
+		}
+		
+		glupDisable(GLUP_TEXTURING);
+		glupEnd();
+	}
+
 	static void draw_axis(GEO::vec3f origin = GEO::vec3f(0, 0, 0)) {
 		glupSetColor4fv(GLUP_FRONT_COLOR, (origin + GEO::vec3f(1.f,0.f,0.f)).data());
 		glupBegin(GLUP_LINES);
