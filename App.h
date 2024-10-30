@@ -18,6 +18,10 @@
 // std libs
 #include <optional>
 
+// new colormaps
+#define COLORMAP_HOVER_SELECTION (SIMPLE_APPLICATION_NB_COLORMAPS)
+
+
 class App : public SimpleMeshApplicationExt {
 public:
 
@@ -58,6 +62,7 @@ protected:
 
 protected:
 
+	ColorArray hover_selection_colors_; // colors for hover & selection
 
 
 	enum MeshVolumeType {
@@ -78,6 +83,11 @@ protected:
 	// TODO move to gui_base
 	bool show_grid_ = true;
 	bool show_axes_ = true;
+
+	bool show_last_picked_point_ = false;
+	bool show_hovered_cell_overlay_ = true;
+	bool show_hovered_cell_facet_overlay_ = false;
+	float overlay_thickness = 3.;
 
 	// Option
 	bool tool_preview = true;
@@ -136,6 +146,8 @@ protected:
 	std::vector<UM::vec3> hovered_path;
 	std::vector<UM::vec3> selected_path;
 
+	std::vector<std::pair<index_t, index_t>> blocpad;
+
 	// UM::vec3 posAb;
 	// UM::vec3 posBb;
 	// UM::vec3 posN;
@@ -151,5 +163,7 @@ protected:
 
 	// int he_n = 0;
 	// um_bindings::MeshBinding mesh_binding;
+
+	std::vector<UM::vec3> um_facetus;
 
 };

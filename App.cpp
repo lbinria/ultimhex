@@ -20,7 +20,14 @@
 
 using json = nlohmann::json;
 
-App::App(const std::string name) : SimpleMeshApplicationExt(name), tet_bound(tet) {
+App::App(const std::string name) : 
+	SimpleMeshApplicationExt(name), 
+	tet_bound(tet),
+	hover_selection_colors_({
+		{1.f,0.3f,0.6f, 1.f}, // pink hover
+		{0.95f,0.2f,0.0f, 1.f}  // red select
+	}) 
+{
 
 }
 
@@ -52,30 +59,52 @@ void App::draw_scene() {
 		gl_draw::draw_grid();
 
 	// PATH
-	gl_draw::draw_path(hovered_path, hovered_color, true);
-	gl_draw::draw_path(selected_path, selected_color, true);
+	if (gui_mode == LoopPadding) {
+		gl_draw::draw_path(hovered_path, hovered_color, true);
+		gl_draw::draw_path(selected_path, selected_color, true);
+	} 
+	if (gui_mode == BlocPadding) {
+		for (auto x : blocpad) {
+			gl_draw::draw_cell_facet_overlay(mesh_, x.first, x.second, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, overlay_thickness);
+		}
+	}
 
 	// Overlays 
 	// Cell facet
-	if (is_cell_hovered() && is_cell_facet_hovered()) {
-		gl_draw::draw_cell_facet_overlay(mesh_, hovered_cell, hovered_lfacet, hovered_color);	
-	}
-	if (is_cell_selected() && is_cell_lfacet_selected()) {
-		gl_draw::draw_cell_facet_overlay(mesh_, selected_cell, selected_lfacet, selected_color);
+	if (gui_mode == Hover) {
+		if (show_hovered_cell_facet_overlay_) {
+			if (is_cell_hovered() && is_cell_facet_hovered()) {
+				gl_draw::draw_cell_facet_overlay(mesh_, hovered_cell, hovered_lfacet, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, overlay_thickness);	
+			}
+		}
+		// Cell
+		if (show_hovered_cell_overlay_) {
+			if (is_cell_hovered()) {
+				gl_draw::draw_cell_overlay(mesh_, hovered_cell, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, overlay_thickness);
+			}
+		}
+		if (is_cell_selected() && is_cell_lfacet_selected()) {
+			gl_draw::draw_cell_facet_overlay(mesh_, selected_cell, selected_lfacet, colormaps_[COLORMAP_HOVER_SELECTION], 0.5);
+		}
+		if (is_cell_selected()) {
+			gl_draw::draw_cell_overlay(mesh_, selected_cell, colormaps_[COLORMAP_HOVER_SELECTION], 0.5);
+		}
 	}
 
-	// Cell
-	if (is_cell_hovered()) {
-		gl_draw::draw_cell_overlay(mesh_, hovered_cell, colormaps_[current_colormap_index_]);
-	}
-	if (is_cell_selected()) {
-		gl_draw::draw_cell_overlay(mesh_, selected_cell, colormaps_[current_colormap_index_], 0.5);
+
+
+	// Last picked point position as point
+	if (show_last_picked_point_) {
+		glupBegin(GLUP_POINTS);
+		glupPrivateVertex3dv(click_pos.data());
+		glupEnd();
 	}
 
-	// Last click position as point
-	glupBegin(GLUP_POINTS);
-	glupPrivateVertex3dv(click_pos.data());
-	glupEnd();
+	for (auto p : um_facetus) {
+		glupBegin(GLUP_POINTS);
+		glupPrivateVertex3dv(um_bindings::geo_vec(p).data());
+		glupEnd();
+	}
 
 	// Just test
 
@@ -124,12 +153,20 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show vertices", &show_vertices_);
 	ImGui::Checkbox("Show surface", &show_surface_);
 	ImGui::Checkbox("Show volume", &show_volume_);
+	ImGui::Separator();
+	ImGui::Checkbox("Show picket point", &show_last_picked_point_);
+	ImGui::Separator();
+	if (gui_mode == Hover) {
+		ImGui::Checkbox("Show cell overlay", &show_hovered_cell_overlay_);
+		ImGui::Checkbox("Show cell facet overlay", &show_hovered_cell_facet_overlay_);
+		ImGui::SliderFloat("Thickness", &overlay_thickness, 1., 5.);
+	}
+
 }
 
 void App::GL_initialize() {
     SimpleMeshApplicationExt::GL_initialize();
-    // init_rgba_colormap("labeling",6,1,labeling_colors_.as_chars());
-    // init_rgba_colormap("validity",2,1,validity_colors_.as_chars());
+	init_rgba_colormap("hover_selection", 2, 1, hover_selection_colors_.as_chars());
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
 }
 
@@ -179,6 +216,56 @@ std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetA
     std::cout << "n set: " << element_by_group.size() << std::endl;
 	return flag_dirs;
 }
+
+void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, std::function<void(UM::Volume::Facet&)> f) {
+	assert(hex.connected());
+
+	std::vector<bool> visited(24 * hex.ncells(), false);
+
+	for (auto he : start_f.iter_halfedges()) {
+
+		auto cur_he = he;
+
+		while (true) {
+
+			auto opp_c = cur_he.opposite_f().opposite_c();
+			if (!opp_c.active() || visited[cur_he])
+				break;
+
+			visited[cur_he] = true;
+
+			auto n_he = opp_c.opposite_f().next().next();
+			auto facet = n_he.facet();
+
+			f(facet);
+			cur_he = n_he;
+		}
+	}
+
+	// while (!q.empty()) {
+
+	// 	auto f_idx = q.front();
+	// 	auto facet = Volume::Facet(hex, f_idx);
+
+	// 	q.pop();
+
+	// 	for (auto he : facet.iter_halfedges()) {
+	// 		auto opp_c = he.opposite_f().opposite_c();
+	// 		if (!opp_c.active())
+	// 			continue;
+
+	// 		auto nxt_facet = opp_c.opposite_f().facet();
+	// 		if (!visited[nxt_facet]) {
+	// 			q.push(nxt_facet);
+	// 			visited[nxt_facet] = true;
+	// 		}
+	// 	}
+
+	// 	f(facet);
+		
+	// }
+}
+
 
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
 	assert(hex.connected());
@@ -369,12 +456,20 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		}
 	}
 	else if (gui_mode == BlocPadding) {
-		GEO::Attribute<GEO::signed_index_t> cell_filter(
-			mesh_.cells.attributes(), "filter"
-		);
 
-		if (is_cell_hovered())
-			cell_filter[hovered_cell] = true;
+		if (hex.connected() && is_cell_facet_hovered()) {
+			blocpad.clear();
+
+			Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
+			
+			cell_facet_cross(hex, um_f, [&](Volume::Facet &f) {
+				// as its an hex
+				index_t geo_f = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
+				index_t c_idx = geo_f / 8;
+				index_t lf = geo_f - c_idx * 8;
+				blocpad.push_back({c_idx, lf});
+			});
+		}
 
 	}
 }
@@ -408,6 +503,16 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 
 
     }
+	else if (gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
+
+		Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
+		CellAttribute<bool> ca(hex);
+		cell_facet_cross(hex, um_f, [&](Volume::Facet &f) {
+			ca[f.cell()] = true;
+		});
+		write_by_extension("blocpad.geogram", hex, {{}, {{"bb", ca.ptr}}, {}, {}});
+
+	}
 	else if (gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
 		// Transfert attribute from surface tri to volume tet
 		FacetAttribute<int> tri_flag(tet_bound.tri, -1);
@@ -417,11 +522,9 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		tet_bound.set_attribute_to_volume(tri_flag, tet_flag);
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet_bound.tet, tet_flag.ptr, "tet_flag", mesh_);
 	}
-	else if (gui_mode == LoopPadding && action == EVENT_ACTION_DOWN && button == 0) {
+	else if (gui_mode == LoopPadding && action == EVENT_ACTION_UP && button == 0) {
 
 		selected_path = hovered_path;
-
-
 		// Test extract layer
 		// Quads q_out;
 		// Volume::Cell um_c(hex, hovered_cell);
@@ -578,9 +681,12 @@ void App::draw_object_properties() {
 
 	ImGui::Checkbox("Tool preview", &tool_preview);
 
+	int n_facet_per_cell = mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
+
 	ImGui::Text("Hovered vertex: %i", hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", hovered_edge);
 	ImGui::Text("Hovered cell facet: %i", hovered_facet);
+	ImGui::Text("Hovered cell facet [UM]: %i", um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, n_facet_per_cell));
 	ImGui::Text("Hovered cell local facet: %i", hovered_lfacet);
 	ImGui::Text("Hovered cell: %i", hovered_cell);
 
@@ -606,31 +712,36 @@ void App::draw_object_properties() {
 
 		// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
 		// ImGui::ColorButton("+X", ImVec4(1,0,0,1));
+		ImGui::TextUnformatted("Paint flags");
 		if(ImGui::Button("No Paint")) {
 			paint_value = -1;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint -X")) {
+		if(ImGui::Button("-X")) {
 			paint_value = 0;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint -Y")) {
+		ImGui::SameLine();
+		if(ImGui::Button("-Y")) {
 			paint_value = 1;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint -Z")) {
+		ImGui::SameLine();
+		if(ImGui::Button("-Z")) {
 			paint_value = 2;
 			gui_mode = Painting;
 		}	
-		if(ImGui::Button("Paint +X")) {
+		if(ImGui::Button("+X")) {
 			paint_value = 3;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint +Y")) {
+		ImGui::SameLine();
+		if(ImGui::Button("+Y")) {
 			paint_value = 4;
 			gui_mode = Painting;
 		}
-		if(ImGui::Button("Paint +Z")) {
+		ImGui::SameLine();
+		if(ImGui::Button("+Z")) {
 			paint_value = 5;
 			gui_mode = Painting;
 		}	
@@ -644,9 +755,15 @@ void App::draw_object_properties() {
 	if (is_visible_padding_tools) {
 		if(ImGui::Button("Loop padding")) {
 			gui_mode = LoopPadding;
+			// TODO notify Change tool
+			hovered_path.clear();
+			selected_path.clear();
 		}
 		if(ImGui::Button("Bloc padding")) {
 			gui_mode = BlocPadding;
+			// TODO notify Change tool (enable cleaning for example !)
+			hovered_path.clear();
+			selected_path.clear();
 		}
 	}	
 

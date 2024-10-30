@@ -165,11 +165,17 @@ namespace gl_draw {
 	/**
 	 * Draw overlay on cell facet
 	 */
-	static void draw_cell_facet_overlay(Mesh &mesh, index_t c, index_t lfacet, GEO::vec4f color, GLUPint thickness = 3.) {
-		// glupSetMeshWidth(thickness);
-		glupSetColor4fv(GLUP_FRONT_COLOR, color.data());
-		glupBegin(GLUP_LINES);
+	static void draw_cell_facet_overlay(Mesh &mesh, index_t c, index_t lfacet, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
 
+		glupBegin(GLUP_LINES);
+		
 		index_t facet_nb_verts = mesh.cells.facet_nb_vertices(c, lfacet);
 		for(index_t lv = 0; lv < facet_nb_verts; lv++) {
 			index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
@@ -180,18 +186,19 @@ namespace gl_draw {
 			glupPrivateVertex3dv(b.data());
 		}
 
+		glupDisable(GLUP_TEXTURING);
 		glupEnd();
 
-		// TODO refactor boilerplate code
-		glupBegin(GLUP_POINTS);
+		// glupBegin(GLUP_POINTS);
 
-		for(index_t lv = 0; lv < facet_nb_verts; lv++) {
-			index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
-			GEO::vec3 &a = mesh.vertices.point(v0_idx);
-			glupPrivateVertex3dv(a.data());
-		}
+		// for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+		// 	index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
+		// 	GEO::vec3 &a = mesh.vertices.point(v0_idx);
+		// 	glupPrivateVertex3dv(a.data());
+		// }
 
-		glupEnd();
+
+		// glupEnd();
 	}
 
 	/**

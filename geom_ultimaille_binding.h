@@ -41,6 +41,20 @@ namespace um_bindings {
 		return he_from_elf[e + lf * 12];
 	}
 
+	static int um_facet_index_from_geo_facet_index(GEO::index_t f, int n_facet_per_cell) {
+		// In GEO 8 facets per cell
+		int c_idx = f / 8;
+		int lf = (f - c_idx * 8);
+		return c_idx * n_facet_per_cell + lf;
+	}
+
+	static int geo_facet_index_from_um_facet_index(GEO::index_t f, int n_facet_per_cell) {
+		// In GEO 8 facets per cell
+		int c_idx = f / n_facet_per_cell;
+		int lf = (f - c_idx * n_facet_per_cell);
+		return c_idx * 8 + lf;
+	}
+
 	static GEO::vec3 geo_vec(UM::vec3 v) {
 		return GEO::vec3(v.x, v.y, v.z);
 	}
