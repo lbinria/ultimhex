@@ -1,0 +1,8 @@
+build
+results
+/scripts/.vs
+/scripts/conf_exe.txt
+/scripts/tmp_exe.txt
+/scripts/conf_py.txt
+/scripts/visualpy.sln
+/scripts/visualpy.pyproj
