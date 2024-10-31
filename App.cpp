@@ -64,8 +64,11 @@ void App::draw_scene() {
 		gl_draw::draw_path(selected_path, selected_color, true);
 	} 
 	if (gui_mode == BlocPadding) {
-		for (auto x : blocpad) {
-			gl_draw::draw_cell_facet_overlay(mesh_, x.first, x.second, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, overlay_thickness);
+		for (auto c : hovered_bloc_cells) {
+			gl_draw::draw_cell_overlay(mesh_, c, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, overlay_thickness);
+		}
+		for (auto c : selected_bloc_cells) {
+			gl_draw::draw_cell_overlay(mesh_, c, colormaps_[COLORMAP_HOVER_SELECTION], 0.5, overlay_thickness);
 		}
 	}
 
@@ -217,7 +220,7 @@ std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetA
 	return flag_dirs;
 }
 
-void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, std::function<void(UM::Volume::Facet&)> f) {
+void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, std::function<void(UM::Volume::Facet&, int, int)> f) {
 	assert(hex.connected());
 
 	std::vector<bool> visited(24 * hex.ncells(), false);
@@ -226,6 +229,7 @@ void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, st
 
 		auto cur_he = he;
 
+		int dist = 0;
 		while (true) {
 
 			auto opp_c = cur_he.opposite_f().opposite_c();
@@ -237,34 +241,102 @@ void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, st
 			auto n_he = opp_c.opposite_f().next().next();
 			auto facet = n_he.facet();
 
-			f(facet);
+			f(facet, he.id_in_facet(), dist++);
 			cur_he = n_he;
 		}
 	}
-
-	// while (!q.empty()) {
-
-	// 	auto f_idx = q.front();
-	// 	auto facet = Volume::Facet(hex, f_idx);
-
-	// 	q.pop();
-
-	// 	for (auto he : facet.iter_halfedges()) {
-	// 		auto opp_c = he.opposite_f().opposite_c();
-	// 		if (!opp_c.active())
-	// 			continue;
-
-	// 		auto nxt_facet = opp_c.opposite_f().facet();
-	// 		if (!visited[nxt_facet]) {
-	// 			q.push(nxt_facet);
-	// 			visited[nxt_facet] = true;
-	// 		}
-	// 	}
-
-	// 	f(facet);
-		
-	// }
 }
+/**
+ * Search combinatorial offset coordinates from a facet to another considering start_f at {0,0}
+ */
+// std::optional<std::pair<int, int>> search_facet_from_facet(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
+std::optional<std::vector<int>> search_facet_from_facet(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
+	assert(hex.connected());
+
+	std::vector<bool> visited(24 * hex.ncells(), false);
+
+	// Choose a direction {+1,+1}, {-1,+1}, {-1,-1}, {+1,-1}
+	for (int dir = 0; dir < 4; dir++) {
+
+		std::vector<std::tuple<int, int, int>> facets_by_coords;
+
+		auto x_h = start_f.halfedge(dir);
+		auto y_h = start_f.halfedge((dir + 1) % 4);
+
+		auto cur_x_h = x_h;
+		auto cur_y_h = y_h;
+
+		
+		int dy = 0;
+		while (true) {
+
+			int dx = 0;
+			while (true) {
+				
+				// Found !
+				auto facet = cur_x_h.facet();
+				facets_by_coords.push_back(std::tuple(facet, dx, dy));
+
+				if (facet == end_f) {
+					// Should remove facets that are out of rect
+					std::vector<int> facets;
+					for (auto facet_by_coords : facets_by_coords) {
+						if (std::get<1>(facet_by_coords) <= dx && std::get<2>(facet_by_coords) <= dy) {
+							facets.push_back(std::get<0>(facet_by_coords));
+						}
+					}
+					std::cout << "coords: " << dx << ", " << dy << std::endl;
+					return facets;
+				}
+
+				auto opp_c = cur_x_h.opposite_f().opposite_c();
+				// if (!opp_c.active() || visited[cur_x_h])
+				if (!opp_c.active())
+					break;
+
+				visited[cur_x_h] = true;
+				auto nxt_x_he = opp_c.opposite_f().next().next();
+
+				cur_x_h = nxt_x_he;
+				dx++;
+
+			}
+
+			auto opp_c = cur_y_h.opposite_f().opposite_c();
+			// if (!opp_c.active() || visited[cur_y_h]) {
+			if (!opp_c.active()) {
+				break;
+			}
+
+			visited[cur_y_h] = true;
+			cur_y_h = opp_c.opposite_f().next().next();
+			cur_x_h = cur_y_h.facet().halfedge(dir);
+
+			dy++;
+		}
+
+	}
+
+	return std::nullopt;
+}
+
+std::vector<int> extract_surf_facet(Hexahedra &hex, std::vector<int> &cells) {
+	assert(hex.connected());
+
+	std::vector<int> facets;
+	for (auto c_idx : cells) {
+		UM::Volume::Cell c(hex, c_idx);
+		for (auto f : c.iter_facets()) {
+			if (!f.on_boundary() || f.opposite().active())
+				continue;
+			
+			facets.push_back(f);
+		}
+	}
+
+	return facets;
+}
+
 
 
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
@@ -455,20 +527,45 @@ void App::cursor_pos_callback(double x, double y, int source) {
 			}
 		}
 	}
-	else if (gui_mode == BlocPadding) {
+	else if (gui_mode == BlocPadding && bloc_pad_step == 1) {
 
 		if (hex.connected() && is_cell_facet_hovered()) {
-			blocpad.clear();
 
 			Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
+			Volume::Facet bloc_start_ff(hex, bloc_start_f);
+			auto facets_opt = search_facet_from_facet(hex, bloc_start_ff, um_f);
+			if (facets_opt.has_value()) {
+				// std::cout << "coords:" << coord_opt.value().first << ", " << coord_opt.value().second << std::endl;
+				hovered_bloc_cells.clear();
+				for (auto f : facets_opt.value()) {
+					int c = Volume::Facet(hex, f).cell();
+					hovered_bloc_cells.push_back(c);
+				}
+			}
+
+			// for (int i = 0; i < 4; i++)
+			// 	blocpad1[i].clear();
+
+			// Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
 			
-			cell_facet_cross(hex, um_f, [&](Volume::Facet &f) {
-				// as its an hex
-				index_t geo_f = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
-				index_t c_idx = geo_f / 8;
-				index_t lf = geo_f - c_idx * 8;
-				blocpad.push_back({c_idx, lf});
-			});
+			// cell_facet_cross(hex, um_f, [&](Volume::Facet &f, int he, int dist) {
+			// 	// as its an hex
+			// 	index_t geo_f = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
+			// 	index_t c_idx = um_bindings::geo_cell_index_from_facet_index(geo_f);
+			// 	index_t lf = um_bindings::geo_local_cell_facet_index_from_facet(geo_f);
+
+			// 	blocpad1[he].push_back({.c = c_idx, .lf = lf, .dist = dist});
+			// });
+
+			// // Compute intersection between crosses
+			// auto intersection_opt = compute_bloc_pad_intersection(blocpad0, blocpad1);
+			// // Extract region
+			// if (intersection_opt.has_value()) {
+			// 	extract_region_from_facet_to_coords(hex, bloc_pad_0_selection, std::get<0>(intersection_opt.value()), {std::get<1>(intersection_opt.value()), std::get<2>(intersection_opt.value())}, [&](auto &f, auto &c) {
+
+			// 	});
+			// }
+
 		}
 
 	}
@@ -505,12 +602,19 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
     }
 	else if (gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
 
-		Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
-		CellAttribute<bool> ca(hex);
-		cell_facet_cross(hex, um_f, [&](Volume::Facet &f) {
-			ca[f.cell()] = true;
-		});
-		write_by_extension("blocpad.geogram", hex, {{}, {{"bb", ca.ptr}}, {}, {}});
+		if (hex.connected() && is_cell_facet_hovered()) {
+
+			if (bloc_pad_step == 0) {
+				Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(selected_facet, 6));
+				bloc_start_f = um_f;
+				bloc_pad_step++;
+			}
+			else if (bloc_pad_step == 1) {
+				selected_bloc_cells = hovered_bloc_cells;
+				bloc_pad_step++;
+			}
+
+		}
 
 	}
 	else if (gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
@@ -583,6 +687,26 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 
 		selected_path.clear();
 		write_by_extension("padded.geogram", hex);
+	}
+	else if (gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && bloc_pad_step == 2) {
+		auto facets = extract_surf_facet(hex, selected_bloc_cells);
+		CellFacetAttribute<bool> pad_face(hex);
+		for (auto f : facets) {
+			pad_face[f] = true;
+		}
+		BenjaminAPI::pad(hex, pad_face);
+
+		um_bindings::geo_mesh_from_um_hex(hex, mesh_);
+		mesh_gfx_.set_mesh(&mesh_);
+
+		
+		write_by_extension("padded.geogram", hex);
+
+		// Clear tool
+		selected_bloc_cells.clear();
+		hovered_bloc_cells.clear();
+		bloc_pad_step = 0;
+		bloc_start_f = -1;
 	}
 
 

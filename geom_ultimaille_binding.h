@@ -55,6 +55,14 @@ namespace um_bindings {
 		return c_idx * 8 + lf;
 	}
 
+	static int geo_cell_index_from_facet_index(GEO::index_t f) {
+		return f / 8;
+	}
+
+	static int geo_local_cell_facet_index_from_facet(GEO::index_t f) {
+		return f - geo_cell_index_from_facet_index(f) * 8;
+	}
+
 	static GEO::vec3 geo_vec(UM::vec3 v) {
 		return GEO::vec3(v.x, v.y, v.z);
 	}

@@ -60,6 +60,16 @@ protected:
 
 	void reset();
 
+	// Bloc padding data (move to tool)
+	struct cell_cross {
+		index_t c;
+		index_t lf;
+		int dist;
+	};
+
+	// std::optional<std::tuple<int, int, int>> App::compute_bloc_pad_intersection(std::vector<cell_cross> cc0s[4], std::vector<cell_cross> cc1s[4]);
+
+
 protected:
 
 	ColorArray hover_selection_colors_; // colors for hover & selection
@@ -146,7 +156,18 @@ protected:
 	std::vector<UM::vec3> hovered_path;
 	std::vector<UM::vec3> selected_path;
 
-	std::vector<std::pair<index_t, index_t>> blocpad;
+
+
+	int bloc_pad_step = 0;
+	// int bloc_pad_0_selection = -1;
+	// int bloc_pad_1_selection = -1;
+	// std::vector<cell_cross> blocpad0[4];
+	// std::vector<cell_cross> blocpad1[4];
+	int bloc_start_f = -1;
+	int bloc_end_f = -1;
+	std::vector<int> hovered_bloc_cells;
+	std::vector<int> selected_bloc_cells;
+
 
 	// UM::vec3 posAb;
 	// UM::vec3 posBb;
