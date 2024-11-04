@@ -25,7 +25,7 @@
 class App : public SimpleMeshApplicationExt {
 public:
 
-    App(const std::string name = "polycubify");
+    App(const std::string name = "ultimhex");
 
 	void ImGui_initialize() override;
 
@@ -84,7 +84,7 @@ protected:
 		Camera,
 		Hover,
 		Painting,
-		LoopPadding,
+		LayerPadding,
 		BlocPadding
 	};
 

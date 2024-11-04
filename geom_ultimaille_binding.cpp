@@ -79,7 +79,7 @@ namespace um_bindings {
 	void geo_mesh_from_um_tri(UM::Triangles &m, GEO::Mesh &m_out, bool clear) {
 
 		if (clear)
-			m_out.clear(false, true);
+			m_out.clear(false, false);
 
 		int v_off = m_out.vertices.create_vertices(m.nverts());
 		int f_off = m_out.facets.create_facets(m.nfacets(), 3);
@@ -102,7 +102,7 @@ namespace um_bindings {
 		assert(m.connected());
 
 		if (clear)
-			m_out.clear(false, true);
+			m_out.clear(false, false);
 
 		int v_off = m_out.vertices.create_vertices(m.nverts());
 		int c_off = m_out.cells.create_cells(m.ncells(), GEO::MESH_TET);
@@ -151,7 +151,7 @@ namespace um_bindings {
 	void geo_mesh_from_um_quad(UM::Quads &m, GEO::Mesh &m_out, bool clear) {
 
 		if (clear)
-			m_out.clear(false, true);
+			m_out.clear(false, false);
 
 		int v_off = m_out.vertices.create_vertices(m.nverts());
 		int f_off = m_out.facets.create_facets(m.nfacets(), 4);
@@ -207,7 +207,7 @@ namespace um_bindings {
 		assert(m.connected());
 
 		if (clear)
-			m_out.clear(false, true);
+			m_out.clear(false, false);
 
 		int v_off = m_out.vertices.create_vertices(m.nverts());
 		int c_off = m_out.cells.create_cells(m.ncells(), GEO::MESH_HEX);

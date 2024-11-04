@@ -4,3 +4,4 @@ cmake/**
 .vs/
 *.geogram
 data/*
+Arg.md

@@ -59,7 +59,7 @@ void App::draw_scene() {
 		gl_draw::draw_grid();
 
 	// PATH
-	if (gui_mode == LoopPadding) {
+	if (gui_mode == LayerPadding) {
 		gl_draw::draw_path(hovered_path, hovered_color, true);
 		gl_draw::draw_path(selected_path, selected_color, true);
 	} 
@@ -247,13 +247,12 @@ void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, st
 	}
 }
 /**
- * Search combinatorial offset coordinates from a facet to another considering start_f at {0,0}
+ * Search a rect region between two facets
  */
-// std::optional<std::pair<int, int>> search_facet_from_facet(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
-std::optional<std::vector<int>> search_facet_from_facet(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
+std::optional<std::vector<int>> extract_region_between_facets(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
 	assert(hex.connected());
 
-	std::vector<bool> visited(24 * hex.ncells(), false);
+	// std::vector<bool> visited(24 * hex.ncells(), false);
 
 	// Choose a direction {+1,+1}, {-1,+1}, {-1,-1}, {+1,-1}
 	for (int dir = 0; dir < 4; dir++) {
@@ -291,10 +290,11 @@ std::optional<std::vector<int>> search_facet_from_facet(UM::Hexahedra &hex, UM::
 
 				auto opp_c = cur_x_h.opposite_f().opposite_c();
 				// if (!opp_c.active() || visited[cur_x_h])
-				if (!opp_c.active())
+				if (!opp_c.active()) {
 					break;
+				}
 
-				visited[cur_x_h] = true;
+				// visited[cur_x_h] = true;
 				auto nxt_x_he = opp_c.opposite_f().next().next();
 
 				cur_x_h = nxt_x_he;
@@ -308,7 +308,7 @@ std::optional<std::vector<int>> search_facet_from_facet(UM::Hexahedra &hex, UM::
 				break;
 			}
 
-			visited[cur_y_h] = true;
+			// visited[cur_y_h] = true;
 			cur_y_h = opp_c.opposite_f().next().next();
 			cur_x_h = cur_y_h.facet().halfedge(dir);
 
@@ -408,6 +408,103 @@ void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<
 	}
 }
 
+void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
+	assert(hex.connected());
+	std::vector<bool> visited(24 * hex.ncells(), false);
+
+	auto cur_he = start_he;
+
+	while (true) {
+
+		f(cur_he, true);
+
+		auto opp_c = cur_he.next().opposite_f().opposite_c();
+		if (!opp_c.active() || cur_he.next().opposite_f().next().facet().on_boundary()) {
+			cur_he = cur_he.next().opposite_f().next();
+
+		} else {
+			cur_he = opp_c.opposite_f().next();
+
+			// on border ?
+		}
+
+		if (visited[cur_he])
+			break;
+
+		visited[cur_he] = true;
+
+
+	}
+
+}
+
+// void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
+// 	assert(hex.connected());
+
+// 	std::vector<bool> visited(24 * hex.ncells(), false);
+// 	std::queue<int> q;
+// 	q.push(start_he);
+// 	visited[start_he] = true;
+
+// 	while (!q.empty()) {
+
+// 		auto he_idx = q.front();
+// 		auto he = Volume::Halfedge(hex, he_idx);
+
+// 		q.pop();
+
+// 		bool on_boundary = !he.facet().on_boundary();
+
+// 		for (auto around_he : he.opposite_f().facet().iter_halfedges()) {
+// 			if (around_he.opposite_f().facet().on_boundary())
+// 				f(around_he, on_boundary);
+// 		}
+
+// 		f(he, true);
+
+
+// 		// dir: i
+// 		auto opp_c = he.next().opposite_f().opposite_c();
+// 		if (opp_c.active()) {
+// 			auto n_he = opp_c.opposite_f().next();
+// 			if (!visited[n_he]) {
+// 				q.push(n_he);
+// 				visited[n_he] = true;
+// 			}
+// 		}
+// 		// dir: -i
+// 		opp_c = he.prev().opposite_f().opposite_c();
+// 		if (opp_c.active()) {
+// 			auto n_he = opp_c.opposite_f().prev();
+// 			if (!visited[n_he]) {
+// 				q.push(n_he);
+// 				visited[n_he] = true;
+// 			}
+// 		}
+
+// 		// dir: j
+// 		opp_c = he.opposite_f().next().next().opposite_f().opposite_c();
+// 		if (opp_c.active()) {
+// 			auto n_he = opp_c;
+// 			if (!visited[n_he]) {
+// 				q.push(n_he);
+// 				visited[n_he] = true;
+// 			}
+// 		}
+// 		// dir: -j
+// 		opp_c = he.opposite_c();
+// 		if (opp_c.active()) {
+// 			auto n_he = opp_c.opposite_f().next().next().opposite_f();
+// 			if (!visited[n_he]) {
+// 				q.push(n_he);
+// 				visited[n_he] = true;
+// 			}
+// 		}
+
+// 	}
+// }
+
+
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge&)> f) {
 	assert(hex.connected());
 
@@ -500,7 +597,7 @@ void App::cursor_pos_callback(double x, double y, int source) {
 
 		}
 	}
-	else if (gui_mode == LoopPadding) {
+	else if (gui_mode == LayerPadding) {
 
 		hovered_path.clear();
 
@@ -518,11 +615,13 @@ void App::cursor_pos_callback(double x, double y, int source) {
 			Volume::Halfedge hovered_he(hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(hovered_edge, hovered_lfacet)));
 			
 			if (hovered_he.active()) {
-				loop_cut(hex, hovered_he, [&](Volume::Halfedge &he) {
-					UM::vec3 a = he.from().pos();
-					UM::vec3 b = he.to().pos();
-					hovered_path.push_back(a);
-					hovered_path.push_back(b);
+				loop_cut2(hex, hovered_he, [&](Volume::Halfedge &he, bool on_border) {
+					// if (on_border) {
+						UM::vec3 a = he.from().pos();
+						UM::vec3 b = he.to().pos();
+						hovered_path.push_back(a);
+						hovered_path.push_back(b);
+					// }
 				});
 			}
 		}
@@ -533,7 +632,7 @@ void App::cursor_pos_callback(double x, double y, int source) {
 
 			Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(hovered_facet, 6));
 			Volume::Facet bloc_start_ff(hex, bloc_start_f);
-			auto facets_opt = search_facet_from_facet(hex, bloc_start_ff, um_f);
+			auto facets_opt = extract_region_between_facets(hex, bloc_start_ff, um_f);
 			if (facets_opt.has_value()) {
 				// std::cout << "coords:" << coord_opt.value().first << ", " << coord_opt.value().second << std::endl;
 				hovered_bloc_cells.clear();
@@ -626,7 +725,7 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		tet_bound.set_attribute_to_volume(tri_flag, tet_flag);
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(tet_bound.tet, tet_flag.ptr, "tet_flag", mesh_);
 	}
-	else if (gui_mode == LoopPadding && action == EVENT_ACTION_UP && button == 0) {
+	else if (gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
 
 		selected_path = hovered_path;
 		// Test extract layer
@@ -669,7 +768,7 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 	}
 
 	// Validate loop pad
-	if (gui_mode == LoopPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && is_cell_selected()) {
+	if (gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && is_cell_selected()) {
 		
 		CellFacetAttribute<bool> pad_face(hex);
 
@@ -702,6 +801,13 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 		
 		write_by_extension("padded.geogram", hex);
 
+		// Clear tool
+		selected_bloc_cells.clear();
+		hovered_bloc_cells.clear();
+		bloc_pad_step = 0;
+		bloc_start_f = -1;
+	}
+	else if (gui_mode == BlocPadding && (key == 256) && action == EVENT_ACTION_DOWN) {
 		// Clear tool
 		selected_bloc_cells.clear();
 		hovered_bloc_cells.clear();
@@ -878,7 +984,7 @@ void App::draw_object_properties() {
 
 	if (is_visible_padding_tools) {
 		if(ImGui::Button("Loop padding")) {
-			gui_mode = LoopPadding;
+			gui_mode = LayerPadding;
 			// TODO notify Change tool
 			hovered_path.clear();
 			selected_path.clear();
