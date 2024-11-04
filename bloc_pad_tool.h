@@ -6,11 +6,11 @@
 #include "tool.h"
 
 
-struct LayerPadTool : public Tool {
+struct BlocPadTool : public Tool {
 
-	LayerPadTool(Context &ctx) : Tool(ctx) {}
+	BlocPadTool(Context &ctx) : Tool(ctx) {}
 
-	static constexpr char* mode = "LayerPadding";
+	static constexpr char* mode = "BlocPadding";
 
 	bool draw_gui() override;
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
@@ -21,16 +21,20 @@ struct LayerPadTool : public Tool {
 
 	bool is_compatible() override;
 	void key_callback(int key, int scancode, int action, int mods) {}
-	void escape_callback() {}
+	void escape_callback() override;
 
 	void clear() override {
-		// Clear path
-		hovered_path.clear();
-		selected_path.clear();
+		bloc_pad_step = 0;
+		bloc_start_f = -1;
+		bloc_end_f = -1;
+		hovered_bloc_cells.clear();
+		selected_bloc_cells.clear();
 	}
 
-	// Path on surface mesh to display
-	std::vector<UM::vec3> hovered_path;
-	std::vector<UM::vec3> selected_path;
+	int bloc_pad_step = 0;
+	int bloc_start_f = -1;
+	int bloc_end_f = -1;
+	std::vector<int> hovered_bloc_cells;
+	std::vector<int> selected_bloc_cells;
 
 };

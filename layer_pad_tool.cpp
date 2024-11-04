@@ -105,16 +105,21 @@ void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function
 
 }
 
-void LayerPadTool::draw_gui() {
+bool LayerPadTool::draw_gui() {
 	if(ImGui::Button("Loop padding")) {
 		ctx.gui_mode = LayerPadding;
 		// TODO notify Change tool
 		hovered_path.clear();
 		selected_path.clear();
+		
+		return true;
+
 	}
+
+	return false;
 }
 
-void LayerPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color) {
+void LayerPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	gl_draw::draw_path(hovered_path, hovered_color, true);
 	gl_draw::draw_path(selected_path, selected_color, true);
 }
@@ -141,9 +146,34 @@ void LayerPadTool::hover_callback(double x, double y, int source) {
 
 void LayerPadTool::mouse_button_callback(int button, int action, int mods, int source) {
 	selected_path = hovered_path;
+
+	// Test extract layer
+	// Quads q_out;
+	// Volume::Cell um_c(hex, context_.hovered_cell);
+	// Volume::Halfedge start_he(hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.selected_edge, context_.selected_lfacet)));
+	// loop_cut(hex, start_he, [&](UM::Volume::Facet &f) {
+		
+	// 	int v_off = q_out.points.create_points(4);
+	// 	q_out.points[v_off] = f.vertex(0).pos();
+	// 	q_out.points[v_off + 1] = f.vertex(1).pos();
+	// 	q_out.points[v_off + 2] = f.vertex(2).pos();
+	// 	q_out.points[v_off + 3] = f.vertex(3).pos();
+
+	// 	int f_off = q_out.create_facets(1);
+	// 	q_out.vert(f_off, 0) = v_off;
+	// 	q_out.vert(f_off, 1) = v_off + 1;
+	// 	q_out.vert(f_off, 2) = v_off + 2;
+	// 	q_out.vert(f_off, 3) = v_off + 3;
+
+	// });
+	// write_by_extension("result.geogram", q_out);
 }
 
 void LayerPadTool::validate_callback() {
+
+	if (!ctx.is_cell_selected())
+		return;
+
 	CellFacetAttribute<bool> pad_face(ctx.hex);
 
 	Volume::Cell um_c(ctx.hex, ctx.selected_cell);

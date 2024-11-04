@@ -21,6 +21,7 @@
 #include <optional>
 
 #include "layer_pad_tool.h"
+#include "bloc_pad_tool.h"
 
 // new colormaps
 #define COLORMAP_HOVER_SELECTION (SIMPLE_APPLICATION_NB_COLORMAPS)
@@ -80,6 +81,7 @@ protected:
 
 
 	LayerPadTool layer_pad_tool;
+	BlocPadTool bloc_pad_tool;
 
 	enum MeshVolumeType {
 		Tet,
@@ -103,23 +105,6 @@ protected:
 
 
 	Context context_;
-
-
-	// Path on surface mesh to display
-	std::vector<UM::vec3> hovered_path;
-	std::vector<UM::vec3> selected_path;
-
-
-
-	int bloc_pad_step = 0;
-	// int bloc_pad_0_selection = -1;
-	// int bloc_pad_1_selection = -1;
-	// std::vector<cell_cross> blocpad0[4];
-	// std::vector<cell_cross> blocpad1[4];
-	int bloc_start_f = -1;
-	int bloc_end_f = -1;
-	std::vector<int> hovered_bloc_cells;
-	std::vector<int> selected_bloc_cells;
 
 
 	// UM::vec3 posAb;

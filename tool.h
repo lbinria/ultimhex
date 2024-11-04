@@ -15,12 +15,12 @@ struct Tool {
 	/**
 	 * Draw GUI
 	 */
-	virtual void draw_gui() = 0;
+	virtual bool draw_gui() = 0;
 
 	/**
 	* Draw GL
 	*/
-	virtual void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color) = 0;
+	virtual void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) = 0;
 
 	/**
 	 * Call when user press escape key
@@ -32,6 +32,8 @@ struct Tool {
 	virtual void mouse_button_callback(int button, int action, int mods, int source) = 0;
 	virtual void hover_callback(double x, double y, int source) = 0;
 	virtual void key_callback(int key, int scancode, int action, int mods) = 0;
+
+	virtual void clear() = 0;
 
 	Context &ctx;
 

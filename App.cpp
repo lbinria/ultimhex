@@ -29,7 +29,8 @@ App::App(const std::string name) :
 		{1.f,0.3f,0.6f, 1.f}, // pink hover
 		{0.95f,0.2f,0.0f, 1.f}  // red select
 	}),
-	layer_pad_tool(context_)
+	layer_pad_tool(context_),
+	bloc_pad_tool(context_)
 {
 
 }
@@ -61,19 +62,14 @@ void App::draw_scene() {
 	if (show_grid_)
 		gl_draw::draw_grid();
 
+	auto hover_selection_colormap = colormaps_[COLORMAP_HOVER_SELECTION];
+
 	// PATH
 	if (context_.gui_mode == LayerPadding) {
-		// gl_draw::draw_path(hovered_path, hovered_color, true);
-		// gl_draw::draw_path(selected_path, selected_color, true);
-		layer_pad_tool.draw(hovered_color, selected_color);
+		layer_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
 	} 
 	if (context_.gui_mode == BlocPadding) {
-		for (auto c : hovered_bloc_cells) {
-			gl_draw::draw_cell_overlay(mesh_, c, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, context_.overlay_thickness);
-		}
-		for (auto c : selected_bloc_cells) {
-			gl_draw::draw_cell_overlay(mesh_, c, colormaps_[COLORMAP_HOVER_SELECTION], 0.5, context_.overlay_thickness);
-		}
+		bloc_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
 	}
 
 	// Overlays 
@@ -250,97 +246,6 @@ void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, st
 		}
 	}
 }
-/**
- * Search a rect region between two facets
- */
-std::optional<std::vector<int>> extract_region_between_facets(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, UM::Volume::Facet &end_f) {
-	assert(hex.connected());
-
-	// std::vector<bool> visited(24 * hex.ncells(), false);
-
-	// Choose a direction {+1,+1}, {-1,+1}, {-1,-1}, {+1,-1}
-	for (int dir = 0; dir < 4; dir++) {
-
-		std::vector<std::tuple<int, int, int>> facets_by_coords;
-
-		auto x_h = start_f.halfedge(dir);
-		auto y_h = start_f.halfedge((dir + 1) % 4);
-
-		auto cur_x_h = x_h;
-		auto cur_y_h = y_h;
-
-		
-		int dy = 0;
-		while (true) {
-
-			int dx = 0;
-			while (true) {
-				
-				// Found !
-				auto facet = cur_x_h.facet();
-				facets_by_coords.push_back(std::tuple(facet, dx, dy));
-
-				if (facet == end_f) {
-					// Should remove facets that are out of rect
-					std::vector<int> facets;
-					for (auto facet_by_coords : facets_by_coords) {
-						if (std::get<1>(facet_by_coords) <= dx && std::get<2>(facet_by_coords) <= dy) {
-							facets.push_back(std::get<0>(facet_by_coords));
-						}
-					}
-					std::cout << "coords: " << dx << ", " << dy << std::endl;
-					return facets;
-				}
-
-				auto opp_c = cur_x_h.opposite_f().opposite_c();
-				// if (!opp_c.active() || visited[cur_x_h])
-				if (!opp_c.active()) {
-					break;
-				}
-
-				// visited[cur_x_h] = true;
-				auto nxt_x_he = opp_c.opposite_f().next().next();
-
-				cur_x_h = nxt_x_he;
-				dx++;
-
-			}
-
-			auto opp_c = cur_y_h.opposite_f().opposite_c();
-			// if (!opp_c.active() || visited[cur_y_h]) {
-			if (!opp_c.active()) {
-				break;
-			}
-
-			// visited[cur_y_h] = true;
-			cur_y_h = opp_c.opposite_f().next().next();
-			cur_x_h = cur_y_h.facet().halfedge(dir);
-
-			dy++;
-		}
-
-	}
-
-	return std::nullopt;
-}
-
-std::vector<int> extract_surf_facet(Hexahedra &hex, std::vector<int> &cells) {
-	assert(hex.connected());
-
-	std::vector<int> facets;
-	for (auto c_idx : cells) {
-		UM::Volume::Cell c(hex, c_idx);
-		for (auto f : c.iter_facets()) {
-			if (!f.on_boundary() || f.opposite().active())
-				continue;
-			
-			facets.push_back(f);
-		}
-	}
-
-	return facets;
-}
-
 
 
 // void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
@@ -602,77 +507,10 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		}
 	}
 	else if (context_.gui_mode == LayerPadding) {
-
 		layer_pad_tool.hover_callback(x, y, source);
-
-		// hovered_path.clear();
-
-		// if (context_.hex.connected() && context_.is_cell_hovered()) {
-
-		// 	Volume::Cell um_c(context_.hex, context_.hovered_cell);
-		// 	// auto he = um_c.halfedge(he_n);
-		// 	// posAb = he.from().pos();
-		// 	// posBb = he.to().pos();
-		// 	// Quad3 q = he.facet();
-		// 	// posN = q.normal();
-
-
-			
-		// 	Volume::Halfedge hovered_he(context_.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.hovered_edge, context_.hovered_lfacet)));
-			
-		// 	if (hovered_he.active()) {
-		// 		loop_cut2(context_.hex, hovered_he, [&](Volume::Halfedge &he, bool on_border) {
-		// 			// if (on_border) {
-		// 				UM::vec3 a = he.from().pos();
-		// 				UM::vec3 b = he.to().pos();
-		// 				hovered_path.push_back(a);
-		// 				hovered_path.push_back(b);
-		// 			// }
-		// 		});
-		// 	}
-		// }
 	}
-	else if (context_.gui_mode == BlocPadding && bloc_pad_step == 1) {
-
-		if (context_.hex.connected() && context_.is_cell_facet_hovered()) {
-
-			Volume::Facet um_f(context_.hex, um_bindings::um_facet_index_from_geo_facet_index(context_.hovered_facet, 6));
-			Volume::Facet bloc_start_ff(context_.hex, bloc_start_f);
-			auto facets_opt = extract_region_between_facets(context_.hex, bloc_start_ff, um_f);
-			if (facets_opt.has_value()) {
-				// std::cout << "coords:" << coord_opt.value().first << ", " << coord_opt.value().second << std::endl;
-				hovered_bloc_cells.clear();
-				for (auto f : facets_opt.value()) {
-					int c = Volume::Facet(context_.hex, f).cell();
-					hovered_bloc_cells.push_back(c);
-				}
-			}
-
-			// for (int i = 0; i < 4; i++)
-			// 	blocpad1[i].clear();
-
-			// Volume::Facet um_f(hex, um_bindings::um_facet_index_from_geo_facet_index(context_.hovered_facet, 6));
-			
-			// cell_facet_cross(hex, um_f, [&](Volume::Facet &f, int he, int dist) {
-			// 	// as its an hex
-			// 	index_t geo_f = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
-			// 	index_t c_idx = um_bindings::geo_cell_index_from_facet_index(geo_f);
-			// 	index_t lf = um_bindings::geo_local_cell_facet_index_from_facet(geo_f);
-
-			// 	blocpad1[he].push_back({.c = c_idx, .lf = lf, .dist = dist});
-			// });
-
-			// // Compute intersection between crosses
-			// auto intersection_opt = compute_bloc_pad_intersection(blocpad0, blocpad1);
-			// // Extract region
-			// if (intersection_opt.has_value()) {
-			// 	extract_region_from_facet_to_coords(hex, bloc_pad_0_selection, std::get<0>(intersection_opt.value()), {std::get<1>(intersection_opt.value()), std::get<2>(intersection_opt.value())}, [&](auto &f, auto &c) {
-
-			// 	});
-			// }
-
-		}
-
+	else if (context_.gui_mode == BlocPadding) {
+		bloc_pad_tool.hover_callback(x, y, source);
 	}
 }
 
@@ -706,21 +544,7 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 
     }
 	else if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
-
-		if (context_.hex.connected() && context_.is_cell_facet_hovered()) {
-
-			if (bloc_pad_step == 0) {
-				Volume::Facet um_f(context_.hex, um_bindings::um_facet_index_from_geo_facet_index(context_.selected_facet, 6));
-				bloc_start_f = um_f;
-				bloc_pad_step++;
-			}
-			else if (bloc_pad_step == 1) {
-				selected_bloc_cells = hovered_bloc_cells;
-				bloc_pad_step++;
-			}
-
-		}
-
+		bloc_pad_tool.mouse_button_callback(button, action, mods, source);
 	}
 	else if (context_.gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
 		// Transfert attribute from surface tri to volume tet
@@ -732,31 +556,7 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(context_.tet_bound.tet, tet_flag.ptr, "tet_flag", mesh_);
 	}
 	else if (context_.gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
-
 		layer_pad_tool.mouse_button_callback(button, action, mods, source);
-		// selected_path = hovered_path;
-
-
-		// Test extract layer
-		// Quads q_out;
-		// Volume::Cell um_c(hex, context_.hovered_cell);
-		// Volume::Halfedge start_he(hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.selected_edge, context_.selected_lfacet)));
-		// loop_cut(hex, start_he, [&](UM::Volume::Facet &f) {
-			
-		// 	int v_off = q_out.points.create_points(4);
-		// 	q_out.points[v_off] = f.vertex(0).pos();
-		// 	q_out.points[v_off + 1] = f.vertex(1).pos();
-		// 	q_out.points[v_off + 2] = f.vertex(2).pos();
-		// 	q_out.points[v_off + 3] = f.vertex(3).pos();
-
-		// 	int f_off = q_out.create_facets(1);
-		// 	q_out.vert(f_off, 0) = v_off;
-		// 	q_out.vert(f_off, 1) = v_off + 1;
-		// 	q_out.vert(f_off, 2) = v_off + 2;
-		// 	q_out.vert(f_off, 3) = v_off + 3;
-
-		// });
-		// write_by_extension("result.geogram", q_out);
 	}
 
 
@@ -777,53 +577,14 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 	}
 
 	// Validate loop pad
-	if (context_.gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && context_.is_cell_selected()) {
-
+	if (context_.gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
 		layer_pad_tool.validate_callback();
-
-		// CellFacetAttribute<bool> pad_face(context_.hex);
-
-		// Volume::Cell um_c(context_.hex, context_.selected_cell);
-		// Volume::Halfedge start_he(context_.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.selected_edge, context_.selected_lfacet)));
-
-		// loop_cut(context_.hex, start_he, [&](UM::Volume::Facet &f) {
-		// 	pad_face[f] = true;
-		// });
-
-		// BenjaminAPI::pad(context_.hex, pad_face);
-
-		// um_bindings::geo_mesh_from_um_hex(context_.hex, mesh_);
-		// mesh_gfx_.set_mesh(&mesh_);
-
-		// selected_path.clear();
-		// write_by_extension("padded.geogram", context_.hex);
 	}
-	else if (context_.gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN && bloc_pad_step == 2) {
-		auto facets = extract_surf_facet(context_.hex, selected_bloc_cells);
-		CellFacetAttribute<bool> pad_face(context_.hex);
-		for (auto f : facets) {
-			pad_face[f] = true;
-		}
-		BenjaminAPI::pad(context_.hex, pad_face);
-
-		um_bindings::geo_mesh_from_um_hex(context_.hex, mesh_);
-		mesh_gfx_.set_mesh(&mesh_);
-
-		
-		write_by_extension("padded.geogram", context_.hex);
-
-		// Clear tool
-		selected_bloc_cells.clear();
-		hovered_bloc_cells.clear();
-		bloc_pad_step = 0;
-		bloc_start_f = -1;
+	else if (context_.gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
+		bloc_pad_tool.validate_callback();
 	}
 	else if (context_.gui_mode == BlocPadding && (key == 256) && action == EVENT_ACTION_DOWN) {
-		// Clear tool
-		selected_bloc_cells.clear();
-		hovered_bloc_cells.clear();
-		bloc_pad_step = 0;
-		bloc_start_f = -1;
+		bloc_pad_tool.escape_callback();
 	}
 
 
@@ -843,9 +604,11 @@ void App::reset() {
 	context_.gui_mode = Camera;
 	// Clear selections
 	context_.reset_hovered_selected();
-	// Clear path
-	hovered_path.clear();
-	selected_path.clear();
+
+	// Clear tools
+	layer_pad_tool.clear();
+	bloc_pad_tool.clear();
+
 	// Clear UM meshes
 	context_.tet.clear();
 	context_.hex.clear();
@@ -991,25 +754,18 @@ void App::draw_object_properties() {
 
 	}
 
-	bool is_visible_padding_tools = (context_.mesh_metadata.cell_type == MESH_HEX);
 
 	if (layer_pad_tool.is_compatible()) {
-		layer_pad_tool.draw_gui();
+		if (layer_pad_tool.draw_gui()) {
+			// Clean other tools
+			bloc_pad_tool.clear();
+		}
 	}
 
-	if (is_visible_padding_tools) {
-		
-		// if(ImGui::Button("Loop padding")) {
-		// 	context_.gui_mode = LayerPadding;
-		// 	// TODO notify Change tool
-		// 	hovered_path.clear();
-		// 	selected_path.clear();
-		// }
-		if(ImGui::Button("Bloc padding")) {
-			context_.gui_mode = BlocPadding;
-			// TODO notify Change tool (enable cleaning for example !)
-			hovered_path.clear();
-			selected_path.clear();
+	if (bloc_pad_tool.is_compatible()) {
+		if (bloc_pad_tool.draw_gui()) {
+			// Clean other tools
+			layer_pad_tool.clear();
 		}
 	}	
 
