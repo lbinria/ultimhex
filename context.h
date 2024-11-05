@@ -19,11 +19,11 @@
 #include <optional>
 
 enum GUIMode {
-	Camera,
-	Hover,
-	Painting,
-	LayerPadding,
-	BlocPadding
+	Camera = 0,
+	Hover = 1,
+	Painting = 2,
+	LayerPadding = 3,
+	BlocPadding = 4
 };
 
 struct VisualizationBinding {

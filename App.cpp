@@ -336,8 +336,13 @@ void App::reset() {
 	context_.reset_hovered_selected();
 
 	// Clear tools
-	layer_pad_tool.clear();
-	bloc_pad_tool.clear();
+	for (auto &tool : tools) {
+		tool->clear();
+	}
+	// hover_tool.clear();
+	// paint_flag_tool.clear();
+	// layer_pad_tool.clear();
+	// bloc_pad_tool.clear();
 
 	// Clear UM meshes
 	context_.tet.clear();
@@ -357,7 +362,7 @@ bool App::load(const std::string& filename) {
 	std::filesystem::path filename_path(filename);
 
 
-	// Load mesh metadata from json file ?
+	// Load mesh metadata from json file !
 	if (filename_path.extension() == ".json") {
 		std::ifstream ifs(filename);
 		std::string content;
@@ -373,11 +378,7 @@ bool App::load(const std::string& filename) {
 	}
 
     if(!mesh_load(mesh_filename, mesh_, flags)) {
-		
-		paint_flag_tool.clear();
-		layer_pad_tool.clear();
-		bloc_pad_tool.clear();
-
+		reset();
         return false;
     }
 
@@ -437,31 +438,41 @@ void App::draw_object_properties() {
 		context_.gui_mode = Camera;
 	}
 
-	if(hover_tool.is_compatible()) {
-		if (hover_tool.draw_gui()) {
 
+	for (auto &tool : tools) {
+		if (tool->is_compatible()) {
+			tool->draw_gui();
 		}
 	}
 
-	if (paint_flag_tool.is_compatible()) {
-		if (paint_flag_tool.draw_gui()) {
 
-		}
-	}
 
-	if (layer_pad_tool.is_compatible()) {
-		if (layer_pad_tool.draw_gui()) {
-			// Clean other tools
-			bloc_pad_tool.clear();
-		}
-	}
+	// if(hover_tool.is_compatible()) {
+	// 	if (hover_tool.draw_gui()) {
 
-	if (bloc_pad_tool.is_compatible()) {
-		if (bloc_pad_tool.draw_gui()) {
-			// Clean other tools
-			layer_pad_tool.clear();
-		}
-	}
+	// 	}
+	// }
+
+	// if (paint_flag_tool.is_compatible()) {
+	// 	if (paint_flag_tool.draw_gui()) {
+
+	// 	}
+	// }
+
+	// if (layer_pad_tool.is_compatible()) {
+	// 	if (layer_pad_tool.draw_gui()) {
+	// 		// Clean other tools
+	// 		bloc_pad_tool.clear();
+	// 	}
+	// }
+
+	// if (bloc_pad_tool.is_compatible()) {
+	// 	if (bloc_pad_tool.draw_gui()) {
+	// 		// Clean other tools
+	// 		layer_pad_tool.clear();
+	// 	}
+	// }
+
 
 	// Criteria to display polycubify tool
 	auto mesh_metadata_attr = context_.mesh_metadata.get_attr("tet_flag");

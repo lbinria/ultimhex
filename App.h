@@ -79,6 +79,15 @@ protected:
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
 
+	// std::size_t nb_tools = std::size(GUIMode::Camera);
+	std::unique_ptr<Tool> tools[5] = {
+		std::make_unique<HoverTool>(hover_tool), 
+		std::make_unique<HoverTool>(hover_tool), 
+		std::make_unique<PaintFlagTool>(paint_flag_tool), 
+		std::make_unique<LayerPadTool>(layer_pad_tool), 
+		std::make_unique<BlocPadTool>(bloc_pad_tool)
+	};
+
 	enum MeshVolumeType {
 		Tet,
 		Hex
