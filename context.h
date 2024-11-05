@@ -26,9 +26,25 @@ enum GUIMode {
 	BlocPadding
 };
 
+struct VisualizationBinding {
+	bool &show_attributes_;
+	bool &show_vertices_;
+	bool &show_volume_;
+	bool &show_surface_;
+	bool &show_hexes_;
+
+	index_t &current_colormap_index_;
+	std::string &attribute_;
+	GEO::MeshElementsFlags &attribute_subelements_;
+	std::string &attribute_name_;
+	float &attribute_min_;
+	float &attribute_max_;
+	bool &lighting_;
+};
+
 struct Context {
 
-	Context(Mesh &mesh, MeshGfx &mesh_gfx) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet) {}
+	Context(Mesh &mesh, MeshGfx &mesh_gfx, VisualizationBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), view(view) {}
 
 	bool show_last_picked_point_ = false;
 	bool show_hovered_cell_overlay_ = true;
@@ -76,7 +92,6 @@ struct Context {
 	bool left_mouse_pressed = false;
 	GUIMode gui_mode = Camera;
 	GUIMode switch_mode = Camera;
-	int paint_value = 0;
 
 	GEO::vec3 posA;
 	GEO::vec3 posB;
@@ -89,4 +104,8 @@ struct Context {
 	TetBoundary tet_bound;
 
 	MeshMetadata mesh_metadata;
+
+
+
+	VisualizationBinding view;
 };

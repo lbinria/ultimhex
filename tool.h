@@ -14,6 +14,7 @@ struct Tool {
 
 	/**
 	 * Draw GUI
+	 * Return true if selected tool has changed
 	 */
 	virtual bool draw_gui() = 0;
 
@@ -33,6 +34,9 @@ struct Tool {
 	virtual void hover_callback(double x, double y, int source) = 0;
 	virtual void key_callback(int key, int scancode, int action, int mods) = 0;
 
+	/**
+	 * Clear tool
+	 */
 	virtual void clear() = 0;
 
 	Context &ctx;

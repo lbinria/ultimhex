@@ -24,13 +24,27 @@ using json = nlohmann::json;
 
 App::App(const std::string name) : 
 	SimpleMeshApplicationExt(name), 
-	context_(mesh_, mesh_gfx_),
+	context_(mesh_, mesh_gfx_, {
+		.show_attributes_ = show_attributes_,
+		.show_vertices_ = show_vertices_,
+		.show_volume_ = show_volume_,
+		.show_surface_ = show_surface_,
+		.show_hexes_ = show_hexes_,
+		.current_colormap_index_ = current_colormap_index_,
+		.attribute_ = attribute_,
+		.attribute_subelements_ = attribute_subelements_,
+		.attribute_name_ = attribute_name_,
+		.attribute_min_ = attribute_min_,
+		.attribute_max_ = attribute_max_,
+		.lighting_ = lighting_
+	}),
 	hover_selection_colors_({
 		{1.f,0.3f,0.6f, 1.f}, // pink hover
 		{0.95f,0.2f,0.0f, 1.f}  // red select
 	}),
 	layer_pad_tool(context_),
-	bloc_pad_tool(context_)
+	bloc_pad_tool(context_),
+	paint_flag_tool(context_)
 {
 
 }
@@ -100,12 +114,6 @@ void App::draw_scene() {
 	if (context_.show_last_picked_point_) {
 		glupBegin(GLUP_POINTS);
 		glupPrivateVertex3dv(context_.click_pos.data());
-		glupEnd();
-	}
-
-	for (auto p : um_facetus) {
-		glupBegin(GLUP_POINTS);
-		glupPrivateVertex3dv(um_bindings::geo_vec(p).data());
 		glupEnd();
 	}
 
@@ -220,257 +228,6 @@ std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetA
 	return flag_dirs;
 }
 
-void cell_facet_cross(UM::Hexahedra &hex, UM::Volume::Volume::Facet &start_f, std::function<void(UM::Volume::Facet&, int, int)> f) {
-	assert(hex.connected());
-
-	std::vector<bool> visited(24 * hex.ncells(), false);
-
-	for (auto he : start_f.iter_halfedges()) {
-
-		auto cur_he = he;
-
-		int dist = 0;
-		while (true) {
-
-			auto opp_c = cur_he.opposite_f().opposite_c();
-			if (!opp_c.active() || visited[cur_he])
-				break;
-
-			visited[cur_he] = true;
-
-			auto n_he = opp_c.opposite_f().next().next();
-			auto facet = n_he.facet();
-
-			f(facet, he.id_in_facet(), dist++);
-			cur_he = n_he;
-		}
-	}
-}
-
-
-// void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
-// 	assert(hex.connected());
-
-// 	std::vector<bool> visited(24 * hex.ncells(), false);
-// 	std::queue<int> q;
-// 	q.push(start_he);
-// 	visited[start_he] = true;
-
-
-// 	while (!q.empty()) {
-
-// 		auto he_idx = q.front();
-// 		auto he = Volume::Halfedge(hex, he_idx);
-
-// 		q.pop();
-
-// 		auto opp_c = he.next().opposite_f().opposite_c();
-
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c.opposite_f().next();
-
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		} else {
-// 			auto n_he = he.next().opposite_f().next();
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-
-// 		opp_c = he.prev().opposite_f().opposite_c();
-
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c.opposite_f().prev();
-
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		} else {
-// 			auto n_he = he.prev().opposite_f().prev();
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-
-// 		// Propagate to front
-// 		opp_c = he.opposite_f().next().next().opposite_f().opposite_c();
-
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c;
-
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		} 
-
-// 		// Process current
-// 		auto facet = he.opposite_f().facet();
-// 		f(facet);
-		
-// 	}
-// }
-
-// void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
-// 	assert(hex.connected());
-// 	std::vector<bool> visited(24 * hex.ncells(), false);
-
-// 	auto cur_he = start_he;
-
-// 	while (true) {
-
-// 		f(cur_he, true);
-
-// 		auto opp_c = cur_he.next().opposite_f().opposite_c();
-// 		if (!opp_c.active() || cur_he.next().opposite_f().next().facet().on_boundary()) {
-// 			cur_he = cur_he.next().opposite_f().next();
-
-// 		} else {
-// 			cur_he = opp_c.opposite_f().next();
-
-// 			// on border ?
-// 		}
-
-// 		if (visited[cur_he])
-// 			break;
-
-// 		visited[cur_he] = true;
-
-
-// 	}
-
-// }
-
-// void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
-// 	assert(hex.connected());
-
-// 	std::vector<bool> visited(24 * hex.ncells(), false);
-// 	std::queue<int> q;
-// 	q.push(start_he);
-// 	visited[start_he] = true;
-
-// 	while (!q.empty()) {
-
-// 		auto he_idx = q.front();
-// 		auto he = Volume::Halfedge(hex, he_idx);
-
-// 		q.pop();
-
-// 		bool on_boundary = !he.facet().on_boundary();
-
-// 		for (auto around_he : he.opposite_f().facet().iter_halfedges()) {
-// 			if (around_he.opposite_f().facet().on_boundary())
-// 				f(around_he, on_boundary);
-// 		}
-
-// 		f(he, true);
-
-
-// 		// dir: i
-// 		auto opp_c = he.next().opposite_f().opposite_c();
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c.opposite_f().next();
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-// 		// dir: -i
-// 		opp_c = he.prev().opposite_f().opposite_c();
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c.opposite_f().prev();
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-
-// 		// dir: j
-// 		opp_c = he.opposite_f().next().next().opposite_f().opposite_c();
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c;
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-// 		// dir: -j
-// 		opp_c = he.opposite_c();
-// 		if (opp_c.active()) {
-// 			auto n_he = opp_c.opposite_f().next().next().opposite_f();
-// 			if (!visited[n_he]) {
-// 				q.push(n_he);
-// 				visited[n_he] = true;
-// 			}
-// 		}
-
-// 	}
-// }
-
-
-void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge&)> f) {
-	assert(hex.connected());
-
-	std::vector<bool> visited(24 * hex.ncells(), false);
-	std::queue<int> q;
-	q.push(start_he);
-	visited[start_he] = true;
-
-	while (!q.empty()) {
-
-		auto he_idx = q.front();
-		auto he = Volume::Halfedge(hex, he_idx);
-
-		visited[he] = true;
-		q.pop();
-
-		auto opp_c = he.next().opposite_f().opposite_c();
-
-		if (opp_c.active()) {
-			auto n_he = opp_c.opposite_f().next();
-
-			if (!visited[n_he]) {
-				q.push(n_he);
-				visited[n_he] = true;
-			}
-		} else {
-			auto n_he = he.next().opposite_f().next();
-			if (!visited[n_he]) {
-				q.push(n_he);
-				visited[n_he] = true;
-			}
-		}
-
-		opp_c = he.prev().opposite_f().opposite_c();
-
-		if (opp_c.active()) {
-			auto n_he = opp_c.opposite_f().prev();
-
-			if (!visited[n_he]) {
-				q.push(n_he);
-				visited[n_he] = true;
-			}
-		} else {
-			auto n_he = he.prev().opposite_f().prev();
-			if (!visited[n_he]) {
-				q.push(n_he);
-				visited[n_he] = true;
-			}
-		}
-
-		// Process current
-		f(he);
-		
-	}
-
-}
-
 void App::cursor_pos_callback(double x, double y, int source) {
 	SimpleMeshApplicationExt::cursor_pos_callback(x, y, source);
 
@@ -492,19 +249,20 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		context_.hovered_lfacet = lf_idx;
 	}
 
-	if (context_.gui_mode == Painting && context_.left_mouse_pressed) {
-		index_t f_idx = pick(MESH_FACETS);
-		// auto [cf_idx, _] = pickup_cell_facet2(context_.click_pos, context_.hovered_cell);
+	if (context_.gui_mode == Painting /*&& context_.left_mouse_pressed*/) {
+		paint_flag_tool.hover_callback(x, y, source);
+		// index_t f_idx = pick(MESH_FACETS);
+		// // auto [cf_idx, _] = pickup_cell_facet2(context_.click_pos, context_.hovered_cell);
 
-		if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
+		// if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
 
-			GEO::Attribute<GEO::signed_index_t> flag(
-				mesh_.facets.attributes(), "flag"
-			);
+		// 	GEO::Attribute<GEO::signed_index_t> flag(
+		// 		mesh_.facets.attributes(), "flag"
+		// 	);
 
-			flag[f_idx] = context_.paint_value;
+		// 	flag[f_idx] = context_.paint_value;
 
-		}
+		// }
 	}
 	else if (context_.gui_mode == LayerPadding) {
 		layer_pad_tool.hover_callback(x, y, source);
@@ -538,22 +296,12 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		context_.selected_cell = context_.hovered_cell;
 	}
 
-	// If left click
-    if (context_.gui_mode == Painting && action == EVENT_ACTION_DOWN && button == 0) {
 
-
-    }
-	else if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
+    if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
 		bloc_pad_tool.mouse_button_callback(button, action, mods, source);
 	}
 	else if (context_.gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
-		// Transfert attribute from surface tri to volume tet
-		FacetAttribute<int> tri_flag(context_.tet_bound.tri, -1);
-		CellFacetAttribute<int> tet_flag(context_.tet_bound.tet, -1);
-		um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(mesh_, "flag", context_.tet_bound.tri, tri_flag.ptr);
-
-		context_.tet_bound.set_attribute_to_volume(tri_flag, tet_flag);
-		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(context_.tet_bound.tet, tet_flag.ptr, "tet_flag", mesh_);
+		paint_flag_tool.mouse_button_callback(button, action, mods, source);
 	}
 	else if (context_.gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
 		layer_pad_tool.mouse_button_callback(button, action, mods, source);
@@ -643,7 +391,11 @@ bool App::load(const std::string& filename) {
 	}
 
     if(!mesh_load(mesh_filename, mesh_, flags)) {
-		// TODO clear all here too !
+		
+		paint_flag_tool.clear();
+		layer_pad_tool.clear();
+		bloc_pad_tool.clear();
+
         return false;
     }
 
@@ -709,51 +461,11 @@ void App::draw_object_properties() {
 
 	ImGui::Separator();
 
-	bool is_visible_compute_flag_tool = (context_.mesh_metadata.cell_type == MESH_TET);
+	if (paint_flag_tool.is_compatible()) {
+		if (paint_flag_tool.draw_gui()) {
 
-	if (is_visible_compute_flag_tool) {
-
-
-		// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
-		// ImGui::ColorButton("+X", ImVec4(1,0,0,1));
-		ImGui::TextUnformatted("Paint flags");
-		if(ImGui::Button("No Paint")) {
-			context_.paint_value = -1;
-			context_.gui_mode = Painting;
 		}
-		if(ImGui::Button("-X")) {
-			context_.paint_value = 0;
-			context_.gui_mode = Painting;
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("-Y")) {
-			context_.paint_value = 1;
-			context_.gui_mode = Painting;
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("-Z")) {
-			context_.paint_value = 2;
-			context_.gui_mode = Painting;
-		}	
-		if(ImGui::Button("+X")) {
-			context_.paint_value = 3;
-			context_.gui_mode = Painting;
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("+Y")) {
-			context_.paint_value = 4;
-			context_.gui_mode = Painting;
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("+Z")) {
-			context_.paint_value = 5;
-			context_.gui_mode = Painting;
-		}	
-
-		ImGui::Separator();
-
 	}
-
 
 	if (layer_pad_tool.is_compatible()) {
 		if (layer_pad_tool.draw_gui()) {
@@ -767,66 +479,7 @@ void App::draw_object_properties() {
 			// Clean other tools
 			layer_pad_tool.clear();
 		}
-	}	
-
-	if (is_visible_compute_flag_tool) {
-
-		if (ImGui::Button("Compute flags !")) {
-			
-			// Compute flag on tet and tri
-			// TetBoundary tet_bound(tet);
-			context_.tet_bound.update();
-			
-			// To GEO mesh
-			// TODO maybe move under tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
-			um_bindings::geo_mesh_from_tetboundary(context_.tet_bound, mesh_);
-
-			UM::CellFacetAttribute<int> tet_flag(context_.tet, -1);
-			UM::FacetAttribute<int> tri_flag(context_.tet_bound.tri, -1);
-
-			// Compute flag
-			algo::naive_tag(context_.tet, tet_flag);
-			// Transfert flag from tet to tri for display
-			context_.tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
-			// Update GEO mesh attribute "flag"
-			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(context_.tet, tet_flag.ptr, "tet_flag", mesh_);
-			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(context_.tet_bound.tri, tri_flag.ptr, "flag", mesh_);
-
-
-			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
-			// Save mesh metadata
-			context_.mesh_metadata = { 
-				.filename = "flagged.geogram", 
-				.cell_type = GEO::MESH_TET, 
-				.attributes = {
-					{
-						.name = "tet_flag", 
-						.type = "int", 
-						.where = MESH_CELL_FACETS
-					}
-				} 
-			};
-			// Write mesh
-			write_by_extension(context_.mesh_metadata.filename, context_.tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
-			context_.mesh_metadata.save();
-
-			labeling_visu_mode_transition();
-			show_surface_ = true;
-			show_volume_ = false;
-		}
-
-		if (ImGui::Button("Compute patches !")) {
-			// Compute flag on tet and tri
-			TetBoundary tet_bound(context_.tet);
-			UM::FacetAttribute<int> tri_flag(tet_bound.tri, -1);
-			um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(mesh_, "flag", tet_bound.tri, tri_flag.ptr);
-			flag_dirs = compute_patches(tet_bound.tri, tri_flag);
-		}
-
-		ImGui::Separator();
-
 	}
-
 
 	// Criteria to display polycubify tool
 	auto mesh_metadata_attr = context_.mesh_metadata.get_attr("tet_flag");

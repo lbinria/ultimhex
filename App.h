@@ -16,18 +16,20 @@
 #include "context.h"
 #include "mesh_metadata.h"
 
+// Tools
+#include "paint_flag_tool.h"
+#include "layer_pad_tool.h"
+#include "bloc_pad_tool.h"
 
 // std libs
 #include <optional>
-
-#include "layer_pad_tool.h"
-#include "bloc_pad_tool.h"
 
 // new colormaps
 #define COLORMAP_HOVER_SELECTION (SIMPLE_APPLICATION_NB_COLORMAPS)
 
 
 class App : public SimpleMeshApplicationExt {
+
 public:
 
     App(const std::string name = "ultimhex");
@@ -65,21 +67,12 @@ protected:
 
 	void reset();
 
-	// Bloc padding data (move to tool)
-	struct cell_cross {
-		index_t c;
-		index_t lf;
-		int dist;
-	};
-
-	// std::optional<std::tuple<int, int, int>> App::compute_bloc_pad_intersection(std::vector<cell_cross> cc0s[4], std::vector<cell_cross> cc1s[4]);
-
-
 protected:
 
 	ColorArray hover_selection_colors_; // colors for hover & selection
 
-
+	// Declare tools
+	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
 
@@ -106,19 +99,12 @@ protected:
 
 	Context context_;
 
-
+	// TOOD remove
 	// UM::vec3 posAb;
 	// UM::vec3 posBb;
 	// UM::vec3 posN;
-
-
-
+	// int he_n = 0;
 
 	std::vector<std::pair<int, UM::vec3>> flag_dirs;
-
-	// int he_n = 0;
-	// um_bindings::MeshBinding mesh_binding;
-
-	std::vector<UM::vec3> um_facetus;
 
 };
