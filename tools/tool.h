@@ -1,7 +1,7 @@
 #pragma once
 
-#include "context.h"
-#include "mesh_metadata.h"
+#include "../context.h"
+#include "../mesh_metadata.h"
 
 struct Tool {
 
@@ -17,6 +17,11 @@ struct Tool {
 	 * Return true if selected tool has changed
 	 */
 	virtual bool draw_gui() = 0;
+
+	/**
+	 * Draw viewer property for this tool
+	 */
+	virtual void draw_viewer_properties() = 0;
 
 	/**
 	* Draw GL

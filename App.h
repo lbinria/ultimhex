@@ -17,9 +17,11 @@
 #include "mesh_metadata.h"
 
 // Tools
-#include "paint_flag_tool.h"
-#include "layer_pad_tool.h"
-#include "bloc_pad_tool.h"
+// #include "tools/paint_flag_tool.h"
+#include <hover_tool.h>
+#include <paint_flag_tool.h>
+#include "tools/layer_pad_tool.h"
+#include "tools/bloc_pad_tool.h"
 
 // std libs
 #include <optional>
@@ -72,6 +74,7 @@ protected:
 	ColorArray hover_selection_colors_; // colors for hover & selection
 
 	// Declare tools
+	HoverTool hover_tool;
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
@@ -97,6 +100,7 @@ protected:
 
 
 
+	// TODO rename
 	Context context_;
 
 	// TOOD remove

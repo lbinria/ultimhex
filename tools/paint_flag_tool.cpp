@@ -2,10 +2,10 @@
 
 #include <nicostuff/algo/framework/benjamin_API.h>
 
-#include "geom_ultimaille_binding.h"
-#include "context.h"
-#include "gl_draw.h"
-#include "tag_face.h"
+#include "../geom_ultimaille_binding.h"
+#include "../context.h"
+#include "../gl_draw.h"
+#include "../tag_face.h"
 
 
 bool PaintFlagTool::draw_gui() {
@@ -106,6 +106,8 @@ bool PaintFlagTool::draw_gui() {
 
 	ImGui::Separator();
 }
+
+void PaintFlagTool::draw_viewer_properties() {}
 
 void PaintFlagTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	// Nothing to draw

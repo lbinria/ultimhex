@@ -27,6 +27,11 @@ else()
     add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
+# Include project directory
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/tools
+)
+
 # Get development version of ultimaille directly from git repository 
 include(FetchContent)
 FetchContent_Declare(
@@ -40,6 +45,7 @@ FetchContent_MakeAvailable(ultimaille)
 include_directories(${ultimaille_SOURCE_DIR})
 
 include_directories(ext)
+
 
 # # Get development version of ultimaille directly from git repository 
 # include(FetchContent)
@@ -59,7 +65,7 @@ add_subdirectory(ext/nicostuff)
 include_directories(ext)
 
 # Add executable binary
-file(GLOB SOURCES *.h *.cpp)
+file(GLOB SOURCES *.h *.cpp tools/*.h tools/*.cpp)
 add_executable(ultimhex ${SOURCES})
 
 # Link binary with ultimaille

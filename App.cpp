@@ -18,7 +18,6 @@
 // std libs
 #include <queue>
 
-#include "layer_pad_tool.h"
 
 using json = nlohmann::json;
 
@@ -42,6 +41,7 @@ App::App(const std::string name) :
 		{1.f,0.3f,0.6f, 1.f}, // pink hover
 		{0.95f,0.2f,0.0f, 1.f}  // red select
 	}),
+	hover_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
 	paint_flag_tool(context_)
@@ -89,23 +89,7 @@ void App::draw_scene() {
 	// Overlays 
 	// Cell facet
 	if (context_.gui_mode == Hover) {
-		if (context_.show_hovered_cell_facet_overlay_) {
-			if (context_.is_cell_hovered() && context_.is_cell_facet_hovered()) {
-				gl_draw::draw_cell_facet_overlay(mesh_, context_.hovered_cell, context_.hovered_lfacet, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, context_.overlay_thickness);	
-			}
-		}
-		// Cell
-		if (context_.show_hovered_cell_overlay_) {
-			if (context_.is_cell_hovered()) {
-				gl_draw::draw_cell_overlay(mesh_, context_.hovered_cell, colormaps_[COLORMAP_HOVER_SELECTION], 0.0, context_.overlay_thickness);
-			}
-		}
-		if (context_.is_cell_selected() && context_.is_cell_lfacet_selected()) {
-			gl_draw::draw_cell_facet_overlay(mesh_, context_.selected_cell, context_.selected_lfacet, colormaps_[COLORMAP_HOVER_SELECTION], 0.5);
-		}
-		if (context_.is_cell_selected()) {
-			gl_draw::draw_cell_overlay(mesh_, context_.selected_cell, colormaps_[COLORMAP_HOVER_SELECTION], 0.5);
-		}
+		hover_tool.draw(hovered_color, selected_color, hover_selection_colormap);
 	}
 
 
@@ -168,9 +152,7 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show picket point", &context_.show_last_picked_point_);
 	ImGui::Separator();
 	if (context_.gui_mode == Hover) {
-		ImGui::Checkbox("Show cell overlay", &context_.show_hovered_cell_overlay_);
-		ImGui::Checkbox("Show cell facet overlay", &context_.show_hovered_cell_facet_overlay_);
-		ImGui::SliderFloat("Thickness", &context_.overlay_thickness, 1., 5.);
+		hover_tool.draw_viewer_properties();
 	}
 
 }
@@ -455,11 +437,11 @@ void App::draw_object_properties() {
 		context_.gui_mode = Camera;
 	}
 
-	if(ImGui::Button("Hover")) {
-		context_.gui_mode = Hover;
-	}
+	if(hover_tool.is_compatible()) {
+		if (hover_tool.draw_gui()) {
 
-	ImGui::Separator();
+		}
+	}
 
 	if (paint_flag_tool.is_compatible()) {
 		if (paint_flag_tool.draw_gui()) {

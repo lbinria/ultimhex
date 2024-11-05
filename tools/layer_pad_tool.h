@@ -13,6 +13,7 @@ struct LayerPadTool : public Tool {
 	static constexpr char* mode = "LayerPadding";
 
 	bool draw_gui() override;
+	void draw_viewer_properties() override;
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
 	void mouse_button_callback(int button, int action, int mods, int source) override;
 	void hover_callback(double x, double y, int source) override;

@@ -2,9 +2,9 @@
 
 #include <nicostuff/algo/framework/benjamin_API.h>
 
-#include "geom_ultimaille_binding.h"
-#include "context.h"
-#include "gl_draw.h"
+#include "../geom_ultimaille_binding.h"
+#include "../context.h"
+#include "../gl_draw.h"
 
 void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {
 	assert(hex.connected());
@@ -118,6 +118,8 @@ bool LayerPadTool::draw_gui() {
 
 	return false;
 }
+
+void LayerPadTool::draw_viewer_properties() {}
 
 void LayerPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	gl_draw::draw_path(hovered_path, hovered_color, true);

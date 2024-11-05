@@ -2,9 +2,9 @@
 
 #include <nicostuff/algo/framework/benjamin_API.h>
 
-#include "geom_ultimaille_binding.h"
-#include "context.h"
-#include "gl_draw.h"
+#include "../geom_ultimaille_binding.h"
+#include "../context.h"
+#include "../gl_draw.h"
 
 /**
  * Search a rect region between two facets
@@ -105,6 +105,8 @@ bool BlocPadTool::draw_gui() {
 
 	return false;
 }
+
+void BlocPadTool::draw_viewer_properties() {}
 
 void BlocPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	for (auto c : hovered_bloc_cells) {
