@@ -55,6 +55,10 @@ void HoverTool::validate_callback() {
 
 }
 
+void HoverTool::escape_callback() {
+	
+}
+
 bool HoverTool::is_compatible() { 
 	return true;
 }

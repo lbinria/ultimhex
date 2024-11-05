@@ -41,6 +41,7 @@ App::App(const std::string name) :
 		{1.f,0.3f,0.6f, 1.f}, // pink hover
 		{0.95f,0.2f,0.0f, 1.f}  // red select
 	}),
+	camera_tool(context_),
 	hover_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
@@ -79,18 +80,16 @@ void App::draw_scene() {
 	auto hover_selection_colormap = colormaps_[COLORMAP_HOVER_SELECTION];
 
 	// PATH
-	if (context_.gui_mode == LayerPadding) {
-		layer_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	} 
-	if (context_.gui_mode == BlocPadding) {
-		bloc_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	}
-
-	// Overlays 
-	// Cell facet
-	if (context_.gui_mode == Hover) {
-		hover_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	}
+	tools[context_.gui_mode]->draw(hovered_color, selected_color, hover_selection_colormap);
+	// if (context_.gui_mode == Hover) {
+	// 	hover_tool.draw(hovered_color, selected_color, hover_selection_colormap);
+	// }
+	// if (context_.gui_mode == LayerPadding) {
+	// 	layer_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
+	// } 
+	// if (context_.gui_mode == BlocPadding) {
+	// 	bloc_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
+	// }
 
 
 
@@ -149,11 +148,13 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show surface", &show_surface_);
 	ImGui::Checkbox("Show volume", &show_volume_);
 	ImGui::Separator();
-	ImGui::Checkbox("Show picket point", &context_.show_last_picked_point_);
+	ImGui::Checkbox("Show picked point", &context_.show_last_picked_point_);
 	ImGui::Separator();
-	if (context_.gui_mode == Hover) {
-		hover_tool.draw_viewer_properties();
-	}
+
+	tools[context_.gui_mode]->draw_viewer_properties();
+	// if (context_.gui_mode == Hover) {
+	// 	hover_tool.draw_viewer_properties();
+	// }
 
 }
 
@@ -231,27 +232,17 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		context_.hovered_lfacet = lf_idx;
 	}
 
-	if (context_.gui_mode == Painting /*&& context_.left_mouse_pressed*/) {
-		paint_flag_tool.hover_callback(x, y, source);
-		// index_t f_idx = pick(MESH_FACETS);
-		// // auto [cf_idx, _] = pickup_cell_facet2(context_.click_pos, context_.hovered_cell);
+	// if (context_.gui_mode == Painting) {
+	// 	paint_flag_tool.hover_callback(x, y, source);
+	// }
+	// else if (context_.gui_mode == LayerPadding) {
+	// 	layer_pad_tool.hover_callback(x, y, source);
+	// }
+	// else if (context_.gui_mode == BlocPadding) {
+	// 	bloc_pad_tool.hover_callback(x, y, source);
+	// }
 
-		// if (f_idx != NO_FACET && f_idx < mesh_.facets.nb()) {
-
-		// 	GEO::Attribute<GEO::signed_index_t> flag(
-		// 		mesh_.facets.attributes(), "flag"
-		// 	);
-
-		// 	flag[f_idx] = context_.paint_value;
-
-		// }
-	}
-	else if (context_.gui_mode == LayerPadding) {
-		layer_pad_tool.hover_callback(x, y, source);
-	}
-	else if (context_.gui_mode == BlocPadding) {
-		bloc_pad_tool.hover_callback(x, y, source);
-	}
+	tools[context_.gui_mode]->hover_callback(x, y, source);
 }
 
 void App::mouse_button_callback(int button, int action, int mods, int source) {
@@ -279,15 +270,19 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 	}
 
 
-    if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
-		bloc_pad_tool.mouse_button_callback(button, action, mods, source);
+	if (action == EVENT_ACTION_UP && button == 0) {
+		tools[context_.gui_mode]->mouse_button_callback(button, action, mods, source);
 	}
-	else if (context_.gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
-		paint_flag_tool.mouse_button_callback(button, action, mods, source);
-	}
-	else if (context_.gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
-		layer_pad_tool.mouse_button_callback(button, action, mods, source);
-	}
+
+    // if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
+	// 	bloc_pad_tool.mouse_button_callback(button, action, mods, source);
+	// }
+	// else if (context_.gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
+	// 	paint_flag_tool.mouse_button_callback(button, action, mods, source);
+	// }
+	// else if (context_.gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
+	// 	layer_pad_tool.mouse_button_callback(button, action, mods, source);
+	// }
 
 
 
@@ -295,7 +290,7 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 
 void App::key_callback(int key, int scancode, int action, int mods) {
 	
-	std::cout << "key pressed: " << key << std::endl;
+	// std::cout << "key pressed: " << key << std::endl;
 
 	// Ctrl
 	if (action == EVENT_ACTION_DOWN && key == 341) {
@@ -306,16 +301,23 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 		context_.switch_mode = Camera;
 	}
 
-	// Validate loop pad
-	if (context_.gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
-		layer_pad_tool.validate_callback();
+	// Validate
+	if ((key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
+		std::cout << "gui mode: " << context_.gui_mode << std::endl;
+		tools[context_.gui_mode]->validate_callback();
+	} else if (key == 256 && action == EVENT_ACTION_DOWN) {
+		tools[context_.gui_mode]->escape_callback();
 	}
-	else if (context_.gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
-		bloc_pad_tool.validate_callback();
-	}
-	else if (context_.gui_mode == BlocPadding && (key == 256) && action == EVENT_ACTION_DOWN) {
-		bloc_pad_tool.escape_callback();
-	}
+
+	// if (context_.gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
+	// 	layer_pad_tool.validate_callback();
+	// }
+	// else if (context_.gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
+	// 	bloc_pad_tool.validate_callback();
+	// }
+	// else if (context_.gui_mode == BlocPadding && (key == 256) && action == EVENT_ACTION_DOWN) {
+	// 	bloc_pad_tool.escape_callback();
+	// }
 
 
 }
@@ -422,6 +424,7 @@ void App::draw_object_properties() {
 
 	int n_facet_per_cell = context_.mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
 
+	ImGui::Text("Mode: %i", context_.gui_mode);
 	ImGui::Text("Hovered vertex: %i", context_.hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", context_.hovered_edge);
 	ImGui::Text("Hovered cell facet: %i", context_.hovered_facet);
@@ -434,9 +437,7 @@ void App::draw_object_properties() {
 	// 	he_n++;
 	// }
 
-	if(ImGui::Button("Camera")) {
-		context_.gui_mode = Camera;
-	}
+
 
 
 	for (auto &tool : tools) {
@@ -446,7 +447,9 @@ void App::draw_object_properties() {
 	}
 
 
-
+	// if(ImGui::Button("Camera")) {
+	// 	context_.gui_mode = Camera;
+	// }
 	// if(hover_tool.is_compatible()) {
 	// 	if (hover_tool.draw_gui()) {
 

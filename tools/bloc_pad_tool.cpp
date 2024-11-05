@@ -139,6 +139,7 @@ void BlocPadTool::hover_callback(double x, double y, int source) {
 }
 
 void BlocPadTool::mouse_button_callback(int button, int action, int mods, int source) {
+	
 	if (ctx.hex.connected() && ctx.is_cell_facet_hovered()) {
 
 		if (bloc_pad_step == 0) {
@@ -158,6 +159,7 @@ void BlocPadTool::validate_callback() {
 
 	if (bloc_pad_step != 2)
 		return;
+
 
 	auto facets = extract_surf_facet(ctx.hex, selected_bloc_cells);
 	CellFacetAttribute<bool> pad_face(ctx.hex);

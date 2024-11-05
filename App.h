@@ -18,6 +18,7 @@
 
 // Tools
 // #include "tools/paint_flag_tool.h"
+#include <camera_tool.h>
 #include <hover_tool.h>
 #include <paint_flag_tool.h>
 #include "tools/layer_pad_tool.h"
@@ -74,6 +75,7 @@ protected:
 	ColorArray hover_selection_colors_; // colors for hover & selection
 
 	// Declare tools
+	CameraTool camera_tool;
 	HoverTool hover_tool;
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
@@ -81,7 +83,7 @@ protected:
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
 	std::unique_ptr<Tool> tools[5] = {
-		std::make_unique<HoverTool>(hover_tool), 
+		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
 		std::make_unique<LayerPadTool>(layer_pad_tool), 
