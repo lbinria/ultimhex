@@ -23,10 +23,11 @@ enum GUIMode {
 	Hover = 1,
 	Painting = 2,
 	LayerPadding = 3,
-	BlocPadding = 4
+	BlocPadding = 4,
+	Polycubify = 5
 };
 
-struct VisualizationBinding {
+struct ViewBinding {
 	bool &show_attributes_;
 	bool &show_vertices_;
 	bool &show_volume_;
@@ -44,7 +45,7 @@ struct VisualizationBinding {
 
 struct Context {
 
-	Context(Mesh &mesh, MeshGfx &mesh_gfx, VisualizationBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), view(view) {}
+	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), view(view) {}
 
 	bool show_last_picked_point_ = false;
 	bool show_hovered_cell_overlay_ = true;
@@ -107,5 +108,5 @@ struct Context {
 
 
 
-	VisualizationBinding view;
+	ViewBinding view;
 };

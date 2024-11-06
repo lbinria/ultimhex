@@ -10,9 +10,9 @@ struct HoverTool : public Tool {
 
 	HoverTool(Context &ctx) : Tool(ctx) {}
 
-	static constexpr char* mode = "LayerPadding";
+	std::string get_name() { return "Hover"; }
 
-	bool draw_gui() override;
+	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
 	void mouse_button_callback(int button, int action, int mods, int source) override;

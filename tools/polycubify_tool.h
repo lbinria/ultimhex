@@ -6,15 +6,14 @@
 #include "tool.h"
 
 
-struct BlocPadTool : public Tool {
+struct PolycubifyTool : public Tool {
 
-	BlocPadTool(Context &ctx) : Tool(ctx) {}
+	PolycubifyTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Bloc padding"; }
+	std::string get_name() { return "Polycubify"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
-
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
 	void mouse_button_callback(int button, int action, int mods, int source) override;
 	void hover_callback(double x, double y, int source) override;
@@ -26,27 +25,10 @@ struct BlocPadTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		bloc_pad_step = 0;
-		bloc_start_f = -1;
-		bloc_end_f = -1;
-		depth = 1;
-		hovered_bloc_facets.clear();
-		hovered_bloc_facets.clear();
-		hovered_bloc_cells.clear();
-		selected_bloc_cells.clear();
+		paint_value = -1;
 	}
 
-	int bloc_pad_step = 0;
-	int bloc_start_f = -1;
-	int bloc_end_f = -1;
-	int depth = 1;
-	std::vector<int> hovered_bloc_facets;
-	std::vector<int> selected_bloc_facets;
-	std::vector<int> hovered_bloc_cells;
-	std::vector<int> selected_bloc_cells;
+	int paint_value = -1;
 
-	std::vector<int> tmp_facets;
-
-	std::vector<UM::Segment3> wireframe;
 
 };

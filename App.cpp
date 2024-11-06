@@ -45,7 +45,8 @@ App::App(const std::string name) :
 	hover_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
-	paint_flag_tool(context_)
+	paint_flag_tool(context_),
+	polycubify_tool(context_)
 {
 
 }
@@ -152,10 +153,6 @@ void App::draw_viewer_properties() {
 	ImGui::Separator();
 
 	tools[context_.gui_mode]->draw_viewer_properties();
-	// if (context_.gui_mode == Hover) {
-	// 	hover_tool.draw_viewer_properties();
-	// }
-
 }
 
 void App::GL_initialize() {
@@ -232,20 +229,11 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		context_.hovered_lfacet = lf_idx;
 	}
 
-	// if (context_.gui_mode == Painting) {
-	// 	paint_flag_tool.hover_callback(x, y, source);
-	// }
-	// else if (context_.gui_mode == LayerPadding) {
-	// 	layer_pad_tool.hover_callback(x, y, source);
-	// }
-	// else if (context_.gui_mode == BlocPadding) {
-	// 	bloc_pad_tool.hover_callback(x, y, source);
-	// }
-
 	tools[context_.gui_mode]->hover_callback(x, y, source);
 }
 
 void App::mouse_button_callback(int button, int action, int mods, int source) {
+	// std::cout << "mouse: " << button << "," << action << std::endl;
 
 	if (context_.gui_mode == Camera) {
     	SimpleMeshApplication::mouse_button_callback(button,action,mods,source);
@@ -269,22 +257,9 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		context_.selected_cell = context_.hovered_cell;
 	}
 
-
 	if (action == EVENT_ACTION_UP && button == 0) {
 		tools[context_.gui_mode]->mouse_button_callback(button, action, mods, source);
 	}
-
-    // if (context_.gui_mode == BlocPadding && action == EVENT_ACTION_UP && button == 0) {
-	// 	bloc_pad_tool.mouse_button_callback(button, action, mods, source);
-	// }
-	// else if (context_.gui_mode == Painting && action == EVENT_ACTION_UP && button == 0) {
-	// 	paint_flag_tool.mouse_button_callback(button, action, mods, source);
-	// }
-	// else if (context_.gui_mode == LayerPadding && action == EVENT_ACTION_UP && button == 0) {
-	// 	layer_pad_tool.mouse_button_callback(button, action, mods, source);
-	// }
-
-
 
 }
 
@@ -309,17 +284,6 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 		tools[context_.gui_mode]->escape_callback();
 	}
 
-	// if (context_.gui_mode == LayerPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
-	// 	layer_pad_tool.validate_callback();
-	// }
-	// else if (context_.gui_mode == BlocPadding && (key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
-	// 	bloc_pad_tool.validate_callback();
-	// }
-	// else if (context_.gui_mode == BlocPadding && (key == 256) && action == EVENT_ACTION_DOWN) {
-	// 	bloc_pad_tool.escape_callback();
-	// }
-
-
 }
 
 bool App::save(const std::string& filename) {
@@ -341,10 +305,6 @@ void App::reset() {
 	for (auto &tool : tools) {
 		tool->clear();
 	}
-	// hover_tool.clear();
-	// paint_flag_tool.clear();
-	// layer_pad_tool.clear();
-	// bloc_pad_tool.clear();
 
 	// Clear UM meshes
 	context_.tet.clear();
@@ -424,7 +384,7 @@ void App::draw_object_properties() {
 
 	int n_facet_per_cell = context_.mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
 
-	ImGui::Text("Mode: %i", context_.gui_mode);
+	ImGui::Text("Selected tool: %s", tools[context_.gui_mode]->get_name().c_str());
 	ImGui::Text("Hovered vertex: %i", context_.hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", context_.hovered_edge);
 	ImGui::Text("Hovered cell facet: %i", context_.hovered_facet);
@@ -437,97 +397,10 @@ void App::draw_object_properties() {
 	// 	he_n++;
 	// }
 
-
-
-
 	for (auto &tool : tools) {
 		if (tool->is_compatible()) {
-			tool->draw_gui();
+			tool->draw_object_properties();
 		}
-	}
-
-
-	// if(ImGui::Button("Camera")) {
-	// 	context_.gui_mode = Camera;
-	// }
-	// if(hover_tool.is_compatible()) {
-	// 	if (hover_tool.draw_gui()) {
-
-	// 	}
-	// }
-
-	// if (paint_flag_tool.is_compatible()) {
-	// 	if (paint_flag_tool.draw_gui()) {
-
-	// 	}
-	// }
-
-	// if (layer_pad_tool.is_compatible()) {
-	// 	if (layer_pad_tool.draw_gui()) {
-	// 		// Clean other tools
-	// 		bloc_pad_tool.clear();
-	// 	}
-	// }
-
-	// if (bloc_pad_tool.is_compatible()) {
-	// 	if (bloc_pad_tool.draw_gui()) {
-	// 		// Clean other tools
-	// 		layer_pad_tool.clear();
-	// 	}
-	// }
-
-
-	// Criteria to display polycubify tool
-	auto mesh_metadata_attr = context_.mesh_metadata.get_attr("tet_flag");
-	
-	bool is_visible_polycubify_tool = (context_.mesh_metadata.cell_type == MESH_TET) && (mesh_metadata_attr.has_value() && mesh_metadata_attr.value().where == GEO::MESH_CELL_FACETS);
-	
-	if (is_visible_polycubify_tool) {
-		int nhex_wanted = 3000;
-		if (ImGui::Button("Polycubify !")) {
-
-			// Get UM cell facet attribute tet_flag from GEO mesh
-			UM::CellFacetAttribute<int> tet_flag(context_.tet, -1);
-			um_bindings::um_attr_from_geo_attr<GEO::MESH_CELL_FACETS>(mesh_, "tet_flag", context_.tet, tet_flag.ptr);
-
-			try {
-				BenjaminAPI::polycubify(context_.tet, tet_flag, context_.hex, nhex_wanted);
-			} catch (const std::runtime_error &e) {
-				Logger::warn("An error occur when trying to polycubify. Detail: " + std::string(e.what()));
-				std::cout << "polycubify fail" << std::endl;
-				return;
-			}
-
-			HexBoundary hex_bound(context_.hex);
-			// Replace current GEO mesh by UM Hex
-			um_bindings::geo_mesh_from_hexboundary(hex_bound, mesh_);
-
-
-			// write_by_extension("input.geogram", tet);
-			// write_by_extension("polycubify_hex.geogram", hex);
-			// write_by_extension("polycubify_quad.geogram", hex_bound.quad);
-			// mesh_save(mesh_, "polycubify2.geogram");
-			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
-
-			// Write mesh
-
-			// Save mesh metadata in json !!!!
-			context_.mesh_metadata = { 
-				.filename = "polycubified.geogram", 
-				.cell_type = GEO::MESH_HEX, 
-				.attributes = {} 
-			};
-			write_by_extension(context_.mesh_metadata.filename, hex_bound.hex, {{}, {}, {}, {}});
-			context_.mesh_metadata.save();
-
-			// View
-			mesh_gfx_.set_mesh(&mesh_);
-			labeling_visu_mode_transition();
-			show_surface_ = false;
-			show_volume_ = true;
-
-		}
-
 	}
 
 }

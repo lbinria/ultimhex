@@ -6,7 +6,7 @@
 #include "../context.h"
 #include "../gl_draw.h"
 
-bool CameraTool::draw_gui() {
+bool CameraTool::draw_object_properties() {
 	if(ImGui::Button("Camera")) {
 		ctx.gui_mode = Camera;
 		return true;

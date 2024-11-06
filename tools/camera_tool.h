@@ -10,9 +10,9 @@ struct CameraTool : public Tool {
 
 	CameraTool(Context &ctx) : Tool(ctx) {}
 
-	static constexpr char* mode = "Camera";
+	std::string get_name() { return "Camera"; }
 
-	bool draw_gui() override;
+	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
 
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 

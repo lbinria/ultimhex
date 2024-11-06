@@ -640,6 +640,13 @@ namespace GEO {
          */
         void cleanup();
         
+        void set_cells_color(MeshCellType type, float r, float g, float b, float a) {
+            cells_color_[type][0] = r;
+            cells_color_[type][1] = g;
+            cells_color_[type][2] = b;            
+            cells_color_[type][3] = a;            
+        }
+
     protected:
         
         void draw_vertices_array();
@@ -685,6 +692,8 @@ namespace GEO {
             cells_color_[type][1] = g;
             cells_color_[type][2] = b;            
         }
+
+
 
 	void draw_attribute_as_tex_coord(index_t element) {
 	    if(picking_mode_ == MESH_NONE) {

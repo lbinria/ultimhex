@@ -8,7 +8,7 @@
 #include "../tag_face.h"
 
 
-bool PaintFlagTool::draw_gui() {
+bool PaintFlagTool::draw_object_properties() {
 
 	// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
 	// ImGui::ColorButton("+X", ImVec4(1,0,0,1));

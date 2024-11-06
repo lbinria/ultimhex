@@ -5,6 +5,8 @@
 
 struct Tool {
 
+	virtual std::string get_name() = 0;
+
 	Tool(Context &ctx) : ctx(ctx) {}
 
 	/**
@@ -16,7 +18,7 @@ struct Tool {
 	 * Draw GUI
 	 * Return true if selected tool has changed
 	 */
-	virtual bool draw_gui() = 0;
+	virtual bool draw_object_properties() = 0;
 
 	/**
 	 * Draw viewer property for this tool

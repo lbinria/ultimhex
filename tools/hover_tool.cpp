@@ -6,7 +6,7 @@
 #include "../context.h"
 #include "../gl_draw.h"
 
-bool HoverTool::draw_gui() {
+bool HoverTool::draw_object_properties() {
 	if(ImGui::Button("Hover")) {
 		ctx.gui_mode = Hover;
 		return true;

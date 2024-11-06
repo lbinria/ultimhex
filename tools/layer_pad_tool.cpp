@@ -105,7 +105,7 @@ void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function
 
 }
 
-bool LayerPadTool::draw_gui() {
+bool LayerPadTool::draw_object_properties() {
 	if(ImGui::Button("Loop padding")) {
 		ctx.gui_mode = LayerPadding;
 		// TODO notify Change tool
