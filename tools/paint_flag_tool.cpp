@@ -115,8 +115,9 @@ void PaintFlagTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GE
 
 void PaintFlagTool::hover_callback(double x, double y, int source) {
 
+	std::cout << "left mouse : " << ctx.left_mouse_pressed << std::endl;
 	// Just when left mouse is currently pressed (drag)
-	if (!ctx.left_mouse_pressed || !ctx.is_cell_facet_hovered())
+	if (!(ctx.left_mouse_pressed && ctx.is_cell_facet_hovered()))
 		return;
 
 	GEO::Attribute<GEO::signed_index_t> flag(
@@ -136,12 +137,14 @@ void PaintFlagTool::mouse_button_callback(int button, int action, int mods, int 
 	um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet_bound.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
 }
 
+void PaintFlagTool::scroll_callback(double xoffset, double yoffset) {}
+
 void PaintFlagTool::validate_callback() {
 
 }
 
 bool PaintFlagTool::is_compatible() { 
-	return ctx.mesh_metadata.cell_type == MESH_TET;
+	return !ctx.mesh_metadata.filename.empty() && ctx.mesh_metadata.cell_type == MESH_TET;
 }
 
 void PaintFlagTool::escape_callback() {

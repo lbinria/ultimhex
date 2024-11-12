@@ -24,7 +24,8 @@ enum GUIMode {
 	Painting = 2,
 	LayerPadding = 3,
 	BlocPadding = 4,
-	Polycubify = 5
+	NewBlocPadding = 5,
+	Polycubify = 6
 };
 
 struct ViewBinding {

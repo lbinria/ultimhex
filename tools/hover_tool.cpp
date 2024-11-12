@@ -51,6 +51,8 @@ void HoverTool::mouse_button_callback(int button, int action, int mods, int sour
 
 }
 
+void HoverTool::scroll_callback(double xoffset, double yoffset) {}
+
 void HoverTool::validate_callback() {
 
 }

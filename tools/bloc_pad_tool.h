@@ -17,6 +17,7 @@ struct BlocPadTool : public Tool {
 
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
 	void mouse_button_callback(int button, int action, int mods, int source) override;
+	void scroll_callback(double xoffset, double yoffset) override;
 	void hover_callback(double x, double y, int source) override;
 	void validate_callback() override;
 
@@ -26,26 +27,35 @@ struct BlocPadTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		bloc_pad_step = 0;
-		bloc_start_f = -1;
-		bloc_end_f = -1;
+		step = 0;
+		start_f_idx = -1;
+
 		depth = 1;
 		hovered_bloc_facets.clear();
-		hovered_bloc_facets.clear();
+		selected_bloc_facets.clear();
 		hovered_bloc_cells.clear();
 		selected_bloc_cells.clear();
+		wireframe.clear();
+
+		bloc_surface.clear();
+
+		ctx.view.show_volume_ = true;
 	}
 
-	int bloc_pad_step = 0;
-	int bloc_start_f = -1;
-	int bloc_end_f = -1;
+	void switch_view(bool to_wireframe);
+
+	int step = 0;
+	int start_f_idx = -1;
+	std::vector<int> selected_region_cells;
+
 	int depth = 1;
+
 	std::vector<int> hovered_bloc_facets;
 	std::vector<int> selected_bloc_facets;
 	std::vector<int> hovered_bloc_cells;
 	std::vector<int> selected_bloc_cells;
 
-	std::vector<int> tmp_facets;
+	std::vector<int> bloc_surface;
 
 	std::vector<UM::Segment3> wireframe;
 

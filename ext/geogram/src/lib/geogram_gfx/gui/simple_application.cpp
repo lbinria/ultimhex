@@ -403,7 +403,7 @@ namespace GEO {
 	    
 	    double aspect = double(get_width()) / double(get_height());
 	    double zNear = 1.0;   // near clipping plane.
-	    double zFar = 10.0;   // far clipping plane.
+	    double zFar = 15.0;   // far clipping plane.
 	    if(three_D_) {
 		double camera_aperture = 9.0; // field of view in degrees.
 		double view_max_size = zScreen * tan(

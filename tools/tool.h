@@ -38,6 +38,7 @@ struct Tool {
 	virtual void validate_callback() = 0;
 
 	virtual void mouse_button_callback(int button, int action, int mods, int source) = 0;
+	virtual void scroll_callback(double xoffset, double yoffset) = 0;
 	virtual void hover_callback(double x, double y, int source) = 0;
 	virtual void key_callback(int key, int scancode, int action, int mods) = 0;
 

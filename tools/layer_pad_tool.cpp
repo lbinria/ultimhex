@@ -75,11 +75,44 @@ void loop_cut(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<
 	}
 }
 
+// void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
+// 	assert(hex.connected());
+// 	std::vector<bool> visited(24 * hex.ncells(), false);
+
+// 	auto cur_he = start_he;
+
+
+// 	while (true) {
+
+// 		f(cur_he, true);
+
+// 		int i = 0;
+// 		for (auto eh : cur_he.next().iter_CCW_around_edge()) {
+// 			if (eh.facet() != cur_he.facet() && eh.facet().on_boundary()) {
+// 				cur_he = eh.next();
+// 				// break;
+// 			}
+// 			i++;
+// 		}
+
+// 		std::cout << "n halfdege: " << i << std::endl;
+
+// 		if (visited[cur_he])
+// 			break;
+
+// 		visited[cur_he] = true;
+
+
+// 	}
+
+// }
+
 void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f) {
 	assert(hex.connected());
 	std::vector<bool> visited(24 * hex.ncells(), false);
 
 	auto cur_he = start_he;
+
 
 	while (true) {
 
@@ -89,7 +122,7 @@ void loop_cut2(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function
 		if (!opp_c.active() || cur_he.next().opposite_f().next().facet().on_boundary()) {
 			cur_he = cur_he.next().opposite_f().next();
 
-		} else {
+		} else if (opp_c.active()) {
 			cur_he = opp_c.opposite_f().next();
 
 			// on border ?
@@ -136,6 +169,21 @@ void LayerPadTool::hover_callback(double x, double y, int source) {
 		Volume::Halfedge hovered_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.hovered_edge, ctx.hovered_lfacet)));
 		
 		if (hovered_he.active()) {
+
+			// Volume::Cell um_c(ctx.hex, ctx.hovered_cell);
+			// Volume::Halfedge start_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.hovered_edge, ctx.hovered_lfacet)));
+			// loop_cut(ctx.hex, start_he, [&](UM::Volume::Facet &f) {
+			// 	for (auto he : f.iter_halfedges()) {
+			// 		if (he.opposite_f().opposite_c().active())
+			// 			continue;
+
+			// 		UM::vec3 a = he.from().pos();
+			// 		UM::vec3 b = he.to().pos();
+			// 		hovered_path.push_back(a);
+			// 		hovered_path.push_back(b);			
+			// 	}	
+			// });
+
 			loop_cut2(ctx.hex, hovered_he, [&](Volume::Halfedge &he, bool on_border) {
 				UM::vec3 a = he.from().pos();
 				UM::vec3 b = he.to().pos();
@@ -148,28 +196,9 @@ void LayerPadTool::hover_callback(double x, double y, int source) {
 
 void LayerPadTool::mouse_button_callback(int button, int action, int mods, int source) {
 	selected_path = hovered_path;
-
-	// Test extract layer
-	// Quads q_out;
-	// Volume::Cell um_c(hex, context_.hovered_cell);
-	// Volume::Halfedge start_he(hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.selected_edge, context_.selected_lfacet)));
-	// loop_cut(hex, start_he, [&](UM::Volume::Facet &f) {
-		
-	// 	int v_off = q_out.points.create_points(4);
-	// 	q_out.points[v_off] = f.vertex(0).pos();
-	// 	q_out.points[v_off + 1] = f.vertex(1).pos();
-	// 	q_out.points[v_off + 2] = f.vertex(2).pos();
-	// 	q_out.points[v_off + 3] = f.vertex(3).pos();
-
-	// 	int f_off = q_out.create_facets(1);
-	// 	q_out.vert(f_off, 0) = v_off;
-	// 	q_out.vert(f_off, 1) = v_off + 1;
-	// 	q_out.vert(f_off, 2) = v_off + 2;
-	// 	q_out.vert(f_off, 3) = v_off + 3;
-
-	// });
-	// write_by_extension("result.geogram", q_out);
 }
+
+void LayerPadTool::scroll_callback(double xoffset, double yoffset) {}
 
 void LayerPadTool::validate_callback() {
 
@@ -197,3 +226,25 @@ void LayerPadTool::validate_callback() {
 bool LayerPadTool::is_compatible() { 
 	return ctx.mesh_metadata.cell_type == MESH_HEX;
 }
+
+
+// Test extract layer
+// Quads q_out;
+// Volume::Cell um_c(hex, context_.hovered_cell);
+// Volume::Halfedge start_he(hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(context_.selected_edge, context_.selected_lfacet)));
+// loop_cut(hex, start_he, [&](UM::Volume::Facet &f) {
+	
+// 	int v_off = q_out.points.create_points(4);
+// 	q_out.points[v_off] = f.vertex(0).pos();
+// 	q_out.points[v_off + 1] = f.vertex(1).pos();
+// 	q_out.points[v_off + 2] = f.vertex(2).pos();
+// 	q_out.points[v_off + 3] = f.vertex(3).pos();
+
+// 	int f_off = q_out.create_facets(1);
+// 	q_out.vert(f_off, 0) = v_off;
+// 	q_out.vert(f_off, 1) = v_off + 1;
+// 	q_out.vert(f_off, 2) = v_off + 2;
+// 	q_out.vert(f_off, 3) = v_off + 3;
+
+// });
+// write_by_extension("result.geogram", q_out);

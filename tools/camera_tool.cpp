@@ -33,6 +33,8 @@ void CameraTool::mouse_button_callback(int button, int action, int mods, int sou
 
 }
 
+void CameraTool::scroll_callback(double xoffset, double yoffset) {}
+
 void CameraTool::validate_callback() {
 
 }

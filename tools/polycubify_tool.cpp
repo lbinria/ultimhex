@@ -66,6 +66,8 @@ void PolycubifyTool::mouse_button_callback(int button, int action, int mods, int
 
 }
 
+void PolycubifyTool::scroll_callback(double xoffset, double yoffset) {}
+
 void PolycubifyTool::validate_callback() {
 
 }

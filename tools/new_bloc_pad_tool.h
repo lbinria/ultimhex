@@ -6,14 +6,15 @@
 #include "tool.h"
 
 
-struct HoverTool : public Tool {
+struct NewBlocPadTool : public Tool {
 
-	HoverTool(Context &ctx) : Tool(ctx) {}
+	NewBlocPadTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Hover"; }
+	std::string get_name() { return "Bloc padding"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
+
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
 	void mouse_button_callback(int button, int action, int mods, int source) override;
 	void scroll_callback(double xoffset, double yoffset) override;
@@ -25,7 +26,8 @@ struct HoverTool : public Tool {
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
-	void clear() override {}
+	void clear() override {
 
+	}
 
 };

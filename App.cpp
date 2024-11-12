@@ -45,10 +45,11 @@ App::App(const std::string name) :
 	hover_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
+	new_bloc_pad_tool(context_),
 	paint_flag_tool(context_),
 	polycubify_tool(context_)
 {
-
+	
 }
 
 void App::ImGui_initialize() {
@@ -59,6 +60,23 @@ void App::ImGui_initialize() {
         // Larger docked object properties panel
         ImGui::LoadIniSettingsFromDisk("gui.ini");
     }
+}
+
+void App::normalize_mesh() {
+	double xyz_min[3];
+	double xyz_max[3];
+	get_bbox(mesh_, xyz_min, xyz_max, false);
+	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
+	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
+	double max_coord = std::max(std::max(xyz_max[1], xyz_max[2]), xyz_max[0]);
+	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
+	std::cout << "max coord: " << max_coord << std::endl;
+
+	// normalize
+	for (int v = 0; v < mesh_.vertices.nb(); v++) {
+		mesh_.vertices.point(v) /= max_coord; 
+		// mesh_.vertices.point(v) *= 2; 
+	}
 }
 
 void App::draw_scene() {
@@ -142,12 +160,92 @@ void App::draw_menu_bar() {
 void App::draw_viewer_properties() {
     SimpleMeshApplicationExt::draw_viewer_properties();
 
+	ImGui::InputText("Gmhsh path", gmsh_path, sizeof(gmsh_path));
+
+	if (load_step) {
+		ImGui::OpenPopup("Load step options");
+		if (ImGui::BeginPopupModal("Load step options", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+
+			// bool volume;
+			float size_factor = 1.0;
+			ImGui::InputFloat("Mesh size factor", &size_factor);
+			// ImGui::Checkbox("tetrahedrize ?", &volume);
+
+			if (ImGui::Button("Load", ImVec2(120, 0)))
+			{
+				std::string out_filename = context_.mesh_metadata.filename + ".mesh";
+				// Write config file for GMSH
+				std::ofstream conf_file;
+				conf_file.open("conf.geo");
+				if (conf_file.is_open()) { 
+					// std::string mesh_type = volume ? "3" : "2";
+					std::string mesh_type = "3";
+					conf_file << "General.Terminal = 1;\nMesh.MeshSizeFactor = " + std::to_string(size_factor) + ";\nMesh.AngleToleranceFacetOverlap = 0.01;\nMesh " + mesh_type + ";\nSave \"" + out_filename + "\";";
+					conf_file.close();
+				} else {
+					std::cout << "Unable to write file: conf.geo at the Graphite root directory." << std::endl;
+					return;
+				}
+
+				std::string command = std::string(gmsh_path) + " " + context_.mesh_metadata.filename + " conf.geo -0";
+				int result = system(command.c_str());
+
+				if (result != 0) {
+					std::cout << "Unable to mesh step file from GMSH." << std::endl;
+					return;
+				}
+
+				// TODO refactor this
+				MeshIOFlags flags;
+				if(!mesh_load(out_filename, mesh_, flags)) {
+					reset();
+					return;
+				}
+
+				reset();
+
+				normalize_mesh();
+
+				// Init UM tet from GEO mesh
+				if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
+					um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+					context_.tet.connect();
+				}
+
+				is_loading = false;
+
+
+				// Display info
+				mesh_gfx_.set_animate(false);
+				mesh_.vertices.set_dimension(3);
+				mesh_.vertices.set_double_precision(); // added
+				mesh_gfx_.set_mesh(&mesh_);
+				current_file_ = out_filename;
+
+				labeling_visu_mode_transition();
+
+				clear_scene_overlay();
+
+				std::cout << "Mesh loaded !" << std::endl;
+
+				load_step = false;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+
+
 	ImGui::Checkbox("Show grid", &show_grid_);
 	ImGui::Checkbox("Show axes", &show_axes_);
 	ImGui::Separator();
 	ImGui::Checkbox("Show vertices", &show_vertices_);
 	ImGui::Checkbox("Show surface", &show_surface_);
 	ImGui::Checkbox("Show volume", &show_volume_);
+
 	ImGui::Separator();
 	ImGui::Checkbox("Show picked point", &context_.show_last_picked_point_);
 	ImGui::Separator();
@@ -250,6 +348,7 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 
 
 	if (action == EVENT_ACTION_DOWN && button == 0) {
+		// TODO add function select_hovered
 		context_.selected_vertex = context_.hovered_vertex;
 		context_.selected_edge = context_.hovered_edge;
 		context_.selected_facet = context_.hovered_facet;
@@ -261,6 +360,15 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		tools[context_.gui_mode]->mouse_button_callback(button, action, mods, source);
 	}
 
+}
+
+void App::scroll_callback(double xoffset, double yoffset) {
+	if (context_.gui_mode == Camera) {
+    	SimpleMeshApplication::scroll_callback(xoffset, yoffset);
+		return;
+	}
+
+	tools[context_.gui_mode]->scroll_callback(xoffset, yoffset);
 }
 
 void App::key_callback(int key, int scancode, int action, int mods) {
@@ -334,6 +442,13 @@ bool App::load(const std::string& filename) {
 		auto json = json::parse(content);
 		context_.mesh_metadata = MeshMetadata::from_json(json);
 		mesh_filename = context_.mesh_metadata.filename;
+	} else if (filename_path.extension() == ".step" || filename_path.extension() == ".stp") {
+
+		context_.mesh_metadata.filename = filename;
+		load_step = true;
+		return true;
+
+
 	} else {
 		context_.mesh_metadata.filename = filename;
 		context_.mesh_metadata.cell_type = MESH_TET;
@@ -343,20 +458,14 @@ bool App::load(const std::string& filename) {
 		reset();
         return false;
     }
-
+	
 	reset();
 
-
+	normalize_mesh();
 
 	// Init UM tet from GEO mesh
-	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
-		um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
-		context_.tet.connect();
-	}
-	else if (context_.mesh_metadata.cell_type == GEO::MESH_HEX) {
-		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
-		context_.hex.connect();
-	}
+	um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+	context_.tet.connect();
 
 	is_loading = false;
 
@@ -410,7 +519,7 @@ std::string App::supported_write_file_extensions() {
 }
 
 std::string App::supported_read_file_extensions() {
-    return SimpleMeshApplication::supported_read_file_extensions() + ";json"; // add .json in supported write file extensions
+    return SimpleMeshApplication::supported_read_file_extensions() + ";json;step;stp"; // add .json, .step in supported write file extensions
 }
 
 

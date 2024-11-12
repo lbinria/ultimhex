@@ -19,6 +19,7 @@
 // Tools
 #include <camera_tool.h>
 #include <hover_tool.h>
+#include <new_bloc_pad_tool.h>
 #include <paint_flag_tool.h>
 #include "tools/layer_pad_tool.h"
 #include "tools/bloc_pad_tool.h"
@@ -41,6 +42,8 @@ public:
 
 protected:
 
+	void normalize_mesh();
+
 	void draw_scene() override;
 
 	void draw_gui() override;
@@ -62,6 +65,8 @@ protected:
 
 	void mouse_button_callback(int button, int action, int mods, int source) override;
 
+	void scroll_callback(double xoffset, double yoffset) override;
+
 	void cursor_pos_callback(double x, double y, int source) override;
 
 	void key_callback(int key, int scancode, int action, int mods) override;
@@ -80,15 +85,17 @@ protected:
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
+	NewBlocPadTool new_bloc_pad_tool;
 	PolycubifyTool polycubify_tool;
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[6] = {
+	std::unique_ptr<Tool> tools[7] = {
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
 		std::make_unique<LayerPadTool>(layer_pad_tool), 
 		std::make_unique<BlocPadTool>(bloc_pad_tool),
+		std::make_unique<NewBlocPadTool>(new_bloc_pad_tool),
 		std::make_unique<PolycubifyTool>(polycubify_tool)
 	};
 
@@ -98,6 +105,9 @@ protected:
 	};
 
 	bool is_loading = false;
+
+	bool load_step = false;
+	char * gmsh_path = "gmsh";
 
 	// TODO move to gui_base
 	bool show_grid_ = true;
