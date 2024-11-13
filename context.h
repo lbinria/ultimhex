@@ -55,38 +55,42 @@ struct Context {
 
 	index_t hovered_vertex = NO_VERTEX;
 	index_t hovered_edge = NO_EDGE;
-	// TODO rename to cellfacet
 	index_t hovered_facet = NO_FACET;
-	index_t hovered_lfacet = NO_FACET;
+
+	index_t hovered_cell_facet = NO_FACET;
+	index_t hovered_cell_lfacet = NO_FACET;
 	index_t hovered_cell = NO_CELL;
 
 	index_t selected_vertex = NO_VERTEX;
 	index_t selected_edge = NO_EDGE;
 	index_t selected_facet = NO_FACET;
-	index_t selected_lfacet = NO_FACET;
+	index_t selected_cell_facet = NO_FACET;
+	index_t selected_cell_lfacet = NO_FACET;
 	index_t selected_cell = NO_CELL;
 
 	// TODO Please refactor this !
 	bool is_cell_hovered() { return (hovered_cell != NO_CELL && hovered_cell < mesh_.cells.nb()); }
-	bool is_cell_facet_hovered() { return (hovered_facet != NO_FACET && hovered_facet < mesh_.cell_facets.nb()); }
-	bool is_cell_lfacet_hovered() { return (hovered_lfacet != NO_FACET && hovered_lfacet < 6); }
+	bool is_facet_hovered() { return (hovered_facet != NO_FACET && hovered_facet < mesh_.facets.nb()); }
+	bool is_cell_facet_hovered() { return (hovered_cell_facet != NO_FACET && hovered_cell_facet < mesh_.cell_facets.nb()); }
+	bool is_cell_lfacet_hovered() { return (hovered_cell_lfacet != NO_FACET && hovered_cell_lfacet < 6); }
 	bool is_cell_edge_hovered() { return (hovered_edge != NO_EDGE && hovered_edge < 12); }
 
 	bool is_cell_selected() { return (selected_cell != NO_CELL && selected_cell < mesh_.cells.nb()); }
-	bool is_cell_facet_selected() { return (selected_facet != NO_FACET && selected_facet < mesh_.cell_facets.nb()); }
-	bool is_cell_lfacet_selected() { return (selected_lfacet != NO_FACET && selected_lfacet < 6); }
+	bool is_facet_selected() { return (selected_facet != NO_FACET && selected_facet < mesh_.facets.nb()); }
+	bool is_cell_facet_selected() { return (selected_cell_facet != NO_FACET && selected_cell_facet < mesh_.cell_facets.nb()); }
+	bool is_cell_lfacet_selected() { return (selected_cell_lfacet != NO_FACET && selected_cell_lfacet < 6); }
 	bool is_cell_edge_selected() { return (selected_edge != NO_EDGE && selected_edge < 12); }
 
 	void reset_hovered_selected() {
 		hovered_vertex = NO_VERTEX;
 		hovered_edge = NO_EDGE;
-		hovered_facet = NO_FACET;
-		hovered_lfacet = NO_FACET;
+		hovered_cell_facet = NO_FACET;
+		hovered_cell_lfacet = NO_FACET;
 		hovered_cell = NO_CELL;
 		selected_vertex = NO_VERTEX;
 		selected_edge = NO_EDGE;
-		selected_facet = NO_FACET;
-		selected_lfacet = NO_FACET;
+		selected_cell_facet = NO_FACET;
+		selected_cell_lfacet = NO_FACET;
 		selected_cell = NO_CELL;
 	}
 

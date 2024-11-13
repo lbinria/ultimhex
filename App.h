@@ -30,6 +30,7 @@
 
 // new colormaps
 #define COLORMAP_HOVER_SELECTION (SIMPLE_APPLICATION_NB_COLORMAPS)
+#define COLORMAP_FLAGGING (SIMPLE_APPLICATION_NB_COLORMAPS + 1)
 
 
 class App : public SimpleMeshApplicationExt {
@@ -78,6 +79,7 @@ protected:
 protected:
 
 	ColorArray hover_selection_colors_; // colors for hover & selection
+	ColorArray flagging_colors_; // colors for flagging
 
 	// Declare tools
 	CameraTool camera_tool;
@@ -107,11 +109,14 @@ protected:
 	bool is_loading = false;
 
 	bool load_step = false;
+	float size_factor = 0.2;
 	char * gmsh_path = "gmsh";
 
 	// TODO move to gui_base
 	bool show_grid_ = true;
 	bool show_axes_ = true;
+
+	bool show_features = true;
 
 
 

@@ -41,6 +41,10 @@ namespace um_bindings {
 		return he_from_elf[e + lf * 12];
 	}
 
+	// static constexpr int he_from_facet(GEO::index_t f, int n_verts_per_facet) {
+		
+	// }
+
 	static int um_facet_index_from_geo_facet_index(GEO::index_t f, int n_facet_per_cell) {
 		// In GEO 8 facets per cell
 		int c_idx = f / 8;
@@ -65,6 +69,10 @@ namespace um_bindings {
 
 	static GEO::vec3 geo_vec(UM::vec3 v) {
 		return GEO::vec3(v.x, v.y, v.z);
+	}
+
+	static UM::vec3 um_vec(GEO::vec3 v) {
+		return {v.x, v.y, v.z};
 	}
 
 	template<typename T>

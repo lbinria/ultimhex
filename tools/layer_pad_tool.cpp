@@ -166,7 +166,7 @@ void LayerPadTool::hover_callback(double x, double y, int source) {
 
 		Volume::Cell um_c(ctx.hex, ctx.hovered_cell);
 		
-		Volume::Halfedge hovered_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.hovered_edge, ctx.hovered_lfacet)));
+		Volume::Halfedge hovered_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.hovered_edge, ctx.hovered_cell_lfacet)));
 		
 		if (hovered_he.active()) {
 
@@ -208,7 +208,7 @@ void LayerPadTool::validate_callback() {
 	CellFacetAttribute<bool> pad_face(ctx.hex);
 
 	Volume::Cell um_c(ctx.hex, ctx.selected_cell);
-	Volume::Halfedge start_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.selected_edge, ctx.selected_lfacet)));
+	Volume::Halfedge start_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.selected_edge, ctx.selected_cell_lfacet)));
 
 	loop_cut(ctx.hex, start_he, [&](UM::Volume::Facet &f) {
 		pad_face[f] = true;

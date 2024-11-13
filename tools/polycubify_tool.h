@@ -26,10 +26,10 @@ struct PolycubifyTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		paint_value = -1;
+		nhex_wanted = 10000;
 	}
 
-	int paint_value = -1;
+	int nhex_wanted = 10000;
 
 
 };

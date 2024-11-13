@@ -26,7 +26,7 @@ void HoverTool::draw_viewer_properties() {
 void HoverTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	if (ctx.show_hovered_cell_facet_overlay_) {
 		if (ctx.is_cell_hovered() && ctx.is_cell_facet_hovered()) {
-			gl_draw::draw_cell_facet_overlay(ctx.mesh_, ctx.hovered_cell, ctx.hovered_lfacet, colorMapInfo, 0.0, ctx.overlay_thickness);	
+			gl_draw::draw_cell_facet_overlay(ctx.mesh_, ctx.hovered_cell, ctx.hovered_cell_lfacet, colorMapInfo, 0.0, ctx.overlay_thickness);	
 		}
 	}
 	// Cell
@@ -36,7 +36,7 @@ void HoverTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::S
 		}
 	}
 	if (ctx.is_cell_selected() && ctx.is_cell_lfacet_selected()) {
-		gl_draw::draw_cell_facet_overlay(ctx.mesh_, ctx.selected_cell, ctx.selected_lfacet, colorMapInfo, 0.5);
+		gl_draw::draw_cell_facet_overlay(ctx.mesh_, ctx.selected_cell, ctx.selected_cell_lfacet, colorMapInfo, 0.5);
 	}
 	if (ctx.is_cell_selected()) {
 		gl_draw::draw_cell_overlay(ctx.mesh_, ctx.selected_cell, colorMapInfo, 0.5);

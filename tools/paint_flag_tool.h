@@ -27,9 +27,18 @@ struct PaintFlagTool : public Tool {
 
 	void clear() override {
 		paint_value = -1;
+		current_mode = 0;
+		facet_by_features.clear();
+		facet_by_color.clear();
 	}
 
+	const char * modes[2] = { "Paint", "Bucket" };
+	int current_mode = 0;
 	int paint_value = -1;
+
+	std::vector<int> facet_by_features;
+	std::vector<int> facet_by_color;
+
 
 
 };

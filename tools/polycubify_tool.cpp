@@ -7,7 +7,8 @@
 #include "../gl_draw.h"
 
 bool PolycubifyTool::draw_object_properties() {
-	int nhex_wanted = 3000;
+
+	ImGui::InputInt("Nb hex", &nhex_wanted);
 
 	if (ImGui::Button("Polycubify !")) {
 

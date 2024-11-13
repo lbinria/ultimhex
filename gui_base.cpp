@@ -250,20 +250,30 @@ std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet2(GEO::v
 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
 }
 
+// TODO improve by breaking loop when dist is less than a given threshold
 std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
 	// Search if point is on facet
 	double min_dist = std::numeric_limits<double>().max();
 	index_t f_idx = NO_FACET;
 	index_t lf_idx = NO_FACET;
 
+    
 	for (index_t lf = 0; lf < mesh_.cells.nb_facets(c_idx); lf++) {
+
+        int nb_verts = mesh_.cells.facet_nb_vertices(c_idx, lf);
 
 		auto a = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 0));
 		auto b = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 1));
 		auto c = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 2));
-		auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 3));
+        
+        auto bary = a + b + c;
 
-		auto bary = (a + b + c + d) / 4.;
+        for (int i = 3; i < nb_verts; i++) {
+		    auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, i));
+            bary += d;
+        }
+
+		bary /= nb_verts;
 
 		auto n = normalize(cross(b - a, c - b));
 		double dist = dot(p0 - a, n);
@@ -276,10 +286,44 @@ std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::ve
 			f_idx = mesh_.cells.facet(c_idx, lf);
 			lf_idx = lf;
 		}
+
+        if (dist < 1e-4)
+            break;
 	}
 
 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
 }
+
+// std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
+// 	// Search if point is on facet
+// 	double min_dist = std::numeric_limits<double>().max();
+// 	index_t f_idx = NO_FACET;
+// 	index_t lf_idx = NO_FACET;
+
+// 	for (index_t lf = 0; lf < mesh_.cells.nb_facets(c_idx); lf++) {
+
+// 		auto a = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 0));
+// 		auto b = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 1));
+// 		auto c = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 2));
+// 		auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 3));
+
+// 		auto bary = (a + b + c + d) / 4.;
+
+// 		auto n = normalize(cross(b - a, c - b));
+// 		double dist = dot(p0 - a, n);
+		
+// 		if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-4)
+// 			continue;
+
+// 		if (dist < min_dist) {
+// 			min_dist = dist;
+// 			f_idx = mesh_.cells.facet(c_idx, lf);
+// 			lf_idx = lf;
+// 		}
+// 	}
+
+// 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
+// }
 
 void SimpleMeshApplicationExt::init_rgba_colormap(const std::string& name, int width, int height, unsigned char * data) {
     // like SimpleApplication::init_colormap() but without XPM data, just an u8 array of RGBA values

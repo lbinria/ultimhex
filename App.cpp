@@ -41,6 +41,17 @@ App::App(const std::string name) :
 		{1.f,0.3f,0.6f, 1.f}, // pink hover
 		{0.95f,0.2f,0.0f, 1.f}  // red select
 	}),
+	// 255 128 128
+	//
+	flagging_colors_({
+		{0.5f, 0.5f, 0.5f, 1.0f},
+		{1.f, 0.6f, 0.6f, 1.0f},
+		{0.6f, 1.0f, 0.6f, 1.0f},
+		{0.6f, 0.6f, 1.0f, 1.0f},
+		{0.8f, 0.16f, 0.16f, 1.0f},
+		{0.16f, 0.8f, 0.16f, 1.0f},
+		{0.16f, 0.16f, 0.8f, 1.0f}
+	}),
 	camera_tool(context_),
 	hover_tool(context_),
 	layer_pad_tool(context_),
@@ -143,6 +154,20 @@ void App::draw_scene() {
 		gl_draw::draw_arrow(p, (p + dir * 0.05), 0.01, 8, 0.75, GEO::vec4f(1,0,0,1));
 	}
 
+	if (show_features) {
+		glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(0., 0., 1., 1.).data());
+		glupBegin(GLUP_LINES);
+		for (int e = 0; e < mesh_.edges.nb(); e++) {
+			auto p0 = mesh_.vertices.point(mesh_.edges.vertex(e, 0));
+			auto p1 = mesh_.vertices.point(mesh_.edges.vertex(e, 1));
+			
+
+			glupPrivateVertex3dv(p0.data());
+			glupPrivateVertex3dv(p1.data());
+		}
+		glupEnd();
+	}
+
 }
 
 void App::draw_gui() {
@@ -168,7 +193,7 @@ void App::draw_viewer_properties() {
 		{
 
 			// bool volume;
-			float size_factor = 1.0;
+			
 			ImGui::InputFloat("Mesh size factor", &size_factor);
 			// ImGui::Checkbox("tetrahedrize ?", &volume);
 
@@ -181,7 +206,7 @@ void App::draw_viewer_properties() {
 				if (conf_file.is_open()) { 
 					// std::string mesh_type = volume ? "3" : "2";
 					std::string mesh_type = "3";
-					conf_file << "General.Terminal = 1;\nMesh.MeshSizeFactor = " + std::to_string(size_factor) + ";\nMesh.AngleToleranceFacetOverlap = 0.01;\nMesh " + mesh_type + ";\nSave \"" + out_filename + "\";";
+					conf_file << "General.Terminal = 1;\nMesh.MeshSizeFactor = " + std::to_string(size_factor) + ";\nMesh.AngleToleranceFacetOverlap = 0.02;\nMesh " + mesh_type + ";\nSave \"" + out_filename + "\";";
 					conf_file.close();
 				} else {
 					std::cout << "Unable to write file: conf.geo at the Graphite root directory." << std::endl;
@@ -208,10 +233,9 @@ void App::draw_viewer_properties() {
 				normalize_mesh();
 
 				// Init UM tet from GEO mesh
-				if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
-					um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
-					context_.tet.connect();
-				}
+				context_.mesh_metadata.cell_type = MESH_TET;
+				um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+				context_.tet.connect();
 
 				is_loading = false;
 
@@ -243,6 +267,7 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show axes", &show_axes_);
 	ImGui::Separator();
 	ImGui::Checkbox("Show vertices", &show_vertices_);
+	ImGui::Checkbox("Show features", &show_features);
 	ImGui::Checkbox("Show surface", &show_surface_);
 	ImGui::Checkbox("Show volume", &show_volume_);
 
@@ -256,6 +281,7 @@ void App::draw_viewer_properties() {
 void App::GL_initialize() {
     SimpleMeshApplicationExt::GL_initialize();
 	init_rgba_colormap("hover_selection", 2, 1, hover_selection_colors_.as_chars());
+	init_rgba_colormap("flagging", 7, 1, flagging_colors_.as_chars());
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
 }
 
@@ -315,16 +341,16 @@ void App::cursor_pos_callback(double x, double y, int source) {
 
 	// Try to pick cell
 	context_.hovered_cell = pick(MESH_CELLS);
+	context_.hovered_facet = pick(MESH_FACETS);
 
 	// If a cell is hovered, try to pick cell edge / cell facet 
-	// TODO mesh_metadata.cell_type == MESH_HEX is a quick fix, I should modfy pickup_cell_facet that just hold QUAD !
-	if (context_.is_cell_hovered() && context_.mesh_metadata.cell_type == MESH_HEX) {
+	if (context_.is_cell_hovered()) {
 		index_t e_idx = pickup_cell_edge(picked_point_, context_.hovered_cell);
-		auto [f_idx, lf_idx] = pickup_cell_facet(picked_point_, context_.hovered_cell);
-
 		context_.hovered_edge = e_idx;
-		context_.hovered_facet = f_idx;
-		context_.hovered_lfacet = lf_idx;
+
+		auto [f_idx, lf_idx] = pickup_cell_facet(picked_point_, context_.hovered_cell);
+		context_.hovered_cell_facet = f_idx;
+		context_.hovered_cell_lfacet = lf_idx;
 	}
 
 	tools[context_.gui_mode]->hover_callback(x, y, source);
@@ -352,7 +378,8 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		context_.selected_vertex = context_.hovered_vertex;
 		context_.selected_edge = context_.hovered_edge;
 		context_.selected_facet = context_.hovered_facet;
-		context_.selected_lfacet = context_.hovered_lfacet;
+		context_.selected_cell_facet = context_.hovered_cell_facet;
+		context_.selected_cell_lfacet = context_.hovered_cell_lfacet;
 		context_.selected_cell = context_.hovered_cell;
 	}
 
@@ -464,8 +491,14 @@ bool App::load(const std::string& filename) {
 	normalize_mesh();
 
 	// Init UM tet from GEO mesh
-	um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
-	context_.tet.connect();
+	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
+		um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+		context_.tet.connect();
+	}
+	else if (context_.mesh_metadata.cell_type == GEO::MESH_HEX) {
+		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
+		context_.hex.connect();
+	}
 
 	is_loading = false;
 
@@ -496,9 +529,10 @@ void App::draw_object_properties() {
 	ImGui::Text("Selected tool: %s", tools[context_.gui_mode]->get_name().c_str());
 	ImGui::Text("Hovered vertex: %i", context_.hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", context_.hovered_edge);
-	ImGui::Text("Hovered cell facet: %i", context_.hovered_facet);
-	ImGui::Text("Hovered cell facet [UM]: %i", um_bindings::um_facet_index_from_geo_facet_index(context_.hovered_facet, n_facet_per_cell));
-	ImGui::Text("Hovered cell local facet: %i", context_.hovered_lfacet);
+	ImGui::Text("Hovered facet: %i", context_.hovered_facet);
+	ImGui::Text("Hovered cell facet: %i", context_.hovered_cell_facet);
+	ImGui::Text("Hovered cell facet [UM]: %i", um_bindings::um_facet_index_from_geo_facet_index(context_.hovered_cell_facet, n_facet_per_cell));
+	ImGui::Text("Hovered cell local facet: %i", context_.hovered_cell_lfacet);
 	ImGui::Text("Hovered cell: %i", context_.hovered_cell);
 
 	// ImGui::Text("Hen: %i", he_n);
@@ -539,7 +573,7 @@ void App::labeling_visu_mode_transition() {
 	show_surface_ = true;
 	show_hexes_ = true;
 	
-	current_colormap_index_ = COLORMAP_RAINBOW;
+	current_colormap_index_ = COLORMAP_FLAGGING;
 	attribute_ = "facets.flag";
 	attribute_subelements_ = MESH_FACETS;
 	attribute_name_ = "flag";
