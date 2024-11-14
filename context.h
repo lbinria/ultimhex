@@ -29,11 +29,23 @@ enum GUIMode {
 };
 
 struct ViewBinding {
+
 	bool &show_attributes_;
 	bool &show_vertices_;
 	bool &show_volume_;
 	bool &show_surface_;
+
 	bool &show_hexes_;
+
+	enum Mode {
+		None,
+		Surface,
+		Volume
+	};
+
+	const char * modes[3] = { "None", "Surface", "Volume" };
+	int current_mode = Surface;
+
 
 	index_t &current_colormap_index_;
 	std::string &attribute_;
@@ -42,6 +54,25 @@ struct ViewBinding {
 	float &attribute_min_;
 	float &attribute_max_;
 	bool &lighting_;
+
+	void change_mode(Mode mode) {
+		current_mode = mode;
+		if (mode == ViewBinding::Mode::Surface) {
+			show_surface_ = true;
+			show_volume_ = false;
+		} else if (mode == ViewBinding::Mode::Volume) {
+			show_surface_ = false;
+			show_volume_ = true;
+		} else {
+			show_surface_ = false;
+			show_volume_ = false;
+		}
+	}
+
+	void change_mode(int i) {
+		change_mode((ViewBinding::Mode)i);
+	}
+
 };
 
 struct Context {

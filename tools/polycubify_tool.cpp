@@ -57,8 +57,7 @@ bool PolycubifyTool::draw_object_properties() {
 
 		// View
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-		ctx.view.show_surface_ = false;
-		ctx.view.show_volume_ = true;
+		ctx.view.change_mode(ViewBinding::Mode::Volume);
 
 		return true;
 	}

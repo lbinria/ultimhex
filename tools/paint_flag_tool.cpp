@@ -43,8 +43,7 @@ void PaintFlagTool::init() {
 	um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
 	um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, tri_flag.ptr, "flag", ctx.mesh_);
 
-	ctx.view.show_surface_ = true;
-	ctx.view.show_volume_ = false;
+	ctx.view.change_mode(ViewBinding::Mode::Surface);
 }
 
 bool PaintFlagTool::draw_object_properties() {
@@ -113,8 +112,7 @@ bool PaintFlagTool::draw_object_properties() {
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, tri_flag.ptr, "flag", ctx.mesh_);
 
-		ctx.view.show_surface_ = true;
-		ctx.view.show_volume_ = false;
+		ctx.view.change_mode(ViewBinding::Mode::Surface);
 	}
 
 	// Compute all flags of current mesh in naive mode
@@ -150,8 +148,7 @@ bool PaintFlagTool::draw_object_properties() {
 		write_by_extension(ctx.mesh_metadata.filename, ctx.tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
 		ctx.mesh_metadata.save();
 
-		ctx.view.show_surface_ = true;
-		ctx.view.show_volume_ = false;
+		ctx.view.change_mode(ViewBinding::Mode::Surface);
 	}
 
 	// Paint mode combo box selection

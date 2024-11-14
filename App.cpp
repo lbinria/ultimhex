@@ -265,14 +265,26 @@ void App::draw_viewer_properties() {
 
 	ImGui::Checkbox("Show grid", &show_grid_);
 	ImGui::Checkbox("Show axes", &show_axes_);
+	ImGui::Checkbox("Show picked point", &context_.show_last_picked_point_);
 	ImGui::Separator();
 	ImGui::Checkbox("Show vertices", &show_vertices_);
 	ImGui::Checkbox("Show features", &show_features);
-	ImGui::Checkbox("Show surface", &show_surface_);
-	ImGui::Checkbox("Show volume", &show_volume_);
 
-	ImGui::Separator();
-	ImGui::Checkbox("Show picked point", &context_.show_last_picked_point_);
+	// ImGui::Checkbox("Show surface", &show_surface_);
+	// ImGui::Checkbox("Show volume", &show_volume_);
+	ImGui::TextUnformatted("View mode");
+	for (int i = 0; i < IM_ARRAYSIZE(context_.view.modes); i++)
+	{
+		bool isSelected = (context_.view.current_mode == i);
+		if (ImGui::Selectable(context_.view.modes[i], isSelected))
+		{
+			context_.view.change_mode(i);
+		}
+
+		if (isSelected)
+			ImGui::SetItemDefaultFocus();
+	}
+
 	ImGui::Separator();
 
 	tools[context_.gui_mode]->draw_viewer_properties();
@@ -332,6 +344,8 @@ std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetA
 	return flag_dirs;
 }
 
+
+
 void App::cursor_pos_callback(double x, double y, int source) {
 	SimpleMeshApplicationExt::cursor_pos_callback(x, y, source);
 
@@ -339,12 +353,18 @@ void App::cursor_pos_callback(double x, double y, int source) {
 	if (context_.gui_mode == Camera || is_loading)
 		return;
 
+	if ((UM::vec2{x,y} - last_mouse_pos).norm2() < 9)
+		return;
+
 	// Try to pick cell
 	context_.hovered_cell = pick(MESH_CELLS);
-	context_.hovered_facet = pick(MESH_FACETS);
+
+	// Get facet idx only when surface is displayed
+	if (context_.view.current_mode == ViewBinding::Mode::Surface)
+		context_.hovered_facet = pick(MESH_FACETS);
 
 	// If a cell is hovered, try to pick cell edge / cell facet 
-	if (context_.is_cell_hovered()) {
+	if (context_.view.current_mode == ViewBinding::Mode::Volume && context_.is_cell_hovered()) {
 		index_t e_idx = pickup_cell_edge(picked_point_, context_.hovered_cell);
 		context_.hovered_edge = e_idx;
 
@@ -354,6 +374,8 @@ void App::cursor_pos_callback(double x, double y, int source) {
 	}
 
 	tools[context_.gui_mode]->hover_callback(x, y, source);
+
+	last_mouse_pos = {x, y};
 }
 
 void App::mouse_button_callback(int button, int action, int mods, int source) {
@@ -494,10 +516,12 @@ bool App::load(const std::string& filename) {
 	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
 		um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
 		context_.tet.connect();
+		context_.view.change_mode(ViewBinding::Mode::Surface);
 	}
 	else if (context_.mesh_metadata.cell_type == GEO::MESH_HEX) {
 		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
 		context_.hex.connect();
+		context_.view.change_mode(ViewBinding::Mode::Volume);
 	}
 
 	is_loading = false;
@@ -569,8 +593,8 @@ void App::labeling_visu_mode_transition() {
 
 	show_attributes_ = true;
     show_vertices_ = false;
-	show_volume_ = true;
-	show_surface_ = true;
+	// show_volume_ = true;
+	// show_surface_ = true;
 	show_hexes_ = true;
 	
 	current_colormap_index_ = COLORMAP_FLAGGING;

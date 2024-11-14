@@ -353,12 +353,10 @@ void BlocPadTool::switch_view(bool to_wireframe) {
 	if (to_wireframe) {
 		// Extract wireframe and hide volume + surface
 		wireframe = extract_wireframe(ctx.hex);
-		ctx.view.show_volume_ = false;
-		ctx.view.show_surface_ = false;
+		ctx.view.change_mode(ViewBinding::Mode::None);
 	} else {
 		wireframe.clear();
-		ctx.view.show_volume_ = true;
-		ctx.view.show_surface_ = false;
+		ctx.view.change_mode(ViewBinding::Mode::Volume);
 	}
 }
 
