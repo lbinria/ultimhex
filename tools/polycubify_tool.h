@@ -29,6 +29,8 @@ struct PolycubifyTool : public Tool {
 		nhex_wanted = 10000;
 	}
 
+	bool check_flag_validity();
+
 	int nhex_wanted = 10000;
 
 

@@ -12,6 +12,8 @@ struct PaintFlagTool : public Tool {
 
 	std::string get_name() { return "Flag painting"; }
 
+	void init();
+
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
 	void draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) override; 
@@ -26,15 +28,34 @@ struct PaintFlagTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		paint_value = -1;
-		current_mode = 0;
+		value = -1;
+		current_mode = Facet;
+		current_algo = None;
 		facet_by_features.clear();
 		facet_by_color.clear();
+		for (int i = 0; i < 3; i++)
+			naive_constraints[i] = true;
 	}
 
-	const char * modes[2] = { "Paint", "Bucket" };
-	int current_mode = 0;
-	int paint_value = -1;
+	void paint_bucket();
+	void attribute_transfert();
+
+	enum PaintMode {
+		Facet,
+		Charts
+	};
+	enum PaintAlgo {
+		None,
+		Naive
+	};
+
+	const char * modes[2] = { "Paint facets", "Paint charts" };
+	const char * algos[2] = { "None", "Naive" };
+	int current_mode = Facet;
+	int current_algo = None;
+	int value = -1;
+
+	bool naive_constraints[3] = {true, true, true};
 
 	std::vector<int> facet_by_features;
 	std::vector<int> facet_by_color;

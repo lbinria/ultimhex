@@ -10,7 +10,21 @@ bool PolycubifyTool::draw_object_properties() {
 
 	ImGui::InputInt("Nb hex", &nhex_wanted);
 
+	if (ImGui::BeginPopupModal("Mesh validity failed", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::TextUnformatted("This action requires all mesh faces to be flagged.");
+		if (ImGui::Button("Close", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
+
 	if (ImGui::Button("Polycubify !")) {
+
+		if (!check_flag_validity()) {
+			ImGui::OpenPopup("Mesh validity failed");
+			return false;
+		}
 
 		// Get UM cell facet attribute tet_flag from GEO mesh
 		UM::CellFacetAttribute<int> tet_flag(ctx.tet, -1);
@@ -48,7 +62,24 @@ bool PolycubifyTool::draw_object_properties() {
 
 		return true;
 	}
+
+
+
 	return false;
+}
+
+bool PolycubifyTool::check_flag_validity() {
+	// Check that all faces were flagged
+	GEO::Attribute<GEO::signed_index_t> flag(
+		ctx.mesh_.facets.attributes(), "flag"
+	);
+
+	for (auto f : ctx.mesh_.facets) {
+		if (flag[f] < 0)
+			return false;
+	}
+
+	return true;
 }
 
 void PolycubifyTool::draw_viewer_properties() {
