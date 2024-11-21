@@ -31,6 +31,7 @@ struct PaintFlagTool : public Tool {
 		value = -1;
 		current_mode = Facet;
 		current_algo = None;
+		smudge_ref_value = -1;
 		facet_by_features.clear();
 		facet_by_color.clear();
 		for (int i = 0; i < 3; i++)
@@ -46,14 +47,17 @@ struct PaintFlagTool : public Tool {
 	};
 	enum PaintAlgo {
 		None,
+		Smudge,
 		Naive
 	};
 
 	const char * modes[2] = { "Paint facets", "Paint charts" };
-	const char * algos[2] = { "None", "Naive" };
+	const char * algos[3] = { "None", "Smudge", "Naive" };
 	int current_mode = Facet;
 	int current_algo = None;
 	int value = -1;
+
+	int smudge_ref_value = -1;
 
 	bool naive_constraints[3] = {true, true, true};
 

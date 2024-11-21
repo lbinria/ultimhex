@@ -19,13 +19,14 @@
 #include <optional>
 
 enum GUIMode {
-	Camera = 0,
-	Hover = 1,
-	Painting = 2,
-	LayerPadding = 3,
-	BlocPadding = 4,
-	NewBlocPadding = 5,
-	Polycubify = 6
+	Filter = 0,
+	Camera = 1,
+	Hover = 2,
+	Painting = 3,
+	LayerPadding = 4,
+	BlocPadding = 5,
+	NewBlocPadding = 6,
+	Polycubify = 7
 };
 
 struct ViewBinding {

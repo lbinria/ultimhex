@@ -27,11 +27,24 @@ struct PolycubifyTool : public Tool {
 
 	void clear() override {
 		nhex_wanted = 10000;
+		current_algo = Nicostuff;
 	}
 
 	bool check_flag_validity();
 
+	void run_nicostuff();
+	void run_robust_polycube();
+
+	enum PolycubeAlgo {
+		Nicostuff,
+		RobustPolycube
+	};
+
+	const char * algos[2] = { "Nicostuff", "RobustPolycube" };
+	int current_algo = Nicostuff;
+
 	int nhex_wanted = 10000;
+
 
 
 };

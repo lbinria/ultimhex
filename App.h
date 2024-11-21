@@ -17,6 +17,7 @@
 #include "mesh_metadata.h"
 
 // Tools
+#include <filter_tool.h>
 #include <camera_tool.h>
 #include <hover_tool.h>
 #include <new_bloc_pad_tool.h>
@@ -82,6 +83,7 @@ protected:
 	ColorArray flagging_colors_; // colors for flagging
 
 	// Declare tools
+	FilterTool filter_tool;
 	CameraTool camera_tool;
 	HoverTool hover_tool;
 	PaintFlagTool paint_flag_tool;
@@ -91,7 +93,8 @@ protected:
 	PolycubifyTool polycubify_tool;
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[7] = {
+	std::unique_ptr<Tool> tools[8] = {
+		std::make_unique<FilterTool>(filter_tool), 
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 

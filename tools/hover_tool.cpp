@@ -18,6 +18,9 @@ bool HoverTool::draw_object_properties() {
 }
 
 void HoverTool::draw_viewer_properties() {
+	if (ctx.gui_mode != GUIMode::Hover && ctx.switch_mode != GUIMode::Hover)
+		return;
+
 	ImGui::Checkbox("Show cell overlay", &ctx.show_hovered_cell_overlay_);
 	ImGui::Checkbox("Show cell facet overlay", &ctx.show_hovered_cell_facet_overlay_);
 	ImGui::SliderFloat("Thickness", &ctx.overlay_thickness, 1., 5.);

@@ -52,6 +52,7 @@ App::App(const std::string name) :
 		{0.16f, 0.8f, 0.16f, 1.0f},
 		{0.16f, 0.16f, 0.8f, 1.0f}
 	}),
+	filter_tool(context_),
 	camera_tool(context_),
 	hover_tool(context_),
 	layer_pad_tool(context_),
@@ -79,13 +80,19 @@ void App::normalize_mesh() {
 	get_bbox(mesh_, xyz_min, xyz_max, false);
 	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
 	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
-	double max_coord = std::max(std::max(xyz_max[1], xyz_max[2]), xyz_max[0]);
+	GEO::vec3 bb = bb_max - bb_min;
+	double max_coord = std::max(std::max(bb.x, bb.y), bb.z);
 	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
 	std::cout << "max coord: " << max_coord << std::endl;
 
 	// normalize
 	for (int v = 0; v < mesh_.vertices.nb(); v++) {
-		mesh_.vertices.point(v) /= max_coord; 
+		// mesh_.vertices.point(v) -= bb_min - (bb_min + bb_max) * .5;
+		mesh_.vertices.point(v) -= bb_min ;
+		mesh_.vertices.point(v) /= max_coord;
+		// mesh_.vertices.point(v) += {.5,.5,.5};
+
+		// mesh_.vertices.point(v) = ((mesh_.vertices.point(v) - bb_min) / max_coord) + GEO::vec3{.5,.5,.5};
 		// mesh_.vertices.point(v) *= 2; 
 	}
 }
@@ -261,8 +268,6 @@ void App::draw_viewer_properties() {
 		}
 	}
 
-
-
 	ImGui::Checkbox("Show grid", &show_grid_);
 	ImGui::Checkbox("Show axes", &show_axes_);
 	ImGui::Checkbox("Show picked point", &context_.show_last_picked_point_);
@@ -287,7 +292,10 @@ void App::draw_viewer_properties() {
 
 	ImGui::Separator();
 
-	tools[context_.gui_mode]->draw_viewer_properties();
+	// tools[context_.gui_mode]->draw_viewer_properties();
+	for (auto &tool : tools) {
+		tool->draw_viewer_properties();
+	}
 }
 
 void App::GL_initialize() {
@@ -510,7 +518,12 @@ bool App::load(const std::string& filename) {
 	
 	reset();
 
+	// TODO bad ! must place camera correctly
 	normalize_mesh();
+
+
+	// object_translation_ = (vmin + vmax) * .5;
+	
 
 	// Init UM tet from GEO mesh
 	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
