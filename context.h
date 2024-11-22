@@ -19,9 +19,9 @@
 #include <optional>
 
 enum GUIMode {
-	Filter = 0,
-	Camera = 1,
-	Hover = 2,
+	Camera = 0,
+	Hover = 1,
+	Filter = 2,
 	Painting = 3,
 	LayerPadding = 4,
 	BlocPadding = 5,

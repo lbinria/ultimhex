@@ -83,9 +83,9 @@ protected:
 	ColorArray flagging_colors_; // colors for flagging
 
 	// Declare tools
-	FilterTool filter_tool;
 	CameraTool camera_tool;
 	HoverTool hover_tool;
+	FilterTool filter_tool;
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
@@ -94,9 +94,9 @@ protected:
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
 	std::unique_ptr<Tool> tools[8] = {
-		std::make_unique<FilterTool>(filter_tool), 
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
+		std::make_unique<FilterTool>(filter_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
 		std::make_unique<LayerPadTool>(layer_pad_tool), 
 		std::make_unique<BlocPadTool>(bloc_pad_tool),

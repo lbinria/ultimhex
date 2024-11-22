@@ -64,6 +64,7 @@ struct PaintFlagTool : public Tool {
 	std::vector<int> facet_by_features;
 	std::vector<int> facet_by_color;
 
+	bool is_init = false;
 
 
 };

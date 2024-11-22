@@ -7,7 +7,7 @@
 #include "../gl_draw.h"
 
 bool HoverTool::draw_object_properties() {
-	if(ImGui::Button("Hover")) {
+	if(ImGui::Button("Hover", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 		ctx.gui_mode = Hover;
 		return true;
 	}

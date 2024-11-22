@@ -171,7 +171,7 @@ void PolycubifyTool::run_robust_polycube() {
 
 bool PolycubifyTool::draw_object_properties() {
 
-	if (ImGui::CollapsingHeader("Polycubify")) {
+	// if (ImGui::CollapsingHeader("Polycubify")) {
 
 		// Paint algo combo box selection
 		ImGui::Text("Algorithm");
@@ -226,7 +226,7 @@ bool PolycubifyTool::draw_object_properties() {
 			return true;
 		}
 
-	}
+	// }
 
 	return false;
 }

@@ -51,9 +51,13 @@ bool PaintFlagTool::draw_object_properties() {
 	// auto t = convert_to_ImTextureID(colormaps_[current_colormap_index_].texture);
 	// ImGui::ColorButton("+X", ImVec4(1,0,0,1));
 
-	if (ImGui::CollapsingHeader("Paint flag")) {
+	// if (ImGui::CollapsingHeader("Paint flag")) {
 
-		if(ctx.gui_mode != Painting && ctx.switch_mode != Painting && ImGui::Button("Init flag painting")) {
+		if (is_init && ctx.gui_mode != Painting && ctx.switch_mode != Painting && ImGui::Button("Paint !")) {
+			ctx.gui_mode = Painting;
+		}
+
+		if(!is_init && ImGui::Button("Init flag painting")) {
 
 			init();
 
@@ -97,10 +101,11 @@ bool PaintFlagTool::draw_object_properties() {
 			ctx.mesh_metadata.attributes.push_back(MeshMetadata::MetadataAttribute{ .name = "tet_flag", .type = "int", .where = MESH_CELL_FACETS });
 
 			ctx.gui_mode = Painting;
+			is_init = true;
 		}
 
-		// Only display paint menu when in painting mode
-		if (ctx.gui_mode != Painting && ctx.switch_mode != Painting)
+		// Only display paint menu when painting was initialized
+		if (!is_init || ctx.gui_mode != Painting && ctx.switch_mode != Painting)
 			return false;
 
 		// Remove all flags of current mesh
@@ -311,7 +316,7 @@ bool PaintFlagTool::draw_object_properties() {
 		// 	flag_dirs = compute_patches(tet_bound.tri, tri_flag);
 		// }
 
-	}
+	// }
 
 	ImGui::Separator();
 

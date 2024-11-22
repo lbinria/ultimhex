@@ -7,7 +7,8 @@
 #include "../gl_draw.h"
 
 bool CameraTool::draw_object_properties() {
-	if(ImGui::Button("Camera")) {
+	float buttonWidth = ImGui::GetContentRegionAvail().x;
+	if(ImGui::Button("Camera", ImVec2(buttonWidth, 0))) {
 		ctx.gui_mode = Camera;
 		return true;
 	}

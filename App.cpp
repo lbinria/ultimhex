@@ -52,9 +52,9 @@ App::App(const std::string name) :
 		{0.16f, 0.8f, 0.16f, 1.0f},
 		{0.16f, 0.16f, 0.8f, 1.0f}
 	}),
-	filter_tool(context_),
 	camera_tool(context_),
 	hover_tool(context_),
+	filter_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
 	new_bloc_pad_tool(context_),
@@ -572,14 +572,12 @@ void App::draw_object_properties() {
 	ImGui::Text("Hovered cell local facet: %i", context_.hovered_cell_lfacet);
 	ImGui::Text("Hovered cell: %i", context_.hovered_cell);
 
-	// ImGui::Text("Hen: %i", he_n);
-	// if(ImGui::Button("Next!")) {
-	// 	he_n++;
-	// }
-
 	for (auto &tool : tools) {
 		if (tool->is_compatible()) {
-			tool->draw_object_properties();
+			
+			if (tool->get_name() == "Camera" || tool->get_name() == "Hover" || ImGui::CollapsingHeader(tool->get_name().c_str())) {
+				tool->draw_object_properties();
+			}
 		}
 	}
 
