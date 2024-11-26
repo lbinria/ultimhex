@@ -210,11 +210,24 @@ void LayerPadTool::validate_callback() {
 	Volume::Cell um_c(ctx.hex, ctx.selected_cell);
 	Volume::Halfedge start_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.selected_edge, ctx.selected_cell_lfacet)));
 
+	// Measure time
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
 	loop_cut(ctx.hex, start_he, [&](UM::Volume::Facet &f) {
 		pad_face[f] = true;
 	});
 
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Loop cut duration = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[µs]" << std::endl;
+
+	begin = std::chrono::steady_clock::now();
+
 	BenjaminAPI::pad(ctx.hex, pad_face);
+
+	end = std::chrono::steady_clock::now();
+
+	std::cout << "Padding duration = " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[µs]" << std::endl;
+
 
 	um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);

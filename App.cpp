@@ -74,12 +74,15 @@ void App::ImGui_initialize() {
     }
 }
 
+
 void App::normalize_mesh() {
 	double xyz_min[3];
 	double xyz_max[3];
 	get_bbox(mesh_, xyz_min, xyz_max, false);
 	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
 	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
+
+
 	GEO::vec3 bb = bb_max - bb_min;
 	double max_coord = std::max(std::max(bb.x, bb.y), bb.z);
 	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
@@ -96,6 +99,42 @@ void App::normalize_mesh() {
 		// mesh_.vertices.point(v) *= 2; 
 	}
 }
+
+
+// void App::normalize_mesh() {
+// 	double xyz_min[3];
+// 	double xyz_max[3];
+// 	get_bbox(mesh_, xyz_min, xyz_max, false);
+// 	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
+// 	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
+
+
+// 	GEO::vec3 bb = bb_max - bb_min;
+// 	double max_coord = std::max(std::max(bb.x, bb.y), bb.z);
+// 	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
+// 	std::cout << "max coord: " << max_coord << std::endl;
+
+// 	// normalize
+// 	auto bb_mid = (bb_max + bb_min) * .5 - bb_min;
+// 	for (int v = 0; v < mesh_.vertices.nb(); v++) {
+// 		mesh_.vertices.point(v) -= bb_min + bb_mid;
+// 	}
+
+// 	// // normalize
+// 	// for (int v = 0; v < mesh_.vertices.nb(); v++) {
+// 	// 	// mesh_.vertices.point(v) -= bb_min - (bb_min + bb_max) * .5;
+// 	// 	mesh_.vertices.point(v) -= bb_min ;
+// 	// 	mesh_.vertices.point(v) /= max_coord;
+// 	// 	// mesh_.vertices.point(v) += {.5,.5,.5};
+
+// 	// 	// mesh_.vertices.point(v) = ((mesh_.vertices.point(v) - bb_min) / max_coord) + GEO::vec3{.5,.5,.5};
+// 	// 	// mesh_.vertices.point(v) *= 2; 
+// 	// }
+
+// 	// set_region_of_interest(xyz_min[0], xyz_min[1], xyz_min[2], xyz_max[0], xyz_max[1], xyz_max[2]);
+// 	set_region_of_interest(-bb_mid.x, -bb_mid.y, -bb_mid.z, bb_mid.x, bb_mid.y, bb_mid.z);
+
+// }
 
 void App::draw_scene() {
     SimpleMeshApplicationExt::draw_scene();
@@ -118,15 +157,6 @@ void App::draw_scene() {
 
 	// PATH
 	tools[context_.gui_mode]->draw(hovered_color, selected_color, hover_selection_colormap);
-	// if (context_.gui_mode == Hover) {
-	// 	hover_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	// }
-	// if (context_.gui_mode == LayerPadding) {
-	// 	layer_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	// } 
-	// if (context_.gui_mode == BlocPadding) {
-	// 	bloc_pad_tool.draw(hovered_color, selected_color, hover_selection_colormap);
-	// }
 
 
 
@@ -414,7 +444,8 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 	}
 
 	if (action == EVENT_ACTION_UP && button == 0) {
-		tools[context_.gui_mode]->mouse_button_callback(button, action, mods, source);
+		if (tools[context_.gui_mode]->is_compatible())
+			tools[context_.gui_mode]->mouse_button_callback(button, action, mods, source);
 	}
 
 }
@@ -521,9 +552,6 @@ bool App::load(const std::string& filename) {
 	// TODO bad ! must place camera correctly
 	normalize_mesh();
 
-
-	// object_translation_ = (vmin + vmax) * .5;
-	
 
 	// Init UM tet from GEO mesh
 	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {

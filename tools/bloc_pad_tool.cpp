@@ -217,7 +217,7 @@ std::vector<UM::Segment3> extract_wireframe(Hexahedra &hex) {
 }
 
 bool BlocPadTool::draw_object_properties() {
-	if(ImGui::Button("Bloc padding")) {
+	if(ImGui::Button("Bloc selection")) {
 		ctx.gui_mode = BlocPadding;
 		return true;
 	}

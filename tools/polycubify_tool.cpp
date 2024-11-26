@@ -146,9 +146,12 @@ void PolycubifyTool::run_robust_polycube() {
 
 	// TODO below boilerplate code ! should refactor
 
-	HexBoundary hex_bound(ctx.hex);
+	// HexBoundary hex_bound(ctx.hex);
+	// // Replace current GEO mesh by UM Hex
+	// um_bindings::geo_mesh_from_hexboundary(hex_bound, ctx.mesh_);
+
 	// Replace current GEO mesh by UM Hex
-	um_bindings::geo_mesh_from_hexboundary(hex_bound, ctx.mesh_);
+	um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
 
 	// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
@@ -160,7 +163,8 @@ void PolycubifyTool::run_robust_polycube() {
 		.cell_type = GEO::MESH_HEX, 
 		.attributes = {} 
 	};
-	write_by_extension(ctx.mesh_metadata.filename, hex_bound.hex, {{}, {}, {}, {}});
+	// write_by_extension(ctx.mesh_metadata.filename, hex_bound.hex, {{}, {}, {}, {}});
+	write_by_extension(ctx.mesh_metadata.filename, ctx.hex, {{}, {}, {}, {}});
 	ctx.mesh_metadata.save();
 
 	// View

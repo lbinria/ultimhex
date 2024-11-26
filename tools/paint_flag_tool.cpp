@@ -127,6 +127,7 @@ bool PaintFlagTool::draw_object_properties() {
 
 			// Compute flag
 			algo::naive_tag(ctx.tet, tet_flag);
+			// algo::generate_naive_flagging(ctx.tet, tet_flag);
 			// Transfert flag from tet to tri for display
 			ctx.tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
 

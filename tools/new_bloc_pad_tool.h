@@ -10,7 +10,7 @@ struct NewBlocPadTool : public Tool {
 
 	NewBlocPadTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Bloc padding"; }
+	std::string get_name() { return "New Bloc padding"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;

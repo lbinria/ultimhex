@@ -97,7 +97,6 @@ namespace um_bindings {
 
 	}
 
-	// Check !
 	void geo_mesh_from_um_tet(UM::Tetrahedra &m, GEO::Mesh &m_out, bool clear) {
 		assert(m.connected());
 
