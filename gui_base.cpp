@@ -192,6 +192,54 @@ index_t SimpleMeshApplicationExt::pick(MeshElementsFlags what) {
             (index_t(buffer[3]) << 24);
 }
 
+
+std::vector<index_t> SimpleMeshApplicationExt::pick_size(MeshElementsFlags what, int size) {
+    // Memory::byte buffer[size][size][4]; // a 4-bytes buffer to read pixels
+    unsigned char buffer[size][size][4]; // a 4-bytes buffer to read pixels
+
+    // see https://github.com/BrunoLevy/geogram/discussions/88
+    // see https://github.com/BrunoLevy/geogram/pull/102
+    // based on https://github.com/BrunoLevy/GraphiteThree/blob/main/src/lib/OGF/renderer/context/rendering_context.cpp get_picked_point()
+    std::vector<index_t> picked_elements(size * size, -1);
+
+    mesh_gfx()->set_picking_mode(what); // instead of rendering colors, mesh_gfx will render indices
+    draw_scene(); // rendering
+    // read the index of the picked element using glReadPixels()
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_PACK_ROW_LENGTH, 1);
+
+    index_t x = index_t(cursor_pos_.x - size / 2), y = index_t(cursor_pos_.y); // double to integer conversion of current cursor position
+    if(x >= get_width() || y >= get_height()) { // if cursor out of the window
+        return std::vector<index_t>();
+    }
+    y = get_height()-1-y; // change Y axis orientation. glReadPixels() wants pixel coordinates from bottom-left corner
+    y -= size / 2;
+
+    glReadPixels(
+        GLint(x),GLint(y),size,size,GL_RGBA,GL_UNSIGNED_BYTE,buffer
+    );
+    
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            // decode index from pixel color
+            index_t picked_element = index_t(buffer[j][i][0])        |
+                    (index_t(buffer[j][i][1]) << 8)  |
+                    (index_t(buffer[j][i][2]) << 16) |
+                    (index_t(buffer[j][i][3]) << 24);
+
+            picked_elements[i + j * size] = picked_element;
+        }
+    }
+
+
+	// Restore default value
+	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+
+    mesh_gfx()->set_picking_mode(MESH_NONE); // go back to color rendering mode
+    
+    return picked_elements;
+}
+
 index_t SimpleMeshApplicationExt::pickup_cell_edge(GEO::vec3 p0, index_t c_idx) {
 	// Search nearest edge
 	double min_dist = std::numeric_limits<double>().max();

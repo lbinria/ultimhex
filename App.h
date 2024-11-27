@@ -45,6 +45,7 @@ public:
 protected:
 
 	void normalize_mesh();
+	void view_mesh();
 
 	void draw_scene() override;
 
@@ -89,7 +90,7 @@ protected:
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
-	NewBlocPadTool new_bloc_pad_tool;
+	LayerPad2 new_bloc_pad_tool;
 	PolycubifyTool polycubify_tool;
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
@@ -100,7 +101,7 @@ protected:
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
 		std::make_unique<LayerPadTool>(layer_pad_tool), 
 		std::make_unique<BlocPadTool>(bloc_pad_tool),
-		std::make_unique<NewBlocPadTool>(new_bloc_pad_tool),
+		std::make_unique<LayerPad2>(new_bloc_pad_tool),
 		std::make_unique<PolycubifyTool>(polycubify_tool)
 	};
 

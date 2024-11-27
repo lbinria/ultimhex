@@ -85,6 +85,8 @@ struct Context {
 	bool show_hovered_cell_facet_overlay_ = false;
 	float overlay_thickness = 3.;
 
+	bool region_selection_activated = false;
+
 	index_t hovered_vertex = NO_VERTEX;
 	index_t hovered_edge = NO_EDGE;
 	index_t hovered_facet = NO_FACET;
@@ -92,6 +94,7 @@ struct Context {
 	index_t hovered_cell_facet = NO_FACET;
 	index_t hovered_cell_lfacet = NO_FACET;
 	index_t hovered_cell = NO_CELL;
+	std::set<index_t> hovered_cells;
 
 	index_t selected_vertex = NO_VERTEX;
 	index_t selected_edge = NO_EDGE;
@@ -99,6 +102,9 @@ struct Context {
 	index_t selected_cell_facet = NO_FACET;
 	index_t selected_cell_lfacet = NO_FACET;
 	index_t selected_cell = NO_CELL;
+	std::vector<index_t> selected_cells;
+
+	int brush_size = 1;
 
 	// TODO Please refactor this !
 	bool is_cell_hovered() { return (hovered_cell != NO_CELL && hovered_cell < mesh_.cells.nb()); }
@@ -124,6 +130,10 @@ struct Context {
 		selected_cell_facet = NO_FACET;
 		selected_cell_lfacet = NO_FACET;
 		selected_cell = NO_CELL;
+
+		hovered_cells.clear();
+		selected_cells.clear();
+		brush_size = 1;
 	}
 
 	GEO::vec3 click_pos;

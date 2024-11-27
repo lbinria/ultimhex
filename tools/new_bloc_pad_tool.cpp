@@ -10,8 +10,8 @@
 
 
 
-bool NewBlocPadTool::draw_object_properties() {
-	if(ImGui::Button("New Bloc padding")) {
+bool LayerPad2::draw_object_properties() {
+	if(ImGui::Button("Layer pad 2 !")) {
 		ctx.gui_mode = NewBlocPadding;
 		return true;
 	}
@@ -19,58 +19,61 @@ bool NewBlocPadTool::draw_object_properties() {
 	return false;
 }
 
-void NewBlocPadTool::draw_viewer_properties() {}
+void LayerPad2::draw_viewer_properties() {}
 
-void NewBlocPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
+void LayerPad2::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::SimpleApplication::ColormapInfo colorMapInfo) {
 	
-	// glupDisable(GLUP_LIGHTING);
-	// glupMatrixMode(GLUP_PROJECTION_MATRIX);
-	// glupLoadIdentity();
-	// glupOrtho2D(-100,100,-100,100);
+	gl_draw::draw_path(selected_path, selected_color, false);
 
-	// glupMatrixMode(GLUP_MODELVIEW_MATRIX);
-	// glupLoadIdentity();
+}
+
+void LayerPad2::hover_callback(double x, double y, int source) {
 	
-	
-	// // glupPushMatrix();
+	if (ctx.left_mouse_pressed && ctx.hex.connected() && ctx.is_cell_hovered() && ctx.is_cell_edge_hovered() && ctx.is_cell_lfacet_hovered()) {
+		selected_path.clear();
 
-	// glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(1.f, 0.f,0.f, 0.5f).data());
-	// glupBegin(GLUP_QUADS);
-	// glupPrivateVertex2f(0,0);
-	// glupPrivateVertex2f(20,0);
-	// glupPrivateVertex2f(20,20);
-	// glupPrivateVertex2f(0,20);
+		Volume::Cell um_c(ctx.hex, ctx.hovered_cell);
+		Volume::Halfedge hovered_he(ctx.hex, um_c.halfedge(um_bindings::he_from_cell_e_lf(ctx.hovered_edge, ctx.hovered_cell_lfacet)));
+		
+		if (hovered_he.active()) {
+			auto n_he = hovered_he.next();
+			auto p_he = hovered_he.prev();
 
-	// glupEnd();
+			auto n_dir = n_he.to().pos() - n_he.from().pos();
+			auto p_dir = p_he.from().pos() - p_he.to().pos();
 
-	// // glupPopMatrix();
-	// glupEnable(GLUP_LIGHTING);
+			auto a = hovered_he.from().pos() + p_dir * 0.2;
+			auto b = hovered_he.to().pos() +  n_dir * 0.2;
 
-}
+			selected_path.push_back(a);
+			selected_path.push_back(b);
+		}
 
-void NewBlocPadTool::hover_callback(double x, double y, int source) {
-
-}
-
-void NewBlocPadTool::mouse_button_callback(int button, int action, int mods, int source) {
-	
-}
-
-void NewBlocPadTool::scroll_callback(double xoffset, double yoffset) {
+	}
 
 }
 
+void LayerPad2::mouse_button_callback(int button, int action, int mods, int source) {
 
 
-void NewBlocPadTool::validate_callback() {
 
 }
 
-bool NewBlocPadTool::is_compatible() { 
-	return ctx.mesh_metadata.cell_type == MESH_HEX;
+void LayerPad2::scroll_callback(double xoffset, double yoffset) {
+
 }
 
-void NewBlocPadTool::escape_callback() {
+
+
+void LayerPad2::validate_callback() {
+
+}
+
+bool LayerPad2::is_compatible() { 
+	return true;
+}
+
+void LayerPad2::escape_callback() {
 	// Clear tool
 	clear();
 }

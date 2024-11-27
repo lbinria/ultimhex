@@ -6,11 +6,11 @@
 #include "tool.h"
 
 
-struct NewBlocPadTool : public Tool {
+struct LayerPad2 : public Tool {
 
-	NewBlocPadTool(Context &ctx) : Tool(ctx) {}
+	LayerPad2(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "New Bloc padding"; }
+	std::string get_name() { return "Layer pad 2"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -27,7 +27,14 @@ struct NewBlocPadTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-
+		hovered_path.clear();
+		selected_path.clear();
 	}
+
+	// Path on surface mesh to display
+	std::vector<UM::vec3> hovered_path;
+	std::vector<UM::vec3> selected_path;
+
+	
 
 };

@@ -28,17 +28,35 @@ struct FilterTool : public Tool {
 
 	void clear() override {
 		mode = None;
+		current_minecraft_mode = Dig;
+		selected_cells.clear();
 	}
 
+	void reset_filters();
+
 	void filter_chart();
+	void minecraft();
 
 	enum Mode {
 		None,
-		Chart
+		Chart,
+		Minecraft,
 	};
-
 
 	Mode mode = None;
 
+	const char * minecraft_modes[2] = { "Dig", "Levelling" };
+
+	enum MinecraftMode {
+		Dig,
+		Levelling
+	};
+
+	int current_minecraft_mode = Dig;
+	
+
+
+	std::set<index_t> selected_cells;
+	
 
 };

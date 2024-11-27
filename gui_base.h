@@ -108,6 +108,7 @@ public:
     void cursor_pos_callback( double x, double y, int source ) override;
 
     index_t pick(MeshElementsFlags what);
+    std::vector<index_t> pick_size(MeshElementsFlags what, int size);
 
 	/**
 	 * Pickup a cell edge
@@ -136,4 +137,5 @@ private:
     vector<PointsGroup> points_groups_;
     vector<EdgesGroup> edges_groups_;
     Memory::byte buffer[4]; // a 4-bytes buffer to read pixels
+    
 };

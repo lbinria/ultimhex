@@ -101,40 +101,40 @@ void App::normalize_mesh() {
 }
 
 
-// void App::normalize_mesh() {
-// 	double xyz_min[3];
-// 	double xyz_max[3];
-// 	get_bbox(mesh_, xyz_min, xyz_max, false);
-// 	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
-// 	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
+void App::view_mesh() {
+	double xyz_min[3];
+	double xyz_max[3];
+	get_bbox(mesh_, xyz_min, xyz_max, false);
+	GEO::vec3 bb_min(xyz_min[0], xyz_min[1], xyz_min[2]);
+	GEO::vec3 bb_max(xyz_max[0], xyz_max[1], xyz_max[2]);
 
 
-// 	GEO::vec3 bb = bb_max - bb_min;
-// 	double max_coord = std::max(std::max(bb.x, bb.y), bb.z);
-// 	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
-// 	std::cout << "max coord: " << max_coord << std::endl;
+	GEO::vec3 bb = bb_max - bb_min;
+	double max_coord = std::max(std::max(bb.x, bb.y), bb.z);
+	std::cout << "min: " << bb_min << ", max: " << bb_max << std::endl;
+	std::cout << "max coord: " << max_coord << std::endl;
 
-// 	// normalize
-// 	auto bb_mid = (bb_max + bb_min) * .5 - bb_min;
-// 	for (int v = 0; v < mesh_.vertices.nb(); v++) {
-// 		mesh_.vertices.point(v) -= bb_min + bb_mid;
-// 	}
+	// normalize
+	auto bb_mid = (bb_max + bb_min) * .5 - bb_min;
+	for (int v = 0; v < mesh_.vertices.nb(); v++) {
+		mesh_.vertices.point(v) -= bb_min + bb_mid;
+	}
 
-// 	// // normalize
-// 	// for (int v = 0; v < mesh_.vertices.nb(); v++) {
-// 	// 	// mesh_.vertices.point(v) -= bb_min - (bb_min + bb_max) * .5;
-// 	// 	mesh_.vertices.point(v) -= bb_min ;
-// 	// 	mesh_.vertices.point(v) /= max_coord;
-// 	// 	// mesh_.vertices.point(v) += {.5,.5,.5};
+	// // normalize
+	// for (int v = 0; v < mesh_.vertices.nb(); v++) {
+	// 	// mesh_.vertices.point(v) -= bb_min - (bb_min + bb_max) * .5;
+	// 	mesh_.vertices.point(v) -= bb_min ;
+	// 	mesh_.vertices.point(v) /= max_coord;
+	// 	// mesh_.vertices.point(v) += {.5,.5,.5};
 
-// 	// 	// mesh_.vertices.point(v) = ((mesh_.vertices.point(v) - bb_min) / max_coord) + GEO::vec3{.5,.5,.5};
-// 	// 	// mesh_.vertices.point(v) *= 2; 
-// 	// }
+	// 	// mesh_.vertices.point(v) = ((mesh_.vertices.point(v) - bb_min) / max_coord) + GEO::vec3{.5,.5,.5};
+	// 	// mesh_.vertices.point(v) *= 2; 
+	// }
 
-// 	// set_region_of_interest(xyz_min[0], xyz_min[1], xyz_min[2], xyz_max[0], xyz_max[1], xyz_max[2]);
-// 	set_region_of_interest(-bb_mid.x, -bb_mid.y, -bb_mid.z, bb_mid.x, bb_mid.y, bb_mid.z);
+	// set_region_of_interest(xyz_min[0], xyz_min[1], xyz_min[2], xyz_max[0], xyz_max[1], xyz_max[2]);
+	set_region_of_interest(-bb_mid.x, -bb_mid.y, -bb_mid.z, bb_mid.x, bb_mid.y, bb_mid.z);
 
-// }
+}
 
 void App::draw_scene() {
     SimpleMeshApplicationExt::draw_scene();
@@ -397,6 +397,20 @@ void App::cursor_pos_callback(double x, double y, int source) {
 	// Try to pick cell
 	context_.hovered_cell = pick(MESH_CELLS);
 
+
+	context_.hovered_cells.clear();
+	if (context_.region_selection_activated) {
+
+		
+		auto cur_hovered_cells = pick_size(MESH_CELLS, context_.brush_size);
+		for (auto c : cur_hovered_cells) {
+			if (c <= 0 || c > mesh_.cells.nb())
+				continue;
+
+			context_.hovered_cells.insert(c);
+		}
+	}
+
 	// Get facet idx only when surface is displayed
 	if (context_.view.current_mode == ViewBinding::Mode::Surface)
 		context_.hovered_facet = pick(MESH_FACETS);
@@ -461,7 +475,7 @@ void App::scroll_callback(double xoffset, double yoffset) {
 
 void App::key_callback(int key, int scancode, int action, int mods) {
 	
-	// std::cout << "key pressed: " << key << std::endl;
+	std::cout << "key pressed: " << key << std::endl;
 
 	// Ctrl
 	if (action == EVENT_ACTION_DOWN && key == 341) {
@@ -478,6 +492,46 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 		tools[context_.gui_mode]->validate_callback();
 	} else if (key == 256 && action == EVENT_ACTION_DOWN) {
 		tools[context_.gui_mode]->escape_callback();
+	}
+
+	// Go to !
+	if (key == 71) {
+		if (context_.view.current_mode == ViewBinding::Mode::Surface) {
+			
+
+		} else if (context_.view.current_mode == ViewBinding::Mode::Volume) {
+			auto c = context_.hovered_cell;
+
+			if (c < 0 || c > mesh_.cells.nb())
+				return;
+
+			GEO::vec3 bary = {0,0,0};
+			UM::vec3 v_min{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
+			UM::vec3 v_max{std::numeric_limits<double>::min(), std::numeric_limits<double>::min(), std::numeric_limits<double>::min()};
+			auto n_verts = mesh_.cells.nb_vertices(c);
+
+			for (int lv = 0; lv < n_verts; lv++) {
+				auto v = mesh_.cells.vertex(c, lv);
+				auto p = mesh_.vertices.point(v);
+				bary += p;
+				if (p.x < v_min.x)
+					v_min.x = p.x;
+				if (p.y < v_min.y)
+					v_min.y = p.y;
+				if (p.z < v_min.z)
+					v_min.z = p.z;
+
+				if (p.x > v_max.x)
+					v_max.x = p.x;
+				if (p.y > v_max.y)
+					v_max.y = p.y;
+				if (p.z > v_max.z)
+					v_max.z = p.z;
+			}
+			bary /= n_verts;
+			
+			set_region_of_interest(v_min[0], v_min[1], v_min[2], v_max[0], v_max[1], v_max[2]);
+		}
 	}
 
 }
@@ -529,7 +583,16 @@ bool App::load(const std::string& filename) {
 
 		auto json = json::parse(content);
 		context_.mesh_metadata = MeshMetadata::from_json(json);
-		mesh_filename = context_.mesh_metadata.filename;
+		
+		std::filesystem::path metadata_filename = context_.mesh_metadata.filename;
+		if (metadata_filename.is_absolute()) {
+			mesh_filename = context_.mesh_metadata.filename;
+		} else {
+			std::filesystem::path relative_mesh_path = filename_path;
+			relative_mesh_path.replace_filename(context_.mesh_metadata.filename);
+			mesh_filename = relative_mesh_path;
+		}
+
 	} else if (filename_path.extension() == ".step" || filename_path.extension() == ".stp") {
 
 		context_.mesh_metadata.filename = filename;

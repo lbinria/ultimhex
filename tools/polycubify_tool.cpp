@@ -46,15 +46,11 @@ void PolycubifyTool::run_robust_polycube() {
 
 	CellFacetAttribute<int> flag(ctx.tet, -1);
 	um_bindings::um_attr_from_geo_attr<MeshElementsFlags::MESH_CELL_FACETS>(ctx.mesh_, "tet_flag", ctx.tet, flag.ptr);
-	// FacetAttribute<int> flag(ctx.tet_bound.tri, -1);
-	// um_bindings::um_attr_from_geo_attr<MeshElementsFlags::MESH_FACETS>(ctx.mesh_, "flag", ctx.tet_bound.tri, flag.ptr);
 
 	// Write mesh file
 	std::string filename = ctx.mesh_metadata.filename + ".mesh";
 	
 	write_by_extension(filename, ctx.tet, {{}, {}, {}, {}});
-	// write_by_extension(filename, ctx.tet_bound.tri, {});
-
 
 	std::string flag_filename = filename + ".flag";
 	std::ofstream flag_file;
