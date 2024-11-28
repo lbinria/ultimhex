@@ -282,7 +282,7 @@ void BlocPadTool::hover_callback(double x, double y, int source) {
 	} else if (step == 1) {
 		// Get UM facets TODO compute this directly in hover to avoid call umbinding each time ! 
 		Volume::Facet start_f(ctx.hex, start_f_idx);
-		Volume::Facet end_f(ctx.hex, um_bindings::um_facet_index_from_geo_facet_index(ctx.hovered_cell_facet, 6));
+		Volume::Facet end_f(ctx.hex, ctx.um_hovered_cell_facet());
 
 		// Get selection from start facet to end facet
 		auto facets_opt = extract_region_between_facets(ctx.hex, start_f, end_f);
@@ -310,7 +310,7 @@ void BlocPadTool::mouse_button_callback(int button, int action, int mods, int so
 				clear();
 			}
 
-			start_f_idx = Volume::Facet(ctx.hex, um_bindings::um_facet_index_from_geo_facet_index(ctx.selected_cell_facet, 6));
+			start_f_idx = Volume::Facet(ctx.hex, ctx.um_hovered_cell_facet());
 			step++;
 
 		} else if (step == 1) {

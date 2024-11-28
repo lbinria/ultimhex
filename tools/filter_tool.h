@@ -41,6 +41,7 @@ struct FilterTool : public Tool {
 		None,
 		Chart,
 		Minecraft,
+		Layer,
 	};
 
 	Mode mode = None;
@@ -58,5 +59,7 @@ struct FilterTool : public Tool {
 
 	std::set<index_t> selected_cells;
 	
+
+	std::vector<index_t> test;
 
 };

@@ -106,6 +106,11 @@ struct Context {
 
 	int brush_size = 1;
 
+	int um_hovered_cell_facet() { 
+		int n_facet_per_cell =mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
+		return um_bindings::um_facet_index_from_geo_facet_index(hovered_cell_facet, n_facet_per_cell);
+	}
+
 	// TODO Please refactor this !
 	bool is_cell_hovered() { return (hovered_cell != NO_CELL && hovered_cell < mesh_.cells.nb()); }
 	bool is_facet_hovered() { return (hovered_facet != NO_FACET && hovered_facet < mesh_.facets.nb()); }

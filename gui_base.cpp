@@ -182,7 +182,7 @@ index_t SimpleMeshApplicationExt::pick(MeshElementsFlags what) {
 
     // Transform the picked point into world space.
     picked_point_ = unproject(vec3(x, y, picked_depth_));
-
+    origin_point_ = unproject(vec3(x, y, 0.0000001));
 
     mesh_gfx()->set_picking_mode(MESH_NONE); // go back to color rendering mode
     // decode index from pixel color
@@ -193,14 +193,16 @@ index_t SimpleMeshApplicationExt::pick(MeshElementsFlags what) {
 }
 
 
-std::vector<index_t> SimpleMeshApplicationExt::pick_size(MeshElementsFlags what, int size) {
+std::set<index_t> SimpleMeshApplicationExt::pick_size(MeshElementsFlags what, int size) {
     // Memory::byte buffer[size][size][4]; // a 4-bytes buffer to read pixels
-    unsigned char buffer[size][size][4]; // a 4-bytes buffer to read pixels
+    // unsigned char buffer[size][size][4]; // a 4-bytes buffer to read pixels
+    Memory::byte buffer[size * size * 4]; // a 4-bytes buffer to read pixels
 
     // see https://github.com/BrunoLevy/geogram/discussions/88
     // see https://github.com/BrunoLevy/geogram/pull/102
     // based on https://github.com/BrunoLevy/GraphiteThree/blob/main/src/lib/OGF/renderer/context/rendering_context.cpp get_picked_point()
-    std::vector<index_t> picked_elements(size * size, -1);
+    // std::vector<index_t> picked_elements(size * size, -1);
+    std::set<index_t> picked_elements;
 
     mesh_gfx()->set_picking_mode(what); // instead of rendering colors, mesh_gfx will render indices
     draw_scene(); // rendering
@@ -208,27 +210,39 @@ std::vector<index_t> SimpleMeshApplicationExt::pick_size(MeshElementsFlags what,
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glPixelStorei(GL_PACK_ROW_LENGTH, 1);
 
-    index_t x = index_t(cursor_pos_.x - size / 2), y = index_t(cursor_pos_.y); // double to integer conversion of current cursor position
+    index_t x = index_t(cursor_pos_.x), y = index_t(cursor_pos_.y); // double to integer conversion of current cursor position
     if(x >= get_width() || y >= get_height()) { // if cursor out of the window
-        return std::vector<index_t>();
+        return std::set<index_t>();
     }
     y = get_height()-1-y; // change Y axis orientation. glReadPixels() wants pixel coordinates from bottom-left corner
+    
+    x -= size / 2;
     y -= size / 2;
 
     glReadPixels(
-        GLint(x),GLint(y),size,size,GL_RGBA,GL_UNSIGNED_BYTE,buffer
+        GLint(x), GLint(y), size, size, GL_RGBA,GL_UNSIGNED_BYTE, buffer
     );
     
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            // decode index from pixel color
-            index_t picked_element = index_t(buffer[j][i][0])        |
-                    (index_t(buffer[j][i][1]) << 8)  |
-                    (index_t(buffer[j][i][2]) << 16) |
-                    (index_t(buffer[j][i][3]) << 24);
+    // for (int i = 0; i < size; i++) {
+    //     for (int j = 0; j < size; j++) {
+    //         // decode index from pixel color
+    //         index_t picked_element = index_t(buffer[j][i][0])        |
+    //                 (index_t(buffer[j][i][1]) << 8)  |
+    //                 (index_t(buffer[j][i][2]) << 16) |
+    //                 (index_t(buffer[j][i][3]) << 24);
 
-            picked_elements[i + j * size] = picked_element;
-        }
+    //         picked_elements[i + j * size] = picked_element;
+    //     }
+    // }
+    for (int i = 0; i < size * size; i++) {
+        // decode index from pixel color
+        index_t picked_element = index_t(buffer[i * 4])        |
+                (index_t(buffer[i * 4 + 1]) << 8)  |
+                (index_t(buffer[i * 4 + 2]) << 16) |
+                (index_t(buffer[i * 4 + 3]) << 24);
+
+        // picked_elements[i] = picked_element;
+        picked_elements.insert(picked_element);
     }
 
 
@@ -298,7 +312,7 @@ std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet2(GEO::v
 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
 }
 
-// TODO improve by breaking loop when dist is less than a given threshold
+
 std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
 	// Search if point is on facet
 	double min_dist = std::numeric_limits<double>().max();
@@ -326,8 +340,12 @@ std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::ve
 		auto n = normalize(cross(b - a, c - b));
 		double dist = dot(p0 - a, n);
 		
-		if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-4)
+		// if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-1)
+		// 	continue;
+
+		if (1. - std::abs(dot(normalize(p0 - bary), normalize(p0 - origin_point_))) < 0.1) {
 			continue;
+        }
 
 		if (dist < min_dist) {
 			min_dist = dist;
@@ -341,37 +359,6 @@ std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::ve
 
 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
 }
-
-// std::tuple<index_t, index_t> SimpleMeshApplicationExt::pickup_cell_facet(GEO::vec3 p0, index_t c_idx) {
-// 	// Search if point is on facet
-// 	double min_dist = std::numeric_limits<double>().max();
-// 	index_t f_idx = NO_FACET;
-// 	index_t lf_idx = NO_FACET;
-
-// 	for (index_t lf = 0; lf < mesh_.cells.nb_facets(c_idx); lf++) {
-
-// 		auto a = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 0));
-// 		auto b = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 1));
-// 		auto c = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 2));
-// 		auto d = mesh_.vertices.point(mesh_.cells.facet_vertex(c_idx, lf, 3));
-
-// 		auto bary = (a + b + c + d) / 4.;
-
-// 		auto n = normalize(cross(b - a, c - b));
-// 		double dist = dot(p0 - a, n);
-		
-// 		if (std::abs(dot(normalize(p0 - a), normalize(bary - a))) < 1e-4)
-// 			continue;
-
-// 		if (dist < min_dist) {
-// 			min_dist = dist;
-// 			f_idx = mesh_.cells.facet(c_idx, lf);
-// 			lf_idx = lf;
-// 		}
-// 	}
-
-// 	return std::tuple<index_t, index_t>(f_idx, lf_idx);
-// }
 
 void SimpleMeshApplicationExt::init_rgba_colormap(const std::string& name, int width, int height, unsigned char * data) {
     // like SimpleApplication::init_colormap() but without XPM data, just an u8 array of RGBA values

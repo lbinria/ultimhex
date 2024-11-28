@@ -166,6 +166,11 @@ namespace gl_draw {
 	 * Draw overlay on cell facet
 	 */
 	static void draw_cell_facet_overlay(Mesh &mesh, index_t c, index_t lfacet, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		auto picking_mode = glupGetPickingMode();
+		// glupPickingMode(GLUP_PICK_CONSTANT);
+		// glupPickingId(-1);
+
+
 		glupEnable(GLUP_TEXTURING);
 		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
 		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
@@ -188,6 +193,9 @@ namespace gl_draw {
 
 		glupDisable(GLUP_TEXTURING);
 		glupEnd();
+		
+		// glupPickingId(idx);
+		// glupPickingMode(picking_mode);
 
 		// glupBegin(GLUP_POINTS);
 
@@ -205,6 +213,11 @@ namespace gl_draw {
 	 * Draw overlay on cell
 	 */
 	static void draw_cell_overlay(Mesh &mesh, index_t c, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		auto picking_mode = glupGetPickingMode();
+		glupPickingMode(GLUP_PICK_CONSTANT);
+		int idx = glupGetPickingId();
+		glupPickingId(idx);
+
 		glupEnable(GLUP_TEXTURING);
 		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
 		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
@@ -226,6 +239,11 @@ namespace gl_draw {
 		
 		glupDisable(GLUP_TEXTURING);
 		glupEnd();
+
+		glupPickingId(idx);
+		glupPickingMode(picking_mode);
+
+
 	}
 
 	static void draw_axis(GEO::vec3f origin = GEO::vec3f(0, 0, 0)) {

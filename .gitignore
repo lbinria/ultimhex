@@ -5,3 +5,5 @@ cmake/**
 *.geogram
 data/*
 Arg.md
+Presentation.md
+conf.geo

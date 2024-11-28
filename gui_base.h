@@ -108,7 +108,7 @@ public:
     void cursor_pos_callback( double x, double y, int source ) override;
 
     index_t pick(MeshElementsFlags what);
-    std::vector<index_t> pick_size(MeshElementsFlags what, int size);
+    std::set<index_t> pick_size(MeshElementsFlags what, int size);
 
 	/**
 	 * Pickup a cell edge
@@ -132,6 +132,7 @@ protected:
     double picked_depth_;
     // vec2 picked_ndc_;
     GEO::vec3 picked_point_;
+    GEO::vec3 origin_point_;
 
 private:
     vector<PointsGroup> points_groups_;

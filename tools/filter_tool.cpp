@@ -6,6 +6,44 @@
 #include "../context.h"
 #include "../gl_draw.h"
 
+std::vector<int> myloop(UM::Hexahedra &hex, UM::Volume::Facet &f) {
+	assert(hex.connected());
+
+	std::vector<int> facets;
+
+	std::vector<bool> visited(hex.nfacets(), false);
+	std::queue<int> q;
+	
+	q.push(f);
+	visited[f] = true;
+
+	while (!q.empty()) {
+
+		auto f_idx = q.front();
+		auto f = Volume::Facet(hex, f_idx);
+		q.pop();
+
+		for (int i = 0; i < f.nhalfedges(); i++) {
+			auto h = f.halfedge(i);
+
+			auto opp_c = h.next().opposite_f().opposite_c();
+			if (!opp_c.active())
+				continue;
+
+			auto nxt_f = opp_c.opposite_f().facet();
+			if (!visited[nxt_f]) {
+				q.push(nxt_f);
+				visited[nxt_f] = true;
+			}
+		}
+
+		facets.push_back(f);
+		
+	}
+
+	return facets;
+}
+
 void FilterTool::reset_filters() {
 	GEO::Attribute<bool> facet_filter(
 		ctx.mesh_.facets.attributes(), "filter"
@@ -57,6 +95,12 @@ bool FilterTool::draw_object_properties() {
 			mode = Minecraft;
 		}
 
+		if (ImGui::Button("Hex layer filter", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+			reset_filters();
+			ctx.gui_mode = Filter;
+			mode = Layer;
+		}
+
 		if (mode == Minecraft) {
 
 			// Paint mode combo box selection
@@ -102,6 +146,8 @@ void FilterTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::
 	for (auto c : selected_cells)
 		gl_draw::draw_cell_overlay(ctx.mesh_, c, colorMapInfo, 0.5);
 
+	for (auto c : test)
+		gl_draw::draw_cell_overlay(ctx.mesh_, c, colorMapInfo, 0.5);
 }
 
 void FilterTool::hover_callback(double x, double y, int source) {
@@ -141,6 +187,41 @@ void FilterTool::mouse_button_callback(int button, int action, int mods, int sou
 
 
 		ctx.mesh_gfx_.set_filter(GEO::MeshElementsFlags::MESH_CELLS);
+
+	} else if (mode == Layer && ctx.is_cell_facet_hovered()) {
+
+		// Filter all selected cells
+		GEO::Attribute<bool> cell_filter(
+			ctx.mesh_.cells.attributes(), "filter"
+		);
+
+		test.clear();
+		auto f = Volume::Facet(ctx.hex, ctx.um_hovered_cell_facet());
+		auto facets = myloop(ctx.hex, f);
+		for (auto f : facets) {
+			Volume::Facet cur_f(ctx.hex, f);
+
+			cell_filter[cur_f.cell()] = false;
+			// test.push_back(cur_f.cell());
+		}
+
+
+		ctx.mesh_gfx_.set_filter(GEO::MeshElementsFlags::MESH_CELLS);
+
+		// // Filter all selected cells
+		// GEO::Attribute<bool> cell_filter(
+		// 	ctx.mesh_.cells.attributes(), "filter"
+		// );
+
+		// Volume::Facet um_hovered_f(ctx.hex, ctx.um_hovered_cell_facet());
+		// auto start_h = um_hovered_f.halfedge(0).opposite_f().next();
+		// loop_cutyo(ctx.hex, start_h, [&](Volume::Facet &f) {
+		// 	// um_bindings::geo_cell_index_from_facet_index(f);
+		// 	cell_filter[f.cell()] = false;
+		// });
+
+		// ctx.mesh_gfx_.set_filter(GEO::MeshElementsFlags::MESH_CELLS);
+
 	}
 
 }

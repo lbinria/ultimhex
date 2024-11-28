@@ -5,12 +5,12 @@
 
 #include "tool.h"
 
-
 struct LayerPadTool : public Tool {
 
 	LayerPadTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Layer padding"; }
+	std::string get_name() { return "Layer pad tools"; }
+	// std::string get_name() override;
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -22,6 +22,7 @@ struct LayerPadTool : public Tool {
 
 
 	bool is_compatible() override;
+
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() {
 		clear();

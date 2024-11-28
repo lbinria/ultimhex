@@ -382,18 +382,7 @@ std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetA
 	return flag_dirs;
 }
 
-
-
-void App::cursor_pos_callback(double x, double y, int source) {
-	SimpleMeshApplicationExt::cursor_pos_callback(x, y, source);
-
-	// Doesn't take account of hovering in camera mode
-	if (context_.gui_mode == Camera || is_loading)
-		return;
-
-	if ((UM::vec2{x,y} - last_mouse_pos).norm2() < 9)
-		return;
-
+void App::refresh_hovered() {
 	// Try to pick cell
 	context_.hovered_cell = pick(MESH_CELLS);
 
@@ -416,14 +405,34 @@ void App::cursor_pos_callback(double x, double y, int source) {
 		context_.hovered_facet = pick(MESH_FACETS);
 
 	// If a cell is hovered, try to pick cell edge / cell facet 
-	if (context_.view.current_mode == ViewBinding::Mode::Volume && context_.is_cell_hovered()) {
-		index_t e_idx = pickup_cell_edge(picked_point_, context_.hovered_cell);
-		context_.hovered_edge = e_idx;
+	if (context_.view.current_mode == ViewBinding::Mode::Volume) {
+		if (context_.is_cell_hovered()) {
+			index_t e_idx = pickup_cell_edge(picked_point_, context_.hovered_cell);
+			context_.hovered_edge = e_idx;
 
-		auto [f_idx, lf_idx] = pickup_cell_facet(picked_point_, context_.hovered_cell);
-		context_.hovered_cell_facet = f_idx;
-		context_.hovered_cell_lfacet = lf_idx;
+			auto [f_idx, lf_idx] = pickup_cell_facet(picked_point_, context_.hovered_cell);
+			context_.hovered_cell_facet = f_idx;
+			context_.hovered_cell_lfacet = lf_idx;
+		} else {
+			context_.hovered_edge = -1;
+			context_.hovered_cell_facet = -1;
+			context_.hovered_cell_lfacet = -1;
+		}
 	}
+}
+
+
+void App::cursor_pos_callback(double x, double y, int source) {
+	SimpleMeshApplicationExt::cursor_pos_callback(x, y, source);
+
+	// Doesn't take account of hovering in camera mode
+	if (context_.gui_mode == Camera || is_loading)
+		return;
+
+	if ((UM::vec2{x,y} - last_mouse_pos).norm2() < 16)
+		return;
+
+	refresh_hovered();
 
 	tools[context_.gui_mode]->hover_callback(x, y, source);
 
@@ -432,6 +441,8 @@ void App::cursor_pos_callback(double x, double y, int source) {
 
 void App::mouse_button_callback(int button, int action, int mods, int source) {
 	// std::cout << "mouse: " << button << "," << action << std::endl;
+
+	// refresh_hovered();
 
 	if (context_.gui_mode == Camera) {
     	SimpleMeshApplication::mouse_button_callback(button,action,mods,source);
@@ -546,6 +557,9 @@ bool App::save(const std::string& filename) {
 }
 
 void App::reset() {
+	// mesh_gfx_.set_mesh(nullptr);
+    // mesh_.clear(false, true);
+
 	// Reset all values
 	context_.gui_mode = Camera;
 	// Clear selections
@@ -563,8 +577,10 @@ void App::reset() {
 
 bool App::load(const std::string& filename) {
     
-	mesh_gfx_.set_mesh(nullptr);
-    mesh_.clear(false, true);
+
+	// mesh_gfx_.set_mesh(nullptr);
+    // mesh_.clear(false, true);
+	reset();
 
     MeshIOFlags flags;
 	
@@ -605,12 +621,12 @@ bool App::load(const std::string& filename) {
 		context_.mesh_metadata.cell_type = MESH_TET;
 	}
 
-    if(!mesh_load(mesh_filename, mesh_, flags)) {
-		reset();
+    if(!mesh_load(mesh_filename, mesh_, flags)) {	
+		// reset();
         return false;
     }
-	
-	reset();
+
+	// reset();
 
 	// TODO bad ! must place camera correctly
 	normalize_mesh();
@@ -652,14 +668,12 @@ void App::draw_object_properties() {
 
 	ImGui::Checkbox("Tool preview", &tool_preview);
 
-	int n_facet_per_cell = context_.mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
-
 	ImGui::Text("Selected tool: %s", tools[context_.gui_mode]->get_name().c_str());
 	ImGui::Text("Hovered vertex: %i", context_.hovered_vertex);
 	ImGui::Text("Hovered cell edge: %i", context_.hovered_edge);
 	ImGui::Text("Hovered facet: %i", context_.hovered_facet);
 	ImGui::Text("Hovered cell facet: %i", context_.hovered_cell_facet);
-	ImGui::Text("Hovered cell facet [UM]: %i", um_bindings::um_facet_index_from_geo_facet_index(context_.hovered_cell_facet, n_facet_per_cell));
+	ImGui::Text("Hovered cell facet [UM]: %i", context_.um_hovered_cell_facet());
 	ImGui::Text("Hovered cell local facet: %i", context_.hovered_cell_lfacet);
 	ImGui::Text("Hovered cell: %i", context_.hovered_cell);
 

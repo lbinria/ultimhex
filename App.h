@@ -20,7 +20,7 @@
 #include <filter_tool.h>
 #include <camera_tool.h>
 #include <hover_tool.h>
-#include <new_bloc_pad_tool.h>
+#include <layer_pad_tool2.h>
 #include <paint_flag_tool.h>
 #include "tools/layer_pad_tool.h"
 #include "tools/bloc_pad_tool.h"
@@ -46,6 +46,8 @@ protected:
 
 	void normalize_mesh();
 	void view_mesh();
+
+	void refresh_hovered();
 
 	void draw_scene() override;
 
