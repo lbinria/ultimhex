@@ -47,7 +47,7 @@ protected:
 	void normalize_mesh();
 	void view_mesh();
 
-	void refresh_hovered();
+	bool refresh_hovered();
 
 	void draw_scene() override;
 
@@ -142,10 +142,7 @@ protected:
 	// UM::vec3 posBb;
 	// UM::vec3 posN;
 	// int he_n = 0;
-
-
-
-	std::vector<std::pair<int, UM::vec3>> flag_dirs;
+	// std::vector<std::pair<int, UM::vec3>> flag_dirs;
 
 	UM::vec2 last_mouse_pos;
 

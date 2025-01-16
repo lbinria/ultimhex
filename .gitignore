@@ -3,6 +3,10 @@ cmake/**
 .vscode/
 .vs/
 *.geogram
+*.flag
+*.mesh
+conf.geo
+gui.ini
 data/*
 Arg.md
 Presentation.md

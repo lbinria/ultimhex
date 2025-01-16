@@ -10,7 +10,7 @@ struct LayerPad2 : public Tool {
 
 	LayerPad2(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Layer pad 2"; }
+	std::string get_name() { return "Redefine layers stack"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -27,14 +27,26 @@ struct LayerPad2 : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		hovered_path.clear();
-		selected_path.clear();
+		is_init_layers = false;
+		selected_h_idx = -1;
+
+		hovered_cells.clear();
+		selected_cells.clear();
+		selected_cell_facets.clear();
+		layers.clear();
 	}
 
-	// Path on surface mesh to display
-	std::vector<UM::vec3> hovered_path;
-	std::vector<UM::vec3> selected_path;
+	// Pre-computation of layers in hex mesh
+	bool is_init_layers = false;
+	std::vector<int> layers;
 
+	int selected_h_idx;
+	std::vector<int> hovered_cells;
+	std::vector<int> selected_cells;
+	std::vector<std::pair<int, int>> selected_cell_facets;
+	int hh;
+
+	int n_layers_requested = 3;
 	
 
 };

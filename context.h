@@ -90,10 +90,18 @@ struct Context {
 	index_t hovered_vertex = NO_VERTEX;
 	index_t hovered_edge = NO_EDGE;
 	index_t hovered_facet = NO_FACET;
-
 	index_t hovered_cell_facet = NO_FACET;
 	index_t hovered_cell_lfacet = NO_FACET;
 	index_t hovered_cell = NO_CELL;
+
+	index_t last_hovered_vertex = NO_VERTEX;
+	index_t last_hovered_edge = NO_EDGE;
+	index_t last_hovered_facet = NO_FACET;
+	index_t last_hovered_cell_facet = NO_FACET;
+	index_t last_hovered_cell_lfacet = NO_FACET;
+	index_t last_hovered_cell = NO_CELL;
+
+
 	std::set<index_t> hovered_cells;
 
 	index_t selected_vertex = NO_VERTEX;
@@ -109,6 +117,15 @@ struct Context {
 	int um_hovered_cell_facet() { 
 		int n_facet_per_cell =mesh_metadata.cell_type == MESH_HEX ? 6 : 4;
 		return um_bindings::um_facet_index_from_geo_facet_index(hovered_cell_facet, n_facet_per_cell);
+	}
+
+	int hovered_lhe() {
+		return um_bindings::he_from_cell_e_lf(hovered_edge, hovered_cell_lfacet);
+	}
+
+	Volume::Halfedge hovered_he(Volume &v) {
+		Volume::Cell c(v, hovered_cell);
+		return c.halfedge(hovered_lhe());
 	}
 
 	// TODO Please refactor this !

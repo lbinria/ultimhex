@@ -135,6 +135,37 @@ namespace gl_draw {
 
 	}
 
+	static void draw_path2(std::vector<UM::vec3> &path, GEO::vec4f color, bool arrow) {
+
+		// auto picking_mode = glupGetPickingMode();
+		// glupPickingMode(GLUP_PICK_CONSTANT);
+
+		glupSetColor4fv(GLUP_FRONT_COLOR, color.data());
+
+		glupBegin(GLUP_POINTS);
+		for (auto p : path) {
+			double pp[3] = {p.x, p.y, p.z};
+			glupPrivateVertex3dv(pp);
+		}
+		glupEnd();
+
+		// glupPickingMode(picking_mode);
+
+
+		glupBegin(GLUP_LINES);
+		for (int i = 0; i < static_cast<int>(path.size()) - 1; i++) {
+			auto pA = path[i];
+			auto pB = path[i + 1];
+			double ppA[3] = {pA.x, pA.y, pA.z};
+			double ppB[3] = {pB.x, pB.y, pB.z};
+			glupPrivateVertex3dv(ppA);
+			glupPrivateVertex3dv(ppB);
+		}
+		glupEnd();
+
+
+	}
+
 	static void draw_grid(double scale = 10., int n_lines = 9, double y = -.1) {
 
 		glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec3f(0.2f,0.2f,0.2f).data());
@@ -162,6 +193,7 @@ namespace gl_draw {
 		glupEnd();
 	}
 
+	// TODO remove unit cell facet drawing !
 	/**
 	 * Draw overlay on cell facet
 	 */
@@ -209,6 +241,7 @@ namespace gl_draw {
 		// glupEnd();
 	}
 
+	// TODO remove unit cell drawing !
 	/**
 	 * Draw overlay on cell
 	 */
@@ -244,6 +277,80 @@ namespace gl_draw {
 		glupPickingMode(picking_mode);
 
 
+	}
+
+	/**
+	 * Draw overlay on cells
+	 */
+	static void draw_cells_overlay(Mesh &mesh, std::vector<int> cells, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		auto picking_mode = glupGetPickingMode();
+		glupPickingMode(GLUP_PICK_CONSTANT);
+		int idx = glupGetPickingId();
+		glupPickingId(idx);
+
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
+
+		glupBegin(GLUP_LINES);
+
+		for (auto c : cells) {
+			for(index_t e = 0; e < mesh.cells.nb_edges(c); e++) {
+				index_t v0_idx = mesh.cells.edge_vertex(c, e, 0);
+				index_t v1_idx = mesh.cells.edge_vertex(c, e, 1);
+				GEO::vec3 &a = mesh.vertices.point(v0_idx);
+				GEO::vec3 &b = mesh.vertices.point(v1_idx);
+				glupPrivateVertex3dv(a.data());
+				glupPrivateVertex3dv(b.data());
+			}
+		}
+		glupDisable(GLUP_TEXTURING);
+		glupEnd();
+
+		glupPickingId(idx);
+		glupPickingMode(picking_mode);
+
+
+	}
+
+	static void draw_cell_facets_overlay(Mesh &mesh, std::vector<std::pair<int, int>> cell_lfacets, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+		auto picking_mode = glupGetPickingMode();
+		// glupPickingMode(GLUP_PICK_CONSTANT);
+		// glupPickingId(-1);
+
+
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
+
+		glupBegin(GLUP_LINES);
+		
+		for (auto [c, lfacet] : cell_lfacets) {
+			index_t facet_nb_verts = mesh.cells.facet_nb_vertices(c, lfacet);
+			for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+				index_t v0_idx = mesh.cells.facet_vertex(c, lfacet, lv);
+				index_t v1_idx = mesh.cells.facet_vertex(c, lfacet, (lv + 1) % facet_nb_verts);
+				GEO::vec3 &a = mesh.vertices.point(v0_idx);
+				GEO::vec3 &b = mesh.vertices.point(v1_idx);
+				glupPrivateVertex3dv(a.data());
+				glupPrivateVertex3dv(b.data());
+			}
+		}
+
+		glupDisable(GLUP_TEXTURING);
+		glupEnd();
+	}
+
+	static void test() {
+		
 	}
 
 	static void draw_axis(GEO::vec3f origin = GEO::vec3f(0, 0, 0)) {

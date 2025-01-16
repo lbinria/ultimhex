@@ -67,6 +67,8 @@ App::App(const std::string name) :
 void App::ImGui_initialize() {
     Application::ImGui_initialize();
     set_style("Dark");
+	
+	// set_full_screen(true);
     if(GEO::FileSystem::is_file("gui.ini")) {
         // Layout modification, saved with ImGui::SaveIniSettingsToDisk()
         // Larger docked object properties panel
@@ -142,10 +144,6 @@ void App::draw_scene() {
 	auto hovered_color = GEO::vec4f(1.f,0.3f,0.6f, 1.f);
 	auto selected_color = GEO::vec4f(1.f,0.2f,0.0f, 1.f);
 
-	// GLUPfloat *view;
-	// glupGetMatrixfv(GLUP_MODELVIEW_MATRIX, view);
-	// ImGuizmo::ViewManipulate(view, 2.f, ImVec2(100,100), ImVec2(20,20), ImU32(100));
-
 	glupSetPointSize(10.0);
 
 	if (show_axes_)
@@ -155,8 +153,14 @@ void App::draw_scene() {
 
 	auto hover_selection_colormap = colormaps_[COLORMAP_HOVER_SELECTION];
 
-	// PATH
-	tools[context_.gui_mode]->draw(hovered_color, selected_color, hover_selection_colormap);
+	// Draw current tool even if switch to camera (Ctrl + move => camera switch)
+	GUIMode gui_mode = context_.gui_mode;
+	if (context_.gui_mode == GUIMode::Camera && context_.switch_mode != context_.gui_mode) {
+		gui_mode = context_.switch_mode;
+	}
+
+	// Draw for current tool
+	tools[gui_mode]->draw(hovered_color, selected_color, hover_selection_colormap);
 
 
 
@@ -167,29 +171,29 @@ void App::draw_scene() {
 		glupEnd();
 	}
 
-	// Just test
+	// // Just test
 
-	for (auto x : flag_dirs) {
-		int flag = x.first;
-		auto p = x.second;
+	// for (auto x : flag_dirs) {
+	// 	int flag = x.first;
+	// 	auto p = x.second;
 
-		UM::vec3 dir{0,0,0};
-		// UGLY but just for testing !
-		if (flag == 0)
-			dir = {-1,0,0};
-		else if (flag == 1)
-			dir = {0,-1,0};
-		else if (flag == 2)
-			dir = {0,0,-1};
-		else if (flag == 3)
-			dir = {1,0,0};
-		else if (flag == 4)
-			dir = {0,1,0};
-		else if (flag == 5)
-			dir = {0,0,1};
+	// 	UM::vec3 dir{0,0,0};
+	// 	// UGLY but just for testing !
+	// 	if (flag == 0)
+	// 		dir = {-1,0,0};
+	// 	else if (flag == 1)
+	// 		dir = {0,-1,0};
+	// 	else if (flag == 2)
+	// 		dir = {0,0,-1};
+	// 	else if (flag == 3)
+	// 		dir = {1,0,0};
+	// 	else if (flag == 4)
+	// 		dir = {0,1,0};
+	// 	else if (flag == 5)
+	// 		dir = {0,0,1};
 
-		gl_draw::draw_arrow(p, (p + dir * 0.05), 0.01, 8, 0.75, GEO::vec4f(1,0,0,1));
-	}
+	// 	gl_draw::draw_arrow(p, (p + dir * 0.05), 0.01, 8, 0.75, GEO::vec4f(1,0,0,1));
+	// }
 
 	if (show_features) {
 		glupSetColor4fv(GLUP_FRONT_COLOR, GEO::vec4f(0., 0., 1., 1.).data());
@@ -215,6 +219,9 @@ void App::draw_menu_bar() {
     SimpleApplication::draw_menu_bar();
 
     if(ImGui::BeginMainMenuBar()) {
+		if (ImGui::Button("Save pref.")) {
+			ImGui::SaveIniSettingsToDisk("gui.ini");
+		}
         ImGui::EndMainMenuBar();
     }
 }
@@ -335,54 +342,55 @@ void App::GL_initialize() {
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
 }
 
-std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
+// std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
 
-	DisjointSet ds(tri.nfacets());
+// 	DisjointSet ds(tri.nfacets());
 
-    for (auto h : tri.iter_halfedges()) {
-		auto f = h.facet();
-		auto opp_f = h.opposite().facet();
+//     for (auto h : tri.iter_halfedges()) {
+// 		auto f = h.facet();
+// 		auto opp_f = h.opposite().facet();
 
-		if (tri_flag[f] != tri_flag[opp_f])
-			continue;
+// 		if (tri_flag[f] != tri_flag[opp_f])
+// 			continue;
 
-        ds.merge(h.facet(), h.opposite().facet());
-    }
+//         ds.merge(h.facet(), h.opposite().facet());
+//     }
 
-    // Get associate facet id to group id
-    std::vector<int> setIds;
-    ds.get_sets_id(setIds);
+//     // Get associate facet id to group id
+//     std::vector<int> setIds;
+//     ds.get_sets_id(setIds);
 
-	// Extract by groups
-	std::map<int, std::vector<int>> element_by_group;
-    for (long unsigned int i = 0; i < setIds.size(); i++) {
-		element_by_group[setIds[i]].push_back(i);
-    }
+// 	// Extract by groups
+// 	std::map<int, std::vector<int>> element_by_group;
+//     for (long unsigned int i = 0; i < setIds.size(); i++) {
+// 		element_by_group[setIds[i]].push_back(i);
+//     }
 
-	std::vector<std::pair<int, UM::vec3>> flag_dirs;
+// 	std::vector<std::pair<int, UM::vec3>> flag_dirs;
 
-	// Get bary of each group
-	for (auto kv : element_by_group) {
-		// Compute bary of all facets
-		UM::vec3 bary{0,0,0};
-		for (auto f_idx : kv.second) {
-			Triangle3 t = UM::Surface::Facet(tri, f_idx);
-			bary += t.bary_verts();
-		}
-		bary /= kv.second.size();
-		std::cout << kv.first << ", bary: " << bary << std::endl;
+// 	// Get bary of each group
+// 	for (auto kv : element_by_group) {
+// 		// Compute bary of all facets
+// 		UM::vec3 bary{0,0,0};
+// 		for (auto f_idx : kv.second) {
+// 			Triangle3 t = UM::Surface::Facet(tri, f_idx);
+// 			bary += t.bary_verts();
+// 		}
+// 		bary /= kv.second.size();
+// 		std::cout << kv.first << ", bary: " << bary << std::endl;
 
-		// Get flag of group
-		int flag = tri_flag[kv.second.front()];
-		flag_dirs.push_back({flag, bary});
-	}
+// 		// Get flag of group
+// 		int flag = tri_flag[kv.second.front()];
+// 		flag_dirs.push_back({flag, bary});
+// 	}
 
-    std::cout << "n set: " << ds.nsets() << std::endl;
-    std::cout << "n set: " << element_by_group.size() << std::endl;
-	return flag_dirs;
-}
+//     std::cout << "n set: " << ds.nsets() << std::endl;
+//     std::cout << "n set: " << element_by_group.size() << std::endl;
+// 	return flag_dirs;
+// }
 
-void App::refresh_hovered() {
+// Return true if has changed, else false
+bool App::refresh_hovered() {
 	// Try to pick cell
 	context_.hovered_cell = pick(MESH_CELLS);
 
@@ -419,22 +427,46 @@ void App::refresh_hovered() {
 			context_.hovered_cell_lfacet = -1;
 		}
 	}
+
+	// Check whether it has changed
+	bool has_changed = 
+		context_.last_hovered_cell != context_.hovered_cell ||
+		context_.last_hovered_cell_facet != context_.hovered_cell_facet ||
+		context_.last_hovered_cell_lfacet != context_.hovered_cell_lfacet ||
+		context_.last_hovered_edge != context_.hovered_edge ||
+		context_.last_hovered_facet != context_.hovered_facet ||
+		context_.last_hovered_vertex != context_.hovered_vertex;
+
+	// TODO please encapsulate that in context !
+	context_.last_hovered_cell = context_.hovered_cell;
+	context_.last_hovered_cell_facet = context_.hovered_cell_facet;
+	context_.last_hovered_cell_lfacet = context_.hovered_cell_lfacet;
+	context_.last_hovered_edge = context_.hovered_edge;
+	context_.last_hovered_facet = context_.hovered_facet;
+	context_.last_hovered_vertex = context_.hovered_vertex;
+
+	return has_changed;
 }
 
 
 void App::cursor_pos_callback(double x, double y, int source) {
 	SimpleMeshApplicationExt::cursor_pos_callback(x, y, source);
 
-	// Doesn't take account of hovering in camera mode
+	// Don't do anything in camera mode
 	if (context_.gui_mode == Camera || is_loading)
 		return;
 
-	if ((UM::vec2{x,y} - last_mouse_pos).norm2() < 16)
+	// Optimization (to not trigger refresh_hovered each time)
+	if ((UM::vec2{x,y} - last_mouse_pos).norm2() < 10)
 		return;
 
-	refresh_hovered();
+	// Refresh element hovered, check whether one of them has changed
+	bool has_changed = refresh_hovered();
 
-	tools[context_.gui_mode]->hover_callback(x, y, source);
+	// Only trigger hover callback if at least one hover elements has changed !
+	if (has_changed) {
+		tools[context_.gui_mode]->hover_callback(x, y, source);
+	}
 
 	last_mouse_pos = {x, y};
 }
@@ -486,7 +518,7 @@ void App::scroll_callback(double xoffset, double yoffset) {
 
 void App::key_callback(int key, int scancode, int action, int mods) {
 	
-	std::cout << "key pressed: " << key << std::endl;
+	// std::cout << "key pressed: " << key << std::endl;
 
 	// Ctrl
 	if (action == EVENT_ACTION_DOWN && key == 341) {
@@ -499,7 +531,6 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 
 	// Validate
 	if ((key == 257 || key == 335) && action == EVENT_ACTION_DOWN) {
-		std::cout << "gui mode: " << context_.gui_mode << std::endl;
 		tools[context_.gui_mode]->validate_callback();
 	} else if (key == 256 && action == EVENT_ACTION_DOWN) {
 		tools[context_.gui_mode]->escape_callback();
