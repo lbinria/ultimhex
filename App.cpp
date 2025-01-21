@@ -57,6 +57,7 @@ App::App(const std::string name) :
 	filter_tool(context_),
 	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
+	patch_pad_tool(context_),
 	new_bloc_pad_tool(context_),
 	paint_flag_tool(context_),
 	polycubify_tool(context_)
@@ -303,6 +304,12 @@ void App::draw_viewer_properties() {
 
 			ImGui::EndPopup();
 		}
+	}
+
+	
+	if (ImGui::InputInt("Cell shrink", &shrink)) {
+		shrink = std::clamp(shrink, 0, 10);
+		cells_shrink_ = shrink * .1f;
 	}
 
 	ImGui::Checkbox("Show grid", &show_grid_);
@@ -579,11 +586,12 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 }
 
 bool App::save(const std::string& filename) {
-    // if(String::string_ends_with(filename,".txt")) { // bypass inherited save behavior in case of a .txt file -> save the labeling only
-    //     save_labeling(filename,mesh_,labeling_);
-    //     fmt::println(Logger::out("I/O"),"Labeling saved to {}",filename); Logger::out("I/O").flush();
-    //     return true;
-    // }
+    
+	if(String::string_ends_with(filename, ".json")) {
+		// TODO implement save of mesh with metadata
+		return true;
+    }
+
 	return SimpleMeshApplication::save(filename);
 }
 
@@ -751,4 +759,5 @@ void App::labeling_visu_mode_transition() {
 	attribute_min_ = -1;
 	attribute_max_ = 5;
 	lighting_ = false;
+	
 }

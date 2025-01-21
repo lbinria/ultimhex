@@ -11,7 +11,7 @@ SparseVector express_with_free_variables(ConstrainedLeastSquares& cls, const Lin
     v.compact();
     if (!v.empty() && v.front().index < 0)
         v.front().index = cls.rb.C.nrows() - 1; // N.B. it is not sorted anymore
-    cls.rb.reduce(v);
+    cls.rb.leading_to_free(v);
     return v;
 }
 

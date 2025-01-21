@@ -1,4 +1,4 @@
-#include "layer_pad_tool2.h"
+#include "layer_stack_redefinition_tool.h"
 
 #include <nicostuff/algo/framework/benjamin_API.h>
 
@@ -10,7 +10,10 @@
 
 
 bool LayerPad2::draw_object_properties() {
-	ImGui::InputInt("Number of layer: ", &n_layers_requested);
+
+	if (ImGui::InputInt("Number of layer: ", &n_layers_requested)) {
+		n_layers_requested = std::clamp(n_layers_requested, 1, 100000 /* arbitrary number... */);
+	}
 
 	if(ImGui::Button("Redefine layers stack !")) {
 		ctx.gui_mode = NewBlocPadding;
@@ -26,6 +29,7 @@ void LayerPad2::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO::S
 	
 	gl_draw::draw_cells_overlay(ctx.mesh_, hovered_cells, colorMapInfo);
 	gl_draw::draw_cell_facets_overlay(ctx.mesh_, selected_cell_facets, colorMapInfo, .5f);
+	// gl_draw::test(ctx.mesh_, selected_cell_facets, colorMapInfo, .5f);
 
 }
 

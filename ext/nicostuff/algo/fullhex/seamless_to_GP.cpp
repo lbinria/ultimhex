@@ -166,7 +166,7 @@ void SeamlessToGP::add_real_constraints(ConstrainedLeastSquares& cls, bool force
 			for( auto h: f.iter_halfedges())FOR(d, 3) {
 				if (std::abs(n[d])<.9) continue;
 				LinExpr constraint = n[d] * X(3 * h.from_corner() + d) - n[d] * X(3 * h.to_corner() + d);
-				//ls.rb.reduce(constraint);
+				//ls.rb.leading_to_free(constraint);
 				//if (constraint.size() < 2) continue;
 
 				auto [already_satisfied,impossible] = constraint_status(cls,constraint);
@@ -196,7 +196,7 @@ void SeamlessToGP::add_int_constraints(ConstrainedLeastSquares& cls,  bool force
 			FOR(d, 3) {
 				if (std::abs(U[h.to_corner()][d]-U[h.from_corner()][d])>1e-5) continue;
 				LinExpr constraint = X(3 * h.from_corner() + d) -std::round(U[h.from_corner()][d]);
-				//cls.rb.reduce(constraint);
+				//cls.rb.leading_to_free(constraint);
 
 				//if (constraint.size() == 0) continue;
 				//if (constraint.size() == 1 && constraint.front().index == ls.nfree) continue;
@@ -220,7 +220,7 @@ void SeamlessToGP::add_int_constraints(ConstrainedLeastSquares& cls,  bool force
 					auto h = f.halfedge(lh);
 					FOR(d, 3) {
 						LinExpr constraint = X(3 * h.from_corner() + branch) - std::round(U[h.from_corner()][branch]);
-						cls.rb.reduce(constraint);
+						cls.rb.leading_to_free(constraint);
 						//if (constraint.size() < 1 || (constraint.size()==1 && constraint.front().index==-1)) continue;
 						auto [already_satisfied,impossible] = constraint_status(cls,constraint);
 						if (already_satisfied || impossible) continue;
@@ -251,7 +251,7 @@ void SeamlessToGP::add_int_constraints(ConstrainedLeastSquares& cls,  bool force
 				double rhs = 0;
 				FOR(term, 2) rhs += U[constraint[term].index / 3][constraint[term].index % 3] * constraint[term].value;
 				constraint = constraint-std::round(rhs);
-				//cls.rb.reduce(constraint);
+				//cls.rb.leading_to_free(constraint);
 				//if (constraint.size() < 2) continue;
 				auto [already_satisfied,impossible] = constraint_status(cls,constraint);
 				if (already_satisfied || impossible) continue;

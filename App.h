@@ -20,10 +20,11 @@
 #include <filter_tool.h>
 #include <camera_tool.h>
 #include <hover_tool.h>
-#include <layer_pad_tool2.h>
+#include <layer_stack_redefinition_tool.h>
 #include <paint_flag_tool.h>
 #include "tools/layer_pad_tool.h"
 #include "tools/bloc_pad_tool.h"
+#include "tools/patch_pad_tool.h"
 #include <polycubify_tool.h>
 
 // std libs
@@ -92,17 +93,19 @@ protected:
 	PaintFlagTool paint_flag_tool;
 	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
+	PatchPadTool patch_pad_tool;
 	LayerPad2 new_bloc_pad_tool;
 	PolycubifyTool polycubify_tool;
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[8] = {
+	std::unique_ptr<Tool> tools[9] = {
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<FilterTool>(filter_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
 		std::make_unique<LayerPadTool>(layer_pad_tool), 
 		std::make_unique<BlocPadTool>(bloc_pad_tool),
+		std::make_unique<PatchPadTool>(patch_pad_tool),
 		std::make_unique<LayerPad2>(new_bloc_pad_tool),
 		std::make_unique<PolycubifyTool>(polycubify_tool)
 	};
@@ -121,9 +124,9 @@ protected:
 	// TODO move to gui_base
 	bool show_grid_ = true;
 	bool show_axes_ = true;
-
 	bool show_features = true;
 
+	int shrink = 0;
 
 
 	// Option

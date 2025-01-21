@@ -349,8 +349,109 @@ namespace gl_draw {
 		glupEnd();
 	}
 
-	static void test() {
+	static void test2(Mesh &mesh, std::vector<int> cells, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+
+		if (cells.size() <= 0)
+			return;
+
+		index_t fc = *mesh.cells.begin();
+		index_t facet_nb_verts = mesh.cells.facet_nb_vertices(fc, 0);
+
+		GLUPprimitive p = GLUP_QUADS;
+		switch (facet_nb_verts)
+		{
+		case 3:
+			p = GLUP_TRIANGLES;
+			break;
+		case 4:
+			p = GLUP_QUADS;
+			break;
+		default:
+			throw new std::runtime_error("Weird ! facet has more of 4 vertices or less of 3...");
+			break;
+		}
+
+		// auto picking_mode = glupGetPickingMode();
+		// glupPickingMode(GLUP_PICK_CONSTANT);
+		// glupPickingId(-1);
+
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
+
+		glupBegin(p);
+
+		for (auto c : cells) {
+			for (int lf = 0; lf < mesh.cells.nb_facets(c); lf++) {
+				index_t f = mesh.cells.facet(c, lf);
+				if (mesh.cell_facets.adjacent_cell(f) != NO_CELL) {
+					for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+						index_t v = mesh.cells.facet_vertex(c, lf, lv);
+						GEO::vec3 &p = mesh.vertices.point(v);
+						glupPrivateVertex3dv(p.data());
+					}
+				}
+			}
+		}
+
+
+		glupDisable(GLUP_TEXTURING);
+		glupEnd();
+	}
+
+	static void test(Mesh &mesh, std::vector<std::pair<int, int>> cell_lfacets, GEO::SimpleApplication::ColormapInfo colormap, GLUPdouble texCoord = 0., GLUPint thickness = 3.) {
+
+		if (cell_lfacets.size() <= 0)
+			return;
+
+		// auto picking_mode = glupGetPickingMode();
+		// glupPickingMode(GLUP_PICK_CONSTANT);
+		// glupPickingId(-1);
+
+		glupEnable(GLUP_TEXTURING);
+		glActiveTexture(GL_TEXTURE0 + GLUP_TEXTURE_2D_UNIT);
+		glBindTexture(GL_TEXTURE_2D, (GLuint) colormap.texture);
+		glupTextureType(GLUP_TEXTURE_2D);
+		glupTextureMode(GLUP_TEXTURE_REPLACE);
+		glupPrivateTexCoord1d(texCoord);
+		glupSetMeshWidth(thickness);
+
+
+		auto [c, lfacet] = *cell_lfacets.begin();
+
+		index_t facet_nb_verts = mesh.cells.facet_nb_vertices(c, lfacet);
+
+		GLUPprimitive p = GLUP_QUADS;
+		switch (facet_nb_verts)
+		{
+		case 3:
+			p = GLUP_TRIANGLES;
+			break;
+		case 4:
+			p = GLUP_QUADS;
+			break;
+		default:
+			throw new std::runtime_error("Weird ! facet has more of 4 vertices or less of 3...");
+			break;
+		}
+
+
+		glupBegin(p);
 		
+		for (auto [c, lfacet] : cell_lfacets) {
+			for(index_t lv = 0; lv < facet_nb_verts; lv++) {
+				index_t v = mesh.cells.facet_vertex(c, lfacet, lv);
+				GEO::vec3 &p = mesh.vertices.point(v);
+				glupPrivateVertex3dv(p.data());
+			}
+		}
+
+		glupDisable(GLUP_TEXTURING);
+		glupEnd();
 	}
 
 	static void draw_axis(GEO::vec3f origin = GEO::vec3f(0, 0, 0)) {

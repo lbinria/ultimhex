@@ -191,7 +191,7 @@ void CubeCover::add_real_constraints(CellFacetAttribute<bool>& cut, ConstrainedL
 
 		for (auto f : m.iter_facets()) if (locked_cells[f.cell()]) for (auto h : f.iter_halfedges()) FOR(d, 3) {
 			LinExpr constraint = X(3 * h.to_corner() + d) - X(3 * h.from_corner() + d) + (U[h.from_corner()][d] - U[h.to_corner()][d]);
-			ls.rb.reduce(constraint);
+			ls.rb.leading_to_free(constraint);
 			if (constraint.size() < 2) {
 				if (constraint.size() > 0) {
 					plop(constraint);
@@ -221,7 +221,7 @@ void CubeCover::add_real_constraints(CellFacetAttribute<bool>& cut, ConstrainedL
 
 			for( auto h: f.iter_halfedges())FOR(d, 3) {
 				LinExpr constraint = n[d] * X(3 * h.from_corner() + d) - n[d] * X(3 * h.to_corner() + d);
-				ls.rb.reduce(constraint);
+				ls.rb.leading_to_free(constraint);
 				if (constraint.size() < 2) continue;
 				ls.add_to_constraints(constraint);
 			}
@@ -247,7 +247,7 @@ void CubeCover::add_int_constraints(CellFacetAttribute<bool>& cut, ConstrainedLe
 			FOR(d, 3) {
 				if (d == coord) continue;
 				LinExpr constraint = X(3 * h.from_corner() + d) -std::round(U[h.from_corner()][d]);
-				ls.rb.reduce(constraint);
+				ls.rb.leading_to_free(constraint);
 
 				if (constraint.size() == 0) continue;
 				if (constraint.size() == 1 && constraint.front().index == ls.nfree) continue;
@@ -271,7 +271,7 @@ void CubeCover::add_int_constraints(CellFacetAttribute<bool>& cut, ConstrainedLe
 					auto h = f.halfedge(lh);
 					FOR(d, 3) {
 						LinExpr constraint = X(3 * h.from_corner() + locked_branch) + std::round(U[h.from_corner()][locked_branch]);
-						ls.rb.reduce(constraint);
+						ls.rb.leading_to_free(constraint);
 						if (constraint.size() < 2) continue;
 						ls.add_to_constraints(constraint);
 					}
@@ -299,7 +299,7 @@ void CubeCover::add_int_constraints(CellFacetAttribute<bool>& cut, ConstrainedLe
 				double rhs = 0;
 				FOR(term, 2) rhs += U[constraint[term].index / 3][constraint[term].index % 3] * constraint[term].value;
 				constraint += -std::round(rhs) * X(ls.nfree);
-				ls.rb.reduce(constraint);
+				ls.rb.leading_to_free(constraint);
 
 				if (constraint.size() < 2) continue;
 				//std::cerr << constraint << std::endl;

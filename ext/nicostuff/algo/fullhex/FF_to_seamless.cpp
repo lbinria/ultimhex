@@ -215,7 +215,7 @@ bool FFToSeamless::add_real_constraints(CellFacetAttribute<bool>& cut, Constrain
 				LinExpr constraint = n[d] * X(3 * h.from_corner() + d) - n[d] * X(3 * h.to_corner() + d);
 				auto [already_satisfied,impossible] = constraint_status(cls,constraint);
 				if (already_satisfied || impossible) continue;
-				//ls.rb.reduce(constraint);
+				//ls.rb.leading_to_free(constraint);
 				//if (constraint.size() < 2) continue;
 				cls.add_to_constraints(constraint);
 			}
@@ -268,7 +268,7 @@ bool FFToSeamless::compute(bool force_boundary) {
 	//}
 	//Drop(m,cid).apply("cid");
 	//for(auto c:m.iter_corners())  FOR(d,3) SparseVector v = express_with_free_variables(cls,X(3*c+d));
-	FOR(i,cls.rb.C.nrows()-1) {LinExpr le = X(i);cls.rb.reduce(le);}
+	FOR(i,cls.rb.C.nrows()-1) {LinExpr le = X(i);cls.rb.leading_to_free(le);}
 
 	Trace::step("Integrate");
 	if (!integrate_field(cls, edge_length)) return false;

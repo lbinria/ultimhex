@@ -174,32 +174,6 @@ namespace um_bindings {
 		}
 	}
 
-	// /**
-	//  * Get geogram facet attribute from ultimaille facet attribute
-	//  */
-	// template<typename MeshInput, int where, typename T>
-	// constexpr void geo_attr_from_um_attr2(MeshInput &s, std::string attr_name, std::vector<T> &p, GEO::Mesh &m_out) {
-
-	// 	using GEO_Attr_T = std::conditional_t<
-	// 		std::is_same_v<T, double>, GEO::Numeric::float64,
-	// 		std::conditional_t<std::is_same_v<T, int>, GEO::Numeric::uint32,
-	// 		std::conditional_t<std::is_same_v<T, bool>, GEO::Numeric::uint8, T>>>;
-
-   	// 	// auto geo_attr(
-    //     // 	std::conditional_t<std::is_e<T, double>, decltype(m.vertices.attributes()), decltype(m.facets.attributes())>{}(), "flag"
-	// 	// );
-
-	// 	if constexpr(where == 1) {
-	// 		GEO::Attribute<GEO_Attr_T> geo_attr(
-	// 			m_out.facets.attributes(), attr_name
-	// 		);
-
-	// 		for (auto f : s.iter_facets()) {			
-	// 			geo_attr[f] = static_cast<GEO_Attr_T>(p[f]);
-	// 		}
-	// 	}
-	// }
-
 	/**
 	 * Get geogram facet attribute from ultimaille facet attribute
 	 */
@@ -288,48 +262,7 @@ namespace um_bindings {
 		}
 	}
 
-	// /**
-	//  * Get ultimaille facet attribute from geogram facet attribute
-	//  */
-	// template<typename T>
-	// void um_attr_from_geo_attr(GEO::Mesh &m, std::string attr_name, UM::Volume &s, UM::CellFacetAttribute<T> &um_attr) {
-
-	// 	using GEO_Attr_T = std::conditional_t<
-	// 		std::is_same_v<T, double>, GEO::Numeric::float64,
-	// 		std::conditional_t<std::is_same_v<T, int>, GEO::Numeric::uint32,
-	// 		std::conditional_t<std::is_same_v<T, bool>, GEO::Numeric::uint8, T>>>;
-
-	// 	GEO::Attribute<GEO_Attr_T> geo_attr(
-	// 		m.cell_facets.attributes(), attr_name
-	// 	);
-
-	// 	for (auto f : s.iter_facets()) {		
-	// 		auto a = geo_attr[f];	
-	// 		auto b = um_attr[f];	
-	// 		um_attr[f] = static_cast<T>(geo_attr[f]);
-	// 	}
-	// }
-
 	void combinatorial_update(GEO::Mesh &mesh, std::function<std::pair<SurfaceAttributes, VolumeAttributes>(TetBoundary&, SurfaceAttributes&, VolumeAttributes&)> f);
 	
-	// TODO add function to modify only attributes attributes_update
-	// TODO add function to modify only geometry geometric_update
-
-
-
-	// struct MeshBinding {
-
-	// 	MeshBinding(GEO::Mesh &mesh);
-
-	// 	GEO::Mesh &mesh;
-	// 	UM::Tetrahedra tet;
-	// 	TetBoundary tet_bound;
-
-	// 	void update_tet();
-	// 	void update_mesh();
-
-	// 	template<typename TAttr>
-	// 	void update_mesh_attr(std::shared_ptr<AttributeContainer<TAttr>> attr, std::string attr_name);
-	// };
 
 }
