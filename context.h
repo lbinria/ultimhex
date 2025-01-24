@@ -25,8 +25,9 @@ enum GUIMode {
 	Painting = 3,
 	LayerPadding = 4,
 	BlocPadding = 5,
-	NewBlocPadding = 6,
-	Polycubify = 7
+	PatchPadding = 6,
+	NewBlocPadding = 7,
+	Polycubify = 8
 };
 
 struct ViewBinding {
@@ -78,7 +79,9 @@ struct ViewBinding {
 
 struct Context {
 
-	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), view(view) {}
+	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), /*hex_bound(hex),*/ view(view) {
+		hex_bound = std::make_unique<HexBoundary>(hex);
+	}
 
 	bool show_last_picked_point_ = false;
 	bool show_hovered_cell_overlay_ = true;
@@ -172,6 +175,8 @@ struct Context {
 	UM::Tetrahedra tet;
 	UM::Hexahedra hex;
 	TetBoundary tet_bound;
+	// HexBoundary hex_bound;
+	std::unique_ptr<HexBoundary> hex_bound;
 
 	MeshMetadata mesh_metadata;
 

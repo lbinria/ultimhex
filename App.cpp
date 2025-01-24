@@ -679,7 +679,12 @@ bool App::load(const std::string& filename) {
 	}
 	else if (context_.mesh_metadata.cell_type == GEO::MESH_HEX) {
 		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
+		// Update hexbound
 		context_.hex.connect();
+		// context_.hex_bound->update();
+		context_.hex_bound = std::make_unique<HexBoundary>(context_.hex);
+		um_bindings::geo_mesh_from_hexboundary(*context_.hex_bound, context_.mesh_);
+
 		context_.view.change_mode(ViewBinding::Mode::Volume);
 	}
 

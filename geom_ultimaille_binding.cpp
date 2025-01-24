@@ -171,7 +171,8 @@ namespace um_bindings {
 
 	void geo_mesh_from_hexboundary(HexBoundary &m, GEO::Mesh &m_out) {
 
-		m_out.clear(true, true);
+		// m_out.clear(true, true);
+		m_out.clear();
 
 		int v_off = m_out.vertices.create_vertices(m.hex.nverts());
 		int f_off = m_out.facets.create_facets(m.quad.nfacets(), 4);

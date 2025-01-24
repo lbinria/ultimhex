@@ -79,23 +79,26 @@ void LayerPad2::validate_callback() {
 	std::cout << "n verts: " << ctx.hex.nverts() << std::endl;
 
 
+	// Remove surface during the processing as they share point with volume, we cannot do any modification without this
+	ctx.hex_bound->clear_surface();
+
 	Volume::Halfedge selected_he(ctx.hex, selected_h_idx);
 	helpers::redefine_stack_layers(ctx.hex, selected_he, n_layers_requested);
-	um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
-	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-	
 
 	// Recompute layers
 	ctx.hex.disconnect();
 	ctx.hex.connect();
+	
+	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+
+	// um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
+	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+	
+
+
 	// Reset
 	clear();
-
-	HexBoundary hb(ctx.hex);
-	write_by_extension("bound_pour_voir_si_connectivite_pete.geogram", hb.quad);
-
-	
-	std::cout << "n verts: " << ctx.hex.nverts() << std::endl;
 }
 
 bool LayerPad2::is_compatible() { 

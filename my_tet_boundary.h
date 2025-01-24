@@ -4,14 +4,11 @@
 
 using namespace UM;
 
-
 struct HexBoundary {
 
 	inline  HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) :hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
-		// if (duplicate_vertices) 
-		// 	ToolBox(quad.points).copy_from(hex.points);
-		// else 
-			quad.points = hex.points;
+ 
+		quad.points = hex.points;
 		
 		for (auto f_hex : hex.iter_facets()) if (!f_hex.opposite().active()) {
 			int f_quad= quad.create_facets(1);
@@ -19,13 +16,36 @@ struct HexBoundary {
 			quad_facet_[f_hex] = f_quad;
 			for(int lv = 0; lv < 4; lv++) quad.vert(f_quad, lv) = f_hex.vertex(lv);
 		}
+
 		quad.connect();
 	}
+
+	inline void clear_surface() {
+		quad.clear();
+	}
+
+
 	inline Volume::Facet		hex_facet(int f_quad) { return Volume::Facet(hex, hex_facet_[f_quad]); }
 	inline Volume::Halfedge	hex_halfedge(int h_quad) { return Volume::Facet(hex, hex_facet_[h_quad/ 4]).halfedge(h_quad% 4); }
 
 	inline Quads::Facet	quad_facet(int f_hex) { return Quads::Facet(quad, quad_facet_[f_hex]); }
 	inline Quads::Halfedge	quad_halfedge(int h_hex) { return Quads::Facet(quad, quad_facet_[h_hex / 4]).halfedge(h_hex % 4); }
+
+
+	inline void set_attribute_to_surface(CellFacetAttribute<int> &hex_attr, FacetAttribute<int> &quad_attr) {
+		for (auto f : hex.iter_facets()) {
+			if (!f.on_boundary())
+				continue;
+			
+			quad_attr[quad_facet(f)] = hex_attr[f];
+		}
+	}
+
+	inline void set_attribute_to_volume(FacetAttribute<int> &quad_attr, CellFacetAttribute<int> &hex_attr) {
+		for (auto f : quad.iter_facets()) {			
+			hex_attr[hex_facet(f)] = quad_attr[f];
+		}
+	}
 
 	Hexahedra& hex;
 	CellFacetAttribute<int> quad_facet_;

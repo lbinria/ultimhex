@@ -28,11 +28,36 @@ struct PatchPadTool : public Tool {
 	}
 
 	void clear() override {
-		is_init_patches = false;
 		patches.clear();
+
+		// Attribute hovered / selected, enable visualizing hovered / selected facets
+		GEO::Attribute<int> hovered_attr(
+			ctx.mesh_.facets.attributes(), "hovered"
+		);
+
+		// Remove hovered facets attribute
+		for (auto f : hovered_facets) {
+			hovered_attr[f] = 0;
+		}
+		// Remove selected facets attribute
+		for (auto f : selected_facets) {
+			hovered_attr[f] = 0;
+		}
+
+		hovered_facets.clear();
+		selected_facets.clear();
 	}
+
+	void clear_patches() {
+		is_init_patches = false;
+	}
+
+	void compute_patches_for_selection();
 
 	bool is_init_patches = false;
 	std::vector<int> patches;
+
+	std::vector<int> hovered_facets;
+	std::vector<int> selected_facets;
 
 };

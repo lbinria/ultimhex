@@ -122,7 +122,8 @@ void PolycubifyTool::run_robust_polycube() {
 
 	// Load result
 	
-	read_by_extension(filename + ".hexmesh_improved.mesh", ctx.hex);
+	// read_by_extension(filename + ".hexmesh_improved.mesh", ctx.hex);
+	read_by_extension(filename + ".hexmesh.mesh", ctx.hex);
 	ctx.hex.connect();
 
 	// normalize
@@ -147,7 +148,12 @@ void PolycubifyTool::run_robust_polycube() {
 	// um_bindings::geo_mesh_from_hexboundary(hex_bound, ctx.mesh_);
 
 	// Replace current GEO mesh by UM Hex
-	um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
+	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+
+	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	// um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
+
+
 
 	// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
