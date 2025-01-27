@@ -10,13 +10,14 @@
 
 void PaintFlagTool::init() {
 	// Compute flag on tet and tri
-	ctx.tet_bound.update();
+	
+	ctx.tet_bound = std::make_unique<TetBoundary>(ctx.tet);
 
 	UM::CellFacetAttribute<int> tet_flag(ctx.tet, -1);
-	UM::FacetAttribute<int> tri_flag(ctx.tet_bound.tri, -1);
+	UM::FacetAttribute<int> tri_flag(ctx.tet_bound->tri, -1);
 
 	// Transfert flag from tet to tri for display
-	ctx.tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
+	ctx.tet_bound->set_attribute_to_surface(tet_flag, tri_flag);
 
 	// Keep features
 	std::vector<std::pair<int, int>> edges(ctx.mesh_.edges.nb());
@@ -29,7 +30,7 @@ void PaintFlagTool::init() {
 	}
 
 	// To GEO mesh (we have to do that to have surface that match to volume, thanks to TetBound)
-	um_bindings::geo_mesh_from_tetboundary(ctx.tet_bound, ctx.mesh_);
+	um_bindings::geo_mesh_from_tetboundary(*ctx.tet_bound, ctx.mesh_);
 
 	// Restore features
 	ctx.mesh_.edges.create_edges(edges.size());
@@ -40,7 +41,7 @@ void PaintFlagTool::init() {
 
 	// Update GEO mesh attribute "flag"
 	um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
-	um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, tri_flag.ptr, "flag", ctx.mesh_);
+	um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, tri_flag.ptr, "flag", ctx.mesh_);
 
 	ctx.view.change_mode(ViewBinding::Mode::Surface);
 }
@@ -62,11 +63,11 @@ bool PaintFlagTool::draw_object_properties() {
 
 			// Init feature bucket
 
-			std::vector<bool> is_feature(ctx.tet_bound.tri.ncorners(), false);
+			std::vector<bool> is_feature(ctx.tet_bound->tri.ncorners(), false);
 
 			// Group halfedge by vertices
 			std::map<std::pair<int, int>, int> halfedge_by_vertices;
-			for (auto h : ctx.tet_bound.tri.iter_halfedges()) {
+			for (auto h : ctx.tet_bound->tri.iter_halfedges()) {
 				halfedge_by_vertices[{h.from(), h.to()}] = h;
 			}
 
@@ -82,8 +83,8 @@ bool PaintFlagTool::draw_object_properties() {
 				is_feature[h2] = true;
 			}
 			
-			DisjointSet ds(ctx.tet_bound.tri.nfacets());
-			for (auto h : ctx.tet_bound.tri.iter_halfedges()) {
+			DisjointSet ds(ctx.tet_bound->tri.nfacets());
+			for (auto h : ctx.tet_bound->tri.iter_halfedges()) {
 				auto opp_h = h.opposite();
 
 				if (!opp_h.active() || is_feature[opp_h])
@@ -92,7 +93,7 @@ bool PaintFlagTool::draw_object_properties() {
 				ds.merge(h.facet(), opp_h.facet());
 			}
 			facet_by_features.clear();
-			facet_by_features.resize(ctx.tet_bound.tri.nfacets());
+			facet_by_features.resize(ctx.tet_bound->tri.nfacets());
 			ds.get_sets_id(facet_by_features);
 
 
@@ -110,10 +111,10 @@ bool PaintFlagTool::draw_object_properties() {
 		// Remove all flags of current mesh
 		if (ImGui::Button("Remove all flags")) {
 			UM::CellFacetAttribute<int> tet_flag(ctx.tet, -1);
-			UM::FacetAttribute<int> tri_flag(ctx.tet_bound.tri, -1);
+			UM::FacetAttribute<int> tri_flag(ctx.tet_bound->tri, -1);
 			// Update GEO mesh attribute "flag"
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
-			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, tri_flag.ptr, "flag", ctx.mesh_);
+			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, tri_flag.ptr, "flag", ctx.mesh_);
 
 			ctx.view.change_mode(ViewBinding::Mode::Surface);
 		}
@@ -122,17 +123,17 @@ bool PaintFlagTool::draw_object_properties() {
 		if (ImGui::Button("Compute all flags")) {
 
 			UM::CellFacetAttribute<int> tet_flag(ctx.tet, -1);
-			UM::FacetAttribute<int> tri_flag(ctx.tet_bound.tri, -1);
+			UM::FacetAttribute<int> tri_flag(ctx.tet_bound->tri, -1);
 
 			// Compute flag
 			algo::naive_tag(ctx.tet, tet_flag);
 			// algo::generate_naive_flagging(ctx.tet, tet_flag);
 			// Transfert flag from tet to tri for display
-			ctx.tet_bound.set_attribute_to_surface(tet_flag, tri_flag);
+			ctx.tet_bound->set_attribute_to_surface(tet_flag, tri_flag);
 
 			// Update GEO mesh attribute "flag"
 			um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
-			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, tri_flag.ptr, "flag", ctx.mesh_);
+			um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, tri_flag.ptr, "flag", ctx.mesh_);
 
 
 			// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
@@ -149,7 +150,7 @@ bool PaintFlagTool::draw_object_properties() {
 				} 
 			};
 			// Write mesh
-			write_by_extension(ctx.mesh_metadata.filename, ctx.tet_bound.tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
+			write_by_extension(ctx.mesh_metadata.filename, ctx.tet_bound->tet, {{}, {}, {{"tet_flag", tet_flag.ptr}}, {}});
 			ctx.mesh_metadata.save();
 
 			ctx.view.change_mode(ViewBinding::Mode::Surface);
@@ -275,10 +276,10 @@ void PaintFlagTool::hover_callback(double x, double y, int source) {
 
 		} else if (current_algo == Naive) {
 
-			UM::Surface::Facet f(ctx.tet_bound.tri, ctx.hovered_facet);
-			// FacetAttribute<int> flag(ctx.tet_bound.tri, -1);
+			UM::Surface::Facet f(ctx.tet_bound->tri, ctx.hovered_facet);
+			// FacetAttribute<int> flag(ctx.tet_bound->tri, -1);
 			// algo::naive_tag({f}, flag, naive_constraints);
-			// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, flag.ptr, "flag", ctx.mesh_);
+			// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, flag.ptr, "flag", ctx.mesh_);
 
 			GEO::Attribute<GEO::signed_index_t> flag(
 				ctx.mesh_.facets.attributes(), "flag"
@@ -325,7 +326,7 @@ void PaintFlagTool::paint_bucket() {
 			if (facet_by_features[i] != feature)
 				continue;
 			
-			facets.push_back(UM::Surface::Facet(ctx.tet_bound.tri, i));
+			facets.push_back(UM::Surface::Facet(ctx.tet_bound->tri, i));
 		}
 
 		GEO::Attribute<GEO::signed_index_t> flag(
@@ -334,9 +335,9 @@ void PaintFlagTool::paint_bucket() {
 
 		algo::naive_tag(facets, flag, naive_constraints);
 
-		// FacetAttribute<int> flag(ctx.tet_bound.tri, -1);
+		// FacetAttribute<int> flag(ctx.tet_bound->tri, -1);
 		// algo::naive_tag(facets, flag, naive_constraints);
-		// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound.tri, flag.ptr, "flag", ctx.mesh_);
+		// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, flag.ptr, "flag", ctx.mesh_);
 	}
 }
 
@@ -345,13 +346,13 @@ void PaintFlagTool::attribute_transfert() {
 	// Because it is volume tet attr that is used for polycubify (not the surface attr) !
 
 	// Transfert "tri_flag" from UM to GEO
-	FacetAttribute<int> tri_flag(ctx.tet_bound.tri, -1);
-	CellFacetAttribute<int> tet_flag(ctx.tet_bound.tet, -1);
-	um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(ctx.mesh_, "flag", ctx.tet_bound.tri, tri_flag.ptr);
+	FacetAttribute<int> tri_flag(ctx.tet_bound->tri, -1);
+	CellFacetAttribute<int> tet_flag(ctx.tet_bound->tet, -1);
+	um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(ctx.mesh_, "flag", ctx.tet_bound->tri, tri_flag.ptr);
 	// Transfert from surface to volume
-	ctx.tet_bound.set_attribute_to_volume(tri_flag, tet_flag);
+	ctx.tet_bound->set_attribute_to_volume(tri_flag, tet_flag);
 	// Transfert "tet_flag" from GEO to UM
-	um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet_bound.tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
+	um_bindings::geo_attr_from_um_attr2<GEO::MESH_CELL_FACETS>(ctx.tet_bound->tet, tet_flag.ptr, "tet_flag", ctx.mesh_);
 }
 
 void PaintFlagTool::mouse_button_callback(int button, int action, int mods, int source) {

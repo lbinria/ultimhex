@@ -36,6 +36,8 @@ struct PaintFlagTool : public Tool {
 		facet_by_color.clear();
 		for (int i = 0; i < 3; i++)
 			naive_constraints[i] = true;
+
+		is_init = false;
 	}
 
 	void paint_bucket();

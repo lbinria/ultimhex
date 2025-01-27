@@ -238,11 +238,11 @@ void FilterTool::filter_chart() {
 	std::vector<int> facet_by_features;
 
 	// TODO duplicate code in paint flag tool
-	std::vector<bool> is_feature(ctx.tet_bound.tri.ncorners(), false);
+	std::vector<bool> is_feature(ctx.tet_bound->tri.ncorners(), false);
 
 	// Group halfedge by vertices
 	std::map<std::pair<int, int>, int> halfedge_by_vertices;
-	for (auto h : ctx.tet_bound.tri.iter_halfedges()) {
+	for (auto h : ctx.tet_bound->tri.iter_halfedges()) {
 		halfedge_by_vertices[{h.from(), h.to()}] = h;
 	}
 
@@ -256,8 +256,8 @@ void FilterTool::filter_chart() {
 		is_feature[h2] = true;
 	}
 
-	DisjointSet ds(ctx.tet_bound.tri.nfacets());
-	for (auto h : ctx.tet_bound.tri.iter_halfedges()) {
+	DisjointSet ds(ctx.tet_bound->tri.nfacets());
+	for (auto h : ctx.tet_bound->tri.iter_halfedges()) {
 		auto opp_h = h.opposite();
 
 		if (!opp_h.active() || is_feature[opp_h])
@@ -266,7 +266,7 @@ void FilterTool::filter_chart() {
 		ds.merge(h.facet(), opp_h.facet());
 	}
 	facet_by_features.clear();
-	facet_by_features.resize(ctx.tet_bound.tri.nfacets());
+	facet_by_features.resize(ctx.tet_bound->tri.nfacets());
 	ds.get_sets_id(facet_by_features);
 
 	int feature = facet_by_features[ctx.selected_facet];

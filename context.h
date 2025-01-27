@@ -79,8 +79,9 @@ struct ViewBinding {
 
 struct Context {
 
-	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), tet_bound(tet), /*hex_bound(hex),*/ view(view) {
+	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), /*tet_bound(tet),*/ /*hex_bound(hex),*/ view(view) {
 		hex_bound = std::make_unique<HexBoundary>(hex);
+		tet_bound = std::make_unique<TetBoundary>(tet);
 	}
 
 	bool show_last_picked_point_ = false;
@@ -174,8 +175,9 @@ struct Context {
 
 	UM::Tetrahedra tet;
 	UM::Hexahedra hex;
-	TetBoundary tet_bound;
-	// HexBoundary hex_bound;
+
+	// TetBoundary tet_bound;
+	std::unique_ptr<TetBoundary> tet_bound;
 	std::unique_ptr<HexBoundary> hex_bound;
 
 	MeshMetadata mesh_metadata;
