@@ -1,0 +1,4 @@
+// pour ultimaille
+git submodule update --recursive --remote
+
+git clone --recurse-submodules https://gitlab.inria.fr/nray/nicostuff.git

@@ -26,7 +26,7 @@
 					v[f] = 3. * (double(dir) - .5) * cross(tri.normal(), grd);
 				}
 
-				Drop(m, v)._force_radius(.02*ToolBox(m).ave_edge_size()).apply_arrow("ff iso" + std::to_string(dim));
+				Drop(m, v)._force_length(.5*ToolBox(m).ave_edge_size()).apply_line("ff iso" + std::to_string(dim));
 			}
 		}
 	}

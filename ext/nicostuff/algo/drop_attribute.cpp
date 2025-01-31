@@ -54,9 +54,8 @@ DropPolyLineGeometry& DropPolyLineGeometry::_force_radius(double radius, bool re
 
 void extract_iso(Tetrahedra& m, Triangles& tr, FacetAttribute<double>& attr, CellCornerAttribute<double>& scal, double iso) {
 
-	//auto heh = m.heh;
-	FOR(c, m.ncells()) //FOR(lf, 4) FOR(lv, 3)
-	{
+
+	FOR(c, m.ncells()){
 		vec3 P[4];
 		double val[4];
 		FOR(lv, 4) P[lv] =  m.points[m.vert(c,lv)];
@@ -100,47 +99,6 @@ void extract_iso(Tetrahedra& m, Triangles& tr, FacetAttribute<double>& attr, Cel
 			FOR(e, 4) {
 				double diff = val[edges[e][1]] - val[edges[e][0]];
 				double lambda = val[edges[e][1]]  / diff;
-				tr.points[offv + e] = lambda * P[edges[e][0]] + (1. - lambda) * P[edges[e][1]];
-			}
-			int f = tr.create_facets(2);
-			FOR(i, 2) attr[f + i] = iso;
-			tr.vert(f, 0) = offv;	tr.vert(f, 1) = offv + 1;		tr.vert(f, 2) = offv + 2;
-			tr.vert(f + 1, 0) = offv; tr.vert(f + 1, 1) = offv + 2;	tr.vert(f + 1, 2) = offv + 3;
-		}
-
-		continue;
-
-
-
-		//if (h[0] > h[1] && h[0] > h[2])
-		{ // avoid duplicated triangles... duplicated vertices are fines;) 
-			if (val[3] < 0 && val[0] > 0 && val[1] > 0 && val[2] > 0) {
-				int offv = tr.points.create_points(3);
-				FOR(i, 3) {
-					double lambda = val[i] / (val[i] - val[3]);
-					tr.points[offv + i] = lambda * P[3] + (1. - lambda) * P[i];
-				}
-				int f = tr.create_facets(1);
-				attr[f] = iso;
-				FOR(i, 3) tr.vert(f, i) = offv + i;
-			}
-			if (val[3] > 0 && val[0] < 0 && val[1] < 0 && val[2] < 0) {
-				int offv = tr.points.create_points(3);
-				FOR(i, 3) {
-					double lambda = val[i] / (val[i] - val[3]);
-					tr.points[offv + i] = lambda * P[3] + (1. - lambda) * P[i];
-				}
-				int f = tr.create_facets(1);
-				attr[f] = iso;
-				FOR(i, 3) tr.vert(f, 2 - i) = offv + i;
-			}
-		}
-
-		if (val[3] > 0 && val[0] > 0 && val[1] < 0 && val[2] < 0) {
-			int offv = tr.points.create_points(4);
-			int edges[4][2] = { {0,1},{0,2},{3,2},{3,1} };
-			FOR(e, 4) {
-				double lambda = val[edges[e][1]]  / (val[edges[e][1]] - val[edges[e][0]]);
 				tr.points[offv + e] = lambda * P[edges[e][0]] + (1. - lambda) * P[edges[e][1]];
 			}
 			int f = tr.create_facets(2);
@@ -224,5 +182,4 @@ void show_U_deformation(Tetrahedra& tet,CellCornerAttribute<vec3>& U) {
 	render_tet.create_cells(tet.ncells());
 	FOR(c, render_tet.ncorners()) render_tet.vert(c / 4, c % 4) = c;
 	ToolBox(render_tet).drop_volume("deformed");
-	//DropVolume(render_tet).apply("deformed");
 }

@@ -1,7 +1,7 @@
 add_subdirectory(third_party/tetgen)
 
 include_directories(algo)
-file(GLOB SOURCES *.cpp *.h framework/*.cpp framework/*.h surface/*.cpp surface/*.h third_party/*.cpp third_party/*.h volume/*.cpp volume/*.h fullhex/*.cpp fullhex/*.h )
+file(GLOB SOURCES *.cpp *.h dirty/*.cpp dirty/*.h framework/*.cpp framework/*.h surface/*.cpp surface/*.h third_party/*.cpp third_party/*.h volume/*.cpp volume/*.h fullhex/*.cpp fullhex/*.h )
 # if (WIN32)
 	set(BUILD_SHARED_LIBS OFF)
 # endif()

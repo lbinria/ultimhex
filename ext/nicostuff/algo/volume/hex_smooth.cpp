@@ -169,13 +169,13 @@ void HexSmoother::smooth_elliptic(double constraint_weight) {
 		vec3 D = { 0,0,l };
 
 		mat<3, 3> ST = { {B - A, C - A, D - A} };
-		int c = h1.from_corner();//m.heh.corner(h1);
+		int c = h1.from_corner();
 		reference[c] = mat<4, 3>{ { {-1,-1,-1},{1,0,0},{0,1,0},{0,0,1} } }*ST.invert_transpose();
 		volume[c] = Tetrahedron(A, B, C, D).volume();
 	}
 
 	const auto getJ = [&](const std::vector<double>& X, Volume::Halfedge& h1, const int* verts)->mat<3, 3> { // get Jacobian matrix for tetrahedron t
-		int c = h1.from_corner();//m.heh.corner(h1);
+		int c = h1.from_corner();
 		mat<3, 3> J = {};
 		for (int i : {0, 1, 2, 3})
 			for (int d : {0, 1, 2})

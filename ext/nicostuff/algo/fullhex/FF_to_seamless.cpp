@@ -215,7 +215,7 @@ bool FFToSeamless::add_real_constraints(CellFacetAttribute<bool>& cut, Constrain
 				LinExpr constraint = n[d] * X(3 * h.from_corner() + d) - n[d] * X(3 * h.to_corner() + d);
 				auto [already_satisfied,impossible] = constraint_status(cls,constraint);
 				if (already_satisfied || impossible) continue;
-				//ls.rb.leading_to_free(constraint);
+				//ls.rb.reduce(constraint);
 				//if (constraint.size() < 2) continue;
 				cls.add_to_constraints(constraint);
 			}

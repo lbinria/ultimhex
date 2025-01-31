@@ -73,6 +73,32 @@
 
 	}
 
+	void ToolBoxHexahedra::drop_singular_edges(std::string filename, bool show_hex ){
+		EdgeGraph eg(hex);
+		EdgeAttribute<int> nh(eg, 0);
+		EdgeAttribute<bool> boundary(eg, false);
+		for (auto h : hex.iter_halfedges()) {
+			//if (h % 1000 == 0) std::cerr << int(h) << " / " << hex.nfacets() * 4 << std::endl;
+			//auto e = eg.edge_from_halfedge(h);
+			PolyLine::Vertex v(eg, h.from());
+			PolyLine::Edge e(eg, -1);
+			for (auto it : v.iter_edges()) if (it.to() == h.to()) e = it;
+
+			if (!h.facet().opposite().active()) boundary[e] = true;
+			nh[e]++;			
+		}
+		for (auto e : eg.iter_edges()) if (nh[e] == 2 && boundary[e]) nh[e] = 4;
+		Drop(eg, nh)._skip_value(4).apply_wireframe(filename);
+		if (show_hex) DropVolume(hex).apply(filename + "_hex");
+
+	}
+
+	void ToolBoxHexahedra::drop_boundary(std::string name) {
+		CellFacetAttribute<bool> hide(hex);
+		for (auto f : hex.iter_facets()) hide[f] = !f.on_boundary();
+		Drop(hex, hide).apply("hexboundary");
+	}
+
 
 
 

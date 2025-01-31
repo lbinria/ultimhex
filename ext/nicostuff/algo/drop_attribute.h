@@ -129,10 +129,14 @@ template<> struct Drop<PointSet, PointAttribute<vec3> > {
 //   |_|   \___/  |_|  \__, |     |______| |_| |_| |_|  \___|
 //                      __/ |                                
 //                     |___/                                 
-template<class T>
-struct Drop<PolyLine, PointAttribute<T>> {
-    Drop(PolyLine& m, PointAttribute<T>& attr) : m(m), attr(attr), __forced_radius(-1) {}
-    PolyLine& m;
+
+template <typename T> concept PolyLineConceptBase = std::is_base_of<PolyLine, T>::value;
+
+
+template<PolyLineConceptBase C,class T>
+struct Drop<C, PointAttribute<T>> {
+    Drop(C& m, PointAttribute<T>& attr) : m(m), attr(attr), __forced_radius(-1) {}
+    C& m;
     PointAttribute<T>& attr;
     ARG(T, skip_value, T(-1));
     ARG(std::function< bool(int) >, select, std::function([&](int v) {return v!=-1; }));
@@ -195,10 +199,10 @@ struct Drop<PolyLine, PointAttribute<T>> {
 
 
 
-template<class T>
-struct Drop<PolyLine, EdgeAttribute<T>> {
-    Drop(PolyLine& m, EdgeAttribute<T>& attr) : m(m), attr(attr), __forced_radius(-1) {}
-    PolyLine& m;
+template<PolyLineConceptBase C, class T>
+struct Drop<C, EdgeAttribute<T>> {
+    Drop(C& m, EdgeAttribute<T>& attr) : m(m), attr(attr), __forced_radius(-1) {}
+    C& m;
     EdgeAttribute<T>& attr;
     ARG(T, skip_value, T(-1));
     ARG(std::function< bool(int) >, select, std::function([&](int v) {return v!=-1; }));
@@ -237,9 +241,13 @@ struct Drop<PolyLine, EdgeAttribute<T>> {
         auto_set_radius();
         Polygons outm;
         FacetAttribute<T> out_attr(outm);
-        FOR(s, m.nedges())
+        FOR(s, m.nedges()) {
+            T attr_s = attr[s];
+
             if (__select(s) && attr[s] != __skip_value)
-                Glyphs::Arrow(outm).resolution(__resolution).radius(__forced_radius).apply(m.points[m.vert(s, 0)], m.points[m.vert(s, 1)], out_attr, attr[s]);
+                Glyphs::Arrow(outm).resolution(__resolution).radius(__forced_radius)
+                .apply(m.points[m.vert(s, 0)], m.points[m.vert(s, 1)], out_attr, attr_s);
+        }
         DropSurface(outm)._just_save_filename(__just_save_filename).add(out_attr, "out_attr")
             ._lighting(false)._show_border(false)._show_edges(false)._show_vertices(false)._active_facet_attribute("out_attr").apply(name);
     }
@@ -247,9 +255,12 @@ struct Drop<PolyLine, EdgeAttribute<T>> {
         auto_set_radius();
         Polygons outm;
         FacetAttribute<T> out_attr(outm);
-        FOR(s, m.nedges())
-            if (__select(s) && attr[s] != __skip_value)
-                Glyphs::Capsule(outm).resolution(__resolution).radius(__forced_radius).apply<T>(m.points[m.vert(s, 0)], m.points[m.vert(s, 1)], out_attr, attr[s]);
+        FOR(s, m.nedges()) {
+            T attr_s = attr[s];
+            if (__select(s) && attr_s != __skip_value)
+                Glyphs::Capsule(outm).resolution(__resolution)
+                .radius(__forced_radius).apply<T>(m.points[m.vert(s, 0)], m.points[m.vert(s, 1)], out_attr, attr_s);
+        }
         DropSurface(outm)._just_save_filename(__just_save_filename).add(out_attr, "out_attr")
             ._lighting(false)._show_border(false)._show_edges(false)._show_vertices(false)._active_facet_attribute("out_attr").apply(name);
     }
@@ -271,10 +282,10 @@ struct Drop<PolyLine, EdgeAttribute<T>> {
 };
 
 
-
-template<> struct Drop<PolyLine, EdgeAttribute<vec3> > {
-    Drop(PolyLine& pl, EdgeAttribute<vec3>& attr) : pl(pl), attr(attr), __forced_length(0), __forced_radius(-1) {}
-    PolyLine& pl;
+template<PolyLineConceptBase C>
+struct Drop<C, EdgeAttribute<vec3> > {
+    Drop(C& pl, EdgeAttribute<vec3>& attr) : pl(pl), attr(attr), __forced_length(0), __forced_radius(-1) {}
+    C& pl;
     EdgeAttribute<vec3>& attr;
     ARG(std::function< bool(int) >, select, std::function([&](int v) {return v!=-1; }));
     ARG(bool, use_disk, false);
@@ -449,8 +460,36 @@ struct Drop<C, CornerAttribute<T>> {
         else
             Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._resolution(__resolution)._skip_value(__skip_value)._force_radius(__forced_radius).apply_arrow(name);
     }
+    void apply_edge(std::string name = "") {
+        um_assert(m.connected());
+        PolyLine pl;
+        EdgeAttribute<double> 			 out_attr(pl);
 
-    void apply_dual_edge(std::string name = "") {
+
+        for (auto h : m.iter_halfedges()) {
+            auto opp = h.opposite();
+            if (opp.active() && opp < h) continue;
+
+            vec3 G = Poly3(h.facet()).bary_verts();
+            if (!__select(h) || __skip_value == attr[h]) continue;
+            vec3 A = m.points[h.from()];
+            vec3 B = m.points[h.to()];
+
+            int e = pl.create_edges(1);
+            out_attr[e] = attr[h];
+            int v = pl.points.create_points(2);
+            FOR(i, 2) pl.vert(e, i) = v + i;
+            pl.points[v] = A;
+            pl.points[v + 1] = B;
+        }
+
+        if (__wireframe)
+            Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._skip_value(__skip_value).apply_wireframe(name);
+        else
+            Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._resolution(__resolution)._skip_value(__skip_value)._force_radius(__forced_radius).apply_arrow(name);
+    }
+
+    void apply_dual_halfedge(std::string name = "") {
         um_assert(m.connected());
         PolyLine pl;
         EdgeAttribute<double> 			 out_attr(pl);
@@ -463,6 +502,34 @@ struct Drop<C, CornerAttribute<T>> {
             if (!__select(h) || __skip_value == attr[h]) continue;
             vec3 A = __decal * m.points[h.to()] + (1. - __decal) * G;
             vec3 B = __decal * m.points[h.to()] + (1. - __decal) * Gopp;
+            int e = pl.create_edges(1);
+            out_attr[e] = attr[h];
+            int v = pl.points.create_points(2);
+            FOR(i, 2) pl.vert(e, i) = v + i;
+            pl.points[v] = A;
+            pl.points[v + 1] = B;
+        }
+        if (__wireframe)
+            Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._skip_value(__skip_value).apply_wireframe(name);
+        else
+            Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._resolution(__resolution)._skip_value(__skip_value)._force_radius(__forced_radius).apply_arrow(name);
+        //Drop<PolyLine, EdgeAttribute<double>>(pl, out_attr)._just_save_filename(__just_save_filename)._skip_value(__skip_value)._resolution(__resolution)._force_radius(__forced_radius).apply_arrow(name);
+    }
+    void apply_dual_edge(std::string name = "") {
+        um_assert(m.connected());
+        PolyLine pl;
+        EdgeAttribute<double> 			 out_attr(pl);
+        for (auto h : m.iter_halfedges()) {
+            vec3 G = Poly3(h.facet()).bary_verts();
+            vec3 Gopp = .5 * (m.points[h.from()] + m.points[h.to()]);
+            auto opp = h.opposite();
+            if (opp.active()) {
+                Gopp = Poly3(opp.facet()).bary_verts();
+                if (opp > h) continue;
+            }
+            if (!__select(h) || __skip_value == attr[h]) continue;
+            vec3 A = G;
+            vec3 B = Gopp;
             int e = pl.create_edges(1);
             out_attr[e] = attr[h];
             int v = pl.points.create_points(2);
@@ -1047,6 +1114,9 @@ struct Drop<C, CellAttribute<mat3x3>> {
     }
 
 };
+
+
+
 
 
 #endif

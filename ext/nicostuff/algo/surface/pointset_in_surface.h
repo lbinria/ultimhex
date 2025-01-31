@@ -25,6 +25,14 @@ struct PointSetEmbedding {
     void project();
 
 
+    PolyLine::Edge edge_from_halfedge(int hid) {
+        Surface::Halfedge h(tri_emb, hid);
+        um_assert(h.active());
+        auto pl_v = PolyLine::Vertex(pl_emb, h.from());
+        for (auto e : pl_v.iter_edges()) if (e.to() == h.to()) return e;
+        return PolyLine::Edge(pl_emb, -1);
+    }
+
     std::array<vec3, 3> constrained_direction(int v);
 
     void show_pts ();

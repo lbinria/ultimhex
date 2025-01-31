@@ -16,7 +16,7 @@ void HexPad::apply(CellFacetAttribute<bool>& pad_face, bool verbose, bool geom_o
 	
 	if (!hex.connected()) {
 		hex.connect();
-		plop("HexPad::apply called not not connected mesh");
+		plop("HexPad::apply called on not connected mesh");
 	}
 	if (verbose) Trace::step("group corners");
 
@@ -97,7 +97,10 @@ void HexPad::apply(CellFacetAttribute<bool>& pad_face, bool verbose, bool geom_o
 
 	hex.connect();
 	if (geom_optim) {
-		//HexSmooth::check_degenerated_topo(conn);
+		plop("Coucou benjamin");
+		double ave = ToolBox(hex).ave_edge_size();
+		for (auto v : hex.iter_vertices()) v.pos()/=ave;
+
 		HexSmoother smoother(hex);
 
 		HexPointSelect select(hex);
@@ -107,7 +110,6 @@ void HexPad::apply(CellFacetAttribute<bool>& pad_face, bool verbose, bool geom_o
 		select.by_facet_value(chart, 1, false);
 		if (dilate) select.dilate(false);		
 
-		//std::vector<TangentConstraint> tan_constraints;
 		for (auto f : hex.iter_facets()) {
 			auto opp = f.opposite();
 			if (opp.active()) continue;
@@ -117,13 +119,8 @@ void HexPad::apply(CellFacetAttribute<bool>& pad_face, bool verbose, bool geom_o
 
 		smoother.set_lock(select);
 		smoother.smooth_elliptic();
-		//HexSmooth::smooth_with_locked_vertices_and_tangent_constraints(hex, select.lock, tan_constraints);
 
-
-		//Drop(hex, chart)._skip_value(0)._shrink(0).apply("ap_opt");
-		//HexSmooth::show_scaled_jacobien(hex, "negSJ", 0);
-		//HexSmooth::show_scaled_jacobien(hex, "SJ", 1);
-
+		for (auto v : hex.iter_vertices()) v.pos() *= ave;
 	}
 
 
@@ -132,7 +129,6 @@ void HexPad::apply(CellFacetAttribute<bool>& pad_face, bool verbose, bool geom_o
 
 
 void refine_marked_cells(Hexahedra& hex, CellAttribute<bool>& need_refine,bool geom_optim ) {
-	//EC3d conn(hex);
 	hex.connect();
 	// mark halfedges
 	std::vector<bool> halfedge2refine(hex.nfacets() * 4, false);

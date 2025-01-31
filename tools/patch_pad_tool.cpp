@@ -9,6 +9,8 @@
 
 bool PatchPadTool::draw_object_properties() {
 	
+	ImGui::Checkbox("Extends to concave", &extends_to_concave);
+
 	if (ImGui::Button("Patch selection")) {
 		compute_patches_for_selection();
 		return true;
@@ -37,7 +39,31 @@ void PatchPadTool::compute_patches_for_selection() {
 			Quad3 opp_q = opp_f;
 
 			// Compute angle
-			if (q.normal() * opp_q.normal() > 0.4) {
+			double angle = q.normal() * opp_q.normal();
+
+			// Compute signed volume between 2 tetrahedrons of quad facets to 
+			UM::vec3 bary;
+			UM::vec3 bary_opp;
+			for (auto qh : f.iter_halfedges()) {
+				bary += qh.from().pos();
+			}
+			bary /= 4.;
+			for (auto qh : opp_f.iter_halfedges()) {
+				bary_opp += qh.from().pos();
+			}
+			bary_opp /= 4.;
+
+			double v = Tetrahedron(h.from().pos(), h.to().pos(), bary, bary_opp).volume();
+
+			// We expect to merge adjacents facets that are almost coplanar
+			bool should_merge = angle > 0.4;
+			// We can also merge adjacents facets that are not coplanar but have a concave angle
+			if (extends_to_concave)
+				should_merge = should_merge ||  v > 0;
+
+			// if (angle > 0.4) {j'avais
+			// if (angle > 0.4 || v > 0) {
+			if (should_merge) {
 				ds.merge(f, opp_f);
 			}
 

@@ -6,7 +6,7 @@ struct ToolBoxPointSet {
 	ToolBoxPointSet(PointSet& pts);
 
 	BBox3 bbox();
-
+	void normalize_largest_dimension();
 	BBox3 normalize(BBox3 bbox = BBox3());
 
 	void normalize_for_stability();

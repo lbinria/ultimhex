@@ -301,7 +301,7 @@ namespace helpers {
 		auto selected_edge = eg.edge_from_halfedge(selected_he);
 		int stack = layer_stack[layer[selected_edge]];
 		
-		CellFacetAttribute<bool> fa(hex, false);
+		// CellFacetAttribute<bool> fa(hex, false);
 
 		// // Extract edges from stack
 		std::vector<std::pair<int,int>> cell_facets;
@@ -324,8 +324,8 @@ namespace helpers {
 
 			auto e = eg.edge_from_halfedge(f.halfedge(0).opposite_f().next());
 
-			if (layer_stack[layer[e]] == stack) {
-				fa[f] = true;
+			if (layer_stack[layer[e]] == stack || next_eg[e] < 0) {
+				// fa[f] = true;
 				// fa[f] = layer_stack[layer[e]];
 				auto c = f.cell();
 				auto gf = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
@@ -335,26 +335,26 @@ namespace helpers {
 		}
 
 
-		UM::Quads q_out;
-		for (auto f : hex.iter_facets()) {
-			// if (fa[f] < 0)
-			if (!fa[f])
-				continue;
+		// UM::Quads q_out;
+		// for (auto f : hex.iter_facets()) {
+		// 	// if (fa[f] < 0)
+		// 	if (!fa[f])
+		// 		continue;
 
-			int v_off = q_out.points.create_points(4);
-			q_out.points[v_off] = f.vertex(0).pos();
-			q_out.points[v_off + 1] = f.vertex(1).pos();
-			q_out.points[v_off + 2] = f.vertex(2).pos();
-			q_out.points[v_off + 3] = f.vertex(3).pos();
+		// 	int v_off = q_out.points.create_points(4);
+		// 	q_out.points[v_off] = f.vertex(0).pos();
+		// 	q_out.points[v_off + 1] = f.vertex(1).pos();
+		// 	q_out.points[v_off + 2] = f.vertex(2).pos();
+		// 	q_out.points[v_off + 3] = f.vertex(3).pos();
 
-			int f_off = q_out.create_facets(1);
-			q_out.vert(f_off, 0) = v_off;
-			q_out.vert(f_off, 1) = v_off + 1;
-			q_out.vert(f_off, 2) = v_off + 2;
-			q_out.vert(f_off, 3) = v_off + 3;
+		// 	int f_off = q_out.create_facets(1);
+		// 	q_out.vert(f_off, 0) = v_off;
+		// 	q_out.vert(f_off, 1) = v_off + 1;
+		// 	q_out.vert(f_off, 2) = v_off + 2;
+		// 	q_out.vert(f_off, 3) = v_off + 3;
 
-		};
-		write_by_extension("q_out.geogram", q_out, {{}, {/*{"f", fa.ptr}*/}, {}});
+		// };
+		// write_by_extension("q_out.geogram", q_out, {{}, {/*{"f", fa.ptr}*/}, {}});
 
 
 

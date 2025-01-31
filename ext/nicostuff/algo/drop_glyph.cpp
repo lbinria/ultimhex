@@ -18,7 +18,8 @@ void drop_arrow(vec3 from, vec3 to, std::string name) {
 	pl.points.create_points(2);
 	pl.points[0] = from;
 	pl.points[1] = to;
-	DropPolyLineGeometry(pl).apply_arrow(name);
+	DropPolyLine(pl).apply(name);
+	//DropPolyLineGeometry(pl).apply_arrow(name);
 }
 
 void drop_triangle(Triangle3 t, std::string name) {

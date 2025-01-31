@@ -37,6 +37,55 @@ namespace Glyphs {
 
 
 
+	struct Ribbon {
+		Ribbon(Polygons& m,
+			vec3 A, vec3 B, vec3 normalAB,
+			vec3 C, vec3 D, vec3 normalCD,
+			int res = 3)
+			:m(m), A(A), B(B), C(C), D(D), nAB(normalAB), nCD(normalCD), res(res) {
+			start = 0;
+			end = 1;
+		}
+		Ribbon& portion_only(double p_start, double p_end) { start = p_start; end = p_end; return *this; }
+
+		Polygons& m;
+		int res;
+		vec3 A, B, nAB, C, D, nCD;
+		double start, end;
+
+		void apply() {
+			int off_q = m.create_facets(res, 4);
+			int off_v = m.points.create_points(2 * (res + 1));
+			FOR(lq, res) {
+				m.vert(off_q + lq, 0) = off_v + 2 * lq;
+				m.vert(off_q + lq, 1) = off_v + 2 * lq + 1;
+				m.vert(off_q + lq, 2) = off_v + 2 * lq + 3;
+				m.vert(off_q + lq, 3) = off_v + 2 * lq + 2;
+			}
+
+			double width = .5*((A - B).norm() + (C - D).norm());
+			double lAC = .5 * (A - C).norm() + .1*width;
+			double lBD = .5 * (B-D).norm() + .1*width;
+			nAB = nAB.normalized();
+			nCD = nCD.normalized();
+			FOR(i, res + 1) {
+				double t = double(i) / double(res);
+				t = start + t * (end - start);
+				double it = 1. - t;
+				double c[4] = { it * it * it,3 * t * it * it,3 * t * t * it,t * t * t };
+				m.points[off_v + 2 * i] = c[0] * A + c[1] * (A + lAC*nAB) + c[2] * (C + lAC*nCD) + c[3] * C;
+				m.points[off_v + 2 * i + 1] = c[0] * B + c[1] * (B + lBD*nAB) + c[2] * (D + lBD * nCD) + c[3] * D;
+			}
+
+
+
+		}
+		template <class T> void apply(FacetAttribute<T>& val, T value) {
+			apply();
+			FOR(f, res) val[m.nfacets() - f - 1] = value;
+		}
+
+	};
 
 
 

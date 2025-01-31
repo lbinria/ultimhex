@@ -8,6 +8,16 @@
 		return res;
 	}
 
+	
+	
+	void ToolBoxPointSet::normalize_largest_dimension() {
+		auto b = bbox();
+		double inv_factor = 1e20;
+		FOR(d, 3) inv_factor = std::min(inv_factor, b.size()[d] );
+		FOR(d, 3) FOR(i, pts.size()) pts[i][d] = inv_factor *(pts[i][d]-b.min[d]);
+		
+	}
+
 	BBox3 ToolBoxPointSet::normalize(BBox3 bbox ) {
 		if (bbox.empty()) FOR(i, 2) bbox.add(vec3(i, i, i));
 		BBox3 prev_bbox;
