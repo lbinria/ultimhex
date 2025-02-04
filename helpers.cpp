@@ -486,7 +486,7 @@ namespace helpers {
 						segment_points.push_back(org.pos());
 						segment_lengths.push_back((e.to().pos() - e.from().pos()).norm());
 
-						while (next_eg[e] > 0 && layer_stack[layer[next_eg[e]]] == stack) {
+						while (next_eg[e] >= 0 && layer_stack[layer[next_eg[e]]] == stack) {
 							auto next_e = PolyLine::Edge(eg, next_eg[e]);
 							e = next_eg[e];
 							segment_points.push_back(e.from().pos());
@@ -499,8 +499,9 @@ namespace helpers {
 
 						// Compute size of polyline
 						double poly_len = 0;
-						for (auto l : segment_lengths)
+						for (auto l : segment_lengths) {
 							poly_len += l;
+						}
 
 						double segment_len_target = poly_len / final_height;
 
