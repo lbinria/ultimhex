@@ -24,8 +24,7 @@ namespace helpers {
 
 	std::vector<int> get_h_layers(Hexahedra &hex);
 
-	std::vector<UM::vec3> get_layer_stack_visu(Hexahedra &hex, Volume::Halfedge &selected_he);
-	std::vector<std::pair<int, int>> get_layer_stack(Hexahedra &hex, Volume::Halfedge &selected_he);
+	std::vector<std::pair<int, int>> get_layer_stack_facets(Hexahedra &hex, Volume::Halfedge &selected_he);
 	void redefine_stack_layers(Hexahedra &hex, Volume::Halfedge &selected_he, int final_height);
 	int get_facets_layers(UM::Hexahedra &hex, CellFacetAttribute<int> &layer);
 	int get_layers(Hexahedra &hex, EdgeGraph &eg, EdgeAttribute<int> &layer);

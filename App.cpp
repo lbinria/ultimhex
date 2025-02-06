@@ -588,6 +588,29 @@ void App::key_callback(int key, int scancode, int action, int mods) {
 bool App::save(const std::string& filename) {
     
 	if(String::string_ends_with(filename, ".json")) {
+		
+		std::filesystem::path mesh_filename = filename + ".geogram";
+		
+		nlohmann::json json_data = {
+			{"filename", mesh_filename.filename().string()},
+			{"cell_type", context_.mesh_metadata.cell_type},
+			{"attributes", nlohmann::json::array()}
+		};
+		std::ofstream ofs(filename);
+		
+		if (ofs.is_open()) {
+			ofs << json_data.dump(4);
+			ofs.close();
+		} else {
+			std::cout << "Unable to write json file: " << filename << std::endl;
+			return false;
+		}
+
+		if (context_.mesh_metadata.cell_type == MESH_HEX)
+			write_by_extension(mesh_filename, context_.hex_bound->hex);
+		else 
+			write_by_extension(mesh_filename, context_.tet_bound->tet);
+
 		// TODO implement save of mesh with metadata
 		return true;
     }
@@ -631,9 +654,21 @@ bool App::load(const std::string& filename) {
 
 	// Load mesh metadata from json file !
 	if (filename_path.extension() == ".json") {
+
 		std::ifstream ifs(filename);
-		std::string content;
-		ifs >> content;
+
+		if (!ifs.is_open()) {
+			std::cout << "Error while opening json file." << std::endl;
+			return false;
+		}
+
+        // Get the file size
+        ifs.seekg(0, std::ios::end);
+        std::streampos file_size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+		std::string content(file_size, '\0');
+		ifs.read(&content[0], file_size);
+
 		ifs.close();
 
 		auto json = json::parse(content);
@@ -648,28 +683,27 @@ bool App::load(const std::string& filename) {
 			mesh_filename = relative_mesh_path;
 		}
 
+	// Load step, open file dialog to choose mesh size parameter
 	} else if (filename_path.extension() == ".step" || filename_path.extension() == ".stp") {
 
 		context_.mesh_metadata.filename = filename;
 		load_step = true;
 		return true;
 
-
+	// Load regular mesh file
 	} else {
 		context_.mesh_metadata.filename = filename;
 		context_.mesh_metadata.cell_type = MESH_TET;
 	}
 
+	// Check error while loading mesh
     if(!mesh_load(mesh_filename, mesh_, flags)) {	
-		// reset();
+		std::cout << "Unable to load mesh file: " << mesh_filename << std::endl;
         return false;
     }
 
-	// reset();
-
 	// TODO bad ! must place camera correctly
 	normalize_mesh();
-
 
 	// Init UM tet from GEO mesh
 	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
@@ -689,7 +723,6 @@ bool App::load(const std::string& filename) {
 	}
 
 	is_loading = false;
-
 
 	// Display info
     mesh_gfx_.set_animate(false);

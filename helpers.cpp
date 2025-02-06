@@ -232,47 +232,28 @@ namespace helpers {
 		layer_graph.connect();
 	}
 
-	std::vector<UM::vec3> get_layer_stack_visu(Hexahedra &hex, Volume::Halfedge &selected_he) {
-		assert(hex.connected());
+	/**
+	 * @brief From a polyline that represent a graph of layer, each point represent a layer 
+	 * associate to each point the id of the layer stack it belongs to
+	 * @param layer_graph Polyline that represent the graph of layer
+	 * @param layer_stack PointAttribute that will store the id of the layer stack
+	 */
+	void get_layer_stack(PolyLine &layer_graph, PointAttribute<int> &layer_stack) {
 
-		// Get layers
-		EdgeGraph eg(hex);
-		EdgeAttribute<int> layer(eg);
-		int nlayers = get_layers(hex, eg, layer);
+		DisjointSet ds(layer_graph.nverts());
+		for (auto e : layer_graph.iter_edges())
+			ds.merge(e.from(), e.to());
 
-		// Get layer graph
-		PolyLine layer_graph;
-		EdgeAttribute<int> next_eg(eg, -2);
-		EdgeAttribute<int> prev_eg(eg, -1);
-		get_layer_graph(hex, eg, layer, nlayers, next_eg, prev_eg, layer_graph);
-
-		// Group stack of layers together
-		PointAttribute<int> layer_stack(layer_graph);
-		{
-			DisjointSet ds(layer_graph.nverts());
-			for (auto e : layer_graph.iter_edges())
-				ds.merge(e.from(), e.to());
-
-			ds.get_sets_id(layer_stack.ptr->data);
-		}
-
-
-		auto selected_edge = eg.edge_from_halfedge(selected_he);
-		int stack = layer_stack[layer[selected_edge]];
-
-
-		std::vector<UM::vec3> points;
-		for (auto seed : layer_graph.iter_edges()) {
-			if (layer_stack[seed.from()] == stack) {
-				points.push_back(seed.from().pos());
-			}
-		}
-
-		return points;
+		ds.get_sets_id(layer_stack.ptr->data);
 	}
 
-	// Get layer stack cells
-	std::vector<std::pair<int, int>> get_layer_stack(Hexahedra &hex, Volume::Halfedge &selected_he) {
+	/**
+	 * @brief Get the layer from a given halfedge, extends layer to a stack of layer in a regular grid of hex 
+	 * (stop when reach border or singularity), and then get all facets of this stack of layers
+	 * @param hex Hexahedra
+	 * @param selected_he Selected halfedge we want to get the stack of layer
+	 */
+	std::vector<std::pair<int, int>> get_layer_stack_facets(Hexahedra &hex, Volume::Halfedge &selected_he) {
 
 		assert(hex.connected());
 
@@ -290,43 +271,19 @@ namespace helpers {
 
 		// Group stack of layers together
 		PointAttribute<int> layer_stack(layer_graph);
-		{
-			DisjointSet ds(layer_graph.nverts());
-			for (auto e : layer_graph.iter_edges())
-				ds.merge(e.from(), e.to());
-
-			ds.get_sets_id(layer_stack.ptr->data);
-		}
+		get_layer_stack(layer_graph, layer_stack);
 
 		auto selected_edge = eg.edge_from_halfedge(selected_he);
 		int stack = layer_stack[layer[selected_edge]];
 		
-		// CellFacetAttribute<bool> fa(hex, false);
-
 		// // Extract edges from stack
 		std::vector<std::pair<int,int>> cell_facets;
-		// for (auto e : eg.iter_edges()) {
-		// 	auto h = eg.halfedge_from_edge(e);
-		// 	auto c = h.cell();
-		// 	auto f = h.prev().opposite_f().facet();
-		// 	fa[f] = layer_stack[layer[e]];
-		// 	ea[e] = layer_stack[layer[e]];
-
-		// 	if (layer_stack[layer[e]] == stack) {
-				
-		// 		auto gf = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
-		// 		auto lf = um_bindings::geo_local_cell_facet_index_from_facet(gf);
-		// 		cell_facets.push_back({c, lf});
-		// 	}
-		// }
 
 		for (auto f : hex.iter_facets()) {
 
 			auto e = eg.edge_from_halfedge(f.halfedge(0).opposite_f().next());
 
-			if (layer_stack[layer[e]] == stack || next_eg[e] < 0) {
-				// fa[f] = true;
-				// fa[f] = layer_stack[layer[e]];
+			if (layer_stack[layer[e]] == stack /*|| next_eg[e] < 0*/) {
 				auto c = f.cell();
 				auto gf = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
 				auto lf = um_bindings::geo_local_cell_facet_index_from_facet(gf);
@@ -334,7 +291,7 @@ namespace helpers {
 			}
 		}
 
-
+		// Extraction of surface example
 		// UM::Quads q_out;
 		// for (auto f : hex.iter_facets()) {
 		// 	// if (fa[f] < 0)
@@ -355,10 +312,6 @@ namespace helpers {
 
 		// };
 		// write_by_extension("q_out.geogram", q_out, {{}, {/*{"f", fa.ptr}*/}, {}});
-
-
-
-
 
 		return cell_facets;
 	}
@@ -384,13 +337,7 @@ namespace helpers {
 
 			// Group stack of layers together
 			PointAttribute<int> layer_stack(layer_graph);
-			{
-				DisjointSet ds(layer_graph.nverts());
-				for (auto e : layer_graph.iter_edges())
-					ds.merge(e.from(), e.to());
-
-				ds.get_sets_id(layer_stack.ptr->data);
-			}
+			get_layer_stack(layer_graph, layer_stack);
 
 			// Get selected edge from selected halfedge
 			// Retrieve selected stack layer
@@ -405,8 +352,6 @@ namespace helpers {
 
 
 			for (auto f : hex.iter_facets()) {
-
-				// auto e = eg.edge_from_halfedge(f.halfedge(0).opposite_f().next());
 
 				for (auto h : f.iter_halfedges()) {
 					auto e = eg.edge_from_halfedge(h.opposite_f().next());
@@ -436,7 +381,6 @@ namespace helpers {
 			UM::Quads q_out;
 			FacetAttribute<int> start2(q_out, 0);
 			for (auto f : hex.iter_facets()) {
-				// if (fa[f] < 0)
 				if (!fa[f])
 					continue;
 
@@ -545,54 +489,6 @@ namespace helpers {
 
 			}
 
-			std::cout << "extrusion.size() = " << extrusion.size() << std::endl;
-
-
-			// {
-			// 	for (auto seed : eg.iter_edges()) {
-
-			// 		// auto seed_h = eg.halfedge_from_edge(seed);
-			// 		// auto f = seed_h.prev().opposite_f();
-			// 		// if (start[f] <= 0)
-			// 		// 	continue;
-
-			// 		if (!(layer_stack[layer[seed]] == stack && (prev_eg[seed] < 0 || layer_stack[layer[prev_eg[seed]]] != stack)))
-			// 			continue;
-
-			// 		// // Search for edge seed + Search for seed of requested stack
-			// 		// if (prev_eg[seed] < 0 && layer_stack[layer[seed]] == stack) {
-
-			// 			n_origin++;
-
-			// 			auto e = seed;
-
-			// 			auto org = e.from();
-			// 			extrusion[org] = std::vector<int>(1, org);
-
-			// 			// Search for other extremity
-			// 			while (next_eg[e] > 0 && layer_stack[layer[next_eg[e]]] == stack) {
-			// 				e = next_eg[e];
-			// 			}
-			// 			auto dest = e.to();
-			// 			std::cout << std::endl;
-
-			// 			int offv =  npts.size();
-			// 			npts.resize(offv + final_height - 1);
-			// 			for (int lv = 0; lv < final_height - 1; lv++) {
-			// 				// Push new vertex id to polyline (combinatoric)
-			// 				extrusion[org].push_back(hex.nverts() + offv + lv);
-			// 				// Set pos (geometry)
-
-			// 				double c = double(lv + 1) / double(final_height);
-			// 				npts[offv + lv] = (1. - c) * org.pos() + c * dest.pos();
-
-			// 			}
-			// 			extrusion[org].push_back(dest);
-			// 		}
-
-			// }
-
-			// std::cout << "extrusion size: " << extrusion.size() << std::endl;
 
 			Quads qq;
 			qq.points.create_points(8);
@@ -605,11 +501,6 @@ namespace helpers {
 				for (auto h : f.iter_halfedges()) 
 					um_assert(extrusion.find(h.from()) != extrusion.end());
 				
-				// std::vector<int>& stack0 = extrusion[f.halfedge(0).from()];
-				// std::vector<int>& stack1 = extrusion[f.halfedge(1).from()];
-				// std::vector<int>& stack2 = extrusion[f.halfedge(3).from()];
-				// std::vector<int>& stack3 = extrusion[f.halfedge(2).from()];
-
 				std::vector<int>& stack0 = extrusion[f.halfedge(1).from()];
 				std::vector<int>& stack1 = extrusion[f.halfedge(0).from()];
 				std::vector<int>& stack2 = extrusion[f.halfedge(2).from()];
@@ -624,35 +515,6 @@ namespace helpers {
 					}
 				}
 
-				// auto p0 =  extrusion[f.halfedge(0).from()][0];
-				// auto p1 =  extrusion[f.halfedge(1).from()][0];
-				// auto p3 =  extrusion[f.halfedge(3).from()][0];
-				// auto p2 =  extrusion[f.halfedge(2).from()][0];
-				// auto p4 =  extrusion[f.halfedge(0).from()][1];
-				// auto p5 =  extrusion[f.halfedge(1).from()][1];
-				// auto p7 =  extrusion[f.halfedge(3).from()][1];
-				// auto p6 =  extrusion[f.halfedge(2).from()][1];
-
-				// qq.points[0] = npts[p0];
-				// qq.points[1] = npts[p1];
-				// qq.points[2] = npts[p2];
-				// qq.points[3] = npts[p3];
-				// qq.points[4] = npts[p4];
-				// qq.points[5] = npts[p5];
-				// qq.points[6] = npts[p6];
-				// qq.points[7] = npts[p7];
-				
-				// qq.create_facets(3);
-				// qq.vert(0, 0) = p0;
-				// qq.vert(0, 1) = p1;
-				// qq.vert(0, 2) = p2;
-				// qq.vert(0, 3) = p3;
-
-				// qq.vert(1, 0) = p4;
-				// qq.vert(1, 1) = p5;
-				// qq.vert(1, 2) = p6;
-				// qq.vert(1, 3) = p7;
-				// break;
 			}
 
 			

@@ -53,8 +53,11 @@ struct PatchPadTool : public Tool {
 	}
 
 	void compute_patches_for_selection();
+	void compute_patches_for_selection2();
+	void compute_features();
 
 	bool extends_to_concave = false;
+	bool traverse = false;
 
 	bool is_init_patches = false;
 	std::vector<int> patches;

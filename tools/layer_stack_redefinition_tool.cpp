@@ -62,7 +62,7 @@ void LayerPad2::mouse_button_callback(int button, int action, int mods, int sour
 
 	selected_h_idx = ctx.hovered_he(ctx.hex);
 	Volume::Halfedge selected_he(ctx.hex, selected_h_idx);
-	selected_cell_facets = helpers::get_layer_stack(ctx.hex, selected_he);
+	selected_cell_facets = helpers::get_layer_stack_facets(ctx.hex, selected_he);
 
 }
 
