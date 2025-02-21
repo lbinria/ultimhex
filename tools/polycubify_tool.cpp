@@ -20,9 +20,11 @@ void PolycubifyTool::run_nicostuff() {
 		return;
 	}
 
-	HexBoundary hex_bound(ctx.hex);
 	// Replace current GEO mesh by UM Hex
-	um_bindings::geo_mesh_from_hexboundary(hex_bound, ctx.mesh_);
+	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+
+	// Replace current GEO mesh by UM Hex
+	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 
 	// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
@@ -34,7 +36,7 @@ void PolycubifyTool::run_nicostuff() {
 		.cell_type = GEO::MESH_HEX, 
 		.attributes = {} 
 	};
-	write_by_extension(ctx.mesh_metadata.filename, hex_bound.hex, {{}, {}, {}, {}});
+	write_by_extension(ctx.mesh_metadata.filename, ctx.hex_bound->hex, {{}, {}, {}, {}});
 	ctx.mesh_metadata.save();
 
 	// View

@@ -20,6 +20,8 @@ struct PatchPadTool : public Tool {
 	void validate_callback() override;
 
 
+	void fix_padding();
+
 	bool is_compatible() override;
 
 	void key_callback(int key, int scancode, int action, int mods) {}
@@ -28,41 +30,40 @@ struct PatchPadTool : public Tool {
 	}
 
 	void clear() override {
-		patches.clear();
-
+		
 		// Attribute hovered / selected, enable visualizing hovered / selected facets
 		GEO::Attribute<int> hovered_attr(
 			ctx.mesh_.facets.attributes(), "hovered"
 		);
+		GEO::Attribute<int> cell_facets_hovered_attr(
+			ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+		);
 
-		// Remove hovered facets attribute
-		for (auto f : hovered_facets) {
+		for (auto f : ctx.hex_bound->quad.iter_facets())
 			hovered_attr[f] = 0;
-		}
-		// Remove selected facets attribute
-		for (auto f : selected_facets) {
-			hovered_attr[f] = 0;
-		}
-
-		hovered_facets.clear();
-		selected_facets.clear();
+		for (auto f : ctx.hex_bound->hex.iter_facets())
+			cell_facets_hovered_attr[f] = 0;
 	}
 
 	void clear_patches() {
+		patches.clear();
 		is_init_patches = false;
 	}
 
 	void compute_patches_for_selection();
 	void compute_patches_for_selection2();
+	
+	void extend_patches();
 	void compute_features();
 
+	float threshold = 80.f;
 	bool extends_to_concave = false;
 	bool traverse = false;
+
+	bool should_fix = false;
 
 	bool is_init_patches = false;
 	std::vector<int> patches;
 
-	std::vector<int> hovered_facets;
-	std::vector<int> selected_facets;
 
 };

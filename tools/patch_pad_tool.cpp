@@ -11,9 +11,20 @@ bool PatchPadTool::draw_object_properties() {
 	
 	ImGui::Checkbox("Extends to concave", &extends_to_concave);
 
+	// if (ImGui::InputFloat("Max angle", &threshold)) {
+	// 	threshold = std::clamp(threshold, 0.f, 180.f);
+	// }
+
+	ImGui::SliderFloat("Max angle", &threshold, 0.f, 180.f);
+	
+
 	if (ImGui::Button("Patch selection")) {
 		compute_features();
 		return true;
+	}
+
+	if (ImGui::Button("Fix padding")) {
+		fix_padding();
 	}
 
 	return true;
@@ -70,75 +81,182 @@ void PatchPadTool::compute_features() {
 	ctx.gui_mode = PatchPadding;
 }
 
-void PatchPadTool::compute_patches_for_selection2() {
+// void PatchPadTool::compute_patches_for_selection2() {
 
-	std::vector<int> border_h;
+// 	std::vector<int> border_h;
 	
-	DisjointSet ds(ctx.hex_bound->hex.nfacets());
+// 	DisjointSet ds(ctx.hex_bound->hex.nfacets());
 
-	for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
+// 	for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
 		
-		if (!h.opposite().active()) {
-			continue;
-		}
+// 		if (!h.opposite().active()) {
+// 			continue;
+// 		}
 
-		auto f = h.facet();
-		auto opp_f = h.opposite().facet();
+// 		auto f = h.facet();
+// 		auto opp_f = h.opposite().facet();
 
-		Quad3 q = f;
-		Quad3 opp_q = opp_f;
+// 		Quad3 q = f;
+// 		Quad3 opp_q = opp_f;
 
-		// Compute angle
-		double angle = q.normal() * opp_q.normal();
+// 		// Compute angle
+// 		double angle = q.normal() * opp_q.normal();
 
-		// Compute signed volume between 2 tetrahedrons of quad facets to found convex angles
-		UM::vec3 bary;
-		UM::vec3 bary_opp;
-		for (auto qh : f.iter_halfedges()) {
-			bary += qh.from().pos();
-		}
-		bary /= 4.;
-		for (auto qh : opp_f.iter_halfedges()) {
-			bary_opp += qh.from().pos();
-		}
-		bary_opp /= 4.;
+// 		// Compute signed volume between 2 tetrahedrons of quad facets to found convex angles
+// 		UM::vec3 bary;
+// 		UM::vec3 bary_opp;
+// 		for (auto qh : f.iter_halfedges()) {
+// 			bary += qh.from().pos();
+// 		}
+// 		bary /= 4.;
+// 		for (auto qh : opp_f.iter_halfedges()) {
+// 			bary_opp += qh.from().pos();
+// 		}
+// 		bary_opp /= 4.;
 
-		double v = Tetrahedron(h.from().pos(), h.to().pos(), bary, bary_opp).volume();
+// 		double v = Tetrahedron(h.from().pos(), h.to().pos(), bary, bary_opp).volume();
 		
-		// We expect to merge adjacents facets that are almost coplanar
-		if (angle > 0.4) {
-			// ds.merge(f, opp_f);
-			ds.merge(ctx.hex_bound->hex_facet(f), ctx.hex_bound->hex_facet(opp_f));
-		} else {
-			border_h.push_back(h);
-		}
+// 		// We expect to merge adjacents facets that are almost coplanar
+// 		if (angle > 0.4) {
+// 			// ds.merge(f, opp_f);
+// 			ds.merge(ctx.hex_bound->hex_facet(f), ctx.hex_bound->hex_facet(opp_f));
+// 		} else {
+// 			border_h.push_back(h);
+// 		}
 
-	}
+// 	}
 
-	// Extends halfedge on border until that reach model border
-	for (auto hi : border_h) {
-		auto h = ctx.hex_bound->hex_halfedge(hi);
+// 	// Extends halfedge on border until that reach model border
+// 	for (auto hi : border_h) {
+// 		auto h = ctx.hex_bound->hex_halfedge(hi);
 		
-		auto cur_h = h;
+// 		auto cur_h = h;
 		
-		while (cur_h.opposite_f().opposite_c().active()) {
-			auto opp = cur_h.opposite_f().opposite_c();
-			ds.merge(cur_h.facet(), opp.opposite_f().facet());
-			cur_h = opp.opposite_f().next().next();
-		}
-	}
+// 		while (cur_h.opposite_f().opposite_c().active()) {
+// 			auto opp = cur_h.opposite_f().opposite_c();
+// 			ds.merge(cur_h.facet(), opp.opposite_f().facet());
+// 			cur_h = opp.opposite_f().next().next();
+// 		}
+// 	}
 
-	ds.get_sets_id(patches);
-	is_init_patches = true;
+// 	ds.get_sets_id(patches);
+// 	is_init_patches = true;
 
-}
+// }
+
+// void PatchPadTool::extend_patches() {
+
+// 	std::cout << "Extend patches" << std::endl;
+
+// 	GEO::Attribute<int> cell_facets_hovered_attr(
+// 		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+// 	);
+
+// 	std::vector<int> selected_facet_groups;
+// 	{
+// 		// Group selected facets together
+// 		DisjointSet ds(ctx.hex_bound->hex.nfacets());
+
+// 		for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
+
+// 			auto opp = h.opposite_f().opposite_c();
+// 			if (!opp.active())
+// 				continue;
+			
+// 			auto f = h.facet();
+// 			auto opp_f = opp.opposite_f().facet();
+
+
+// 			if (cell_facets_hovered_attr[f] == 2 && cell_facets_hovered_attr[opp_f] == 2) {
+// 				ds.merge(f, opp_f);
+// 			}
+// 		}
+
+// 		int n_groups = ds.get_sets_id(selected_facet_groups);
+// 	}
+
+// 	// Extract borders
+// 	std::vector<std::pair<int, int>> edges;
+// 	// CellCornerAttribute<bool> border(ctx.hex_bound->hex, false);
+// 	std::queue<int> border;
+// 	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
+		
+// 		auto f = h.facet();
+// 		auto opp = h.opposite_f().opposite_c();
+		
+// 		if (cell_facets_hovered_attr[f] != 2)
+// 			continue;
+		
+// 		if (!opp.active()) {
+// 			edges.push_back({h.from(), h.to()});
+// 			// border[h] = true;
+// 			border.push(h);
+// 			continue;
+// 		}
+
+// 		auto opp_f = opp.opposite_f().facet();
+
+// 		if (selected_facet_groups[f] != selected_facet_groups[opp_f]) {
+// 			edges.push_back({h.from(), h.to()});
+// 			// border[h] = true;
+// 			border.push(h);
+// 		}
+
+
+// 	}
+
+// 	// // Add feature to GEO model (allow to view them)
+// 	// ctx.mesh_.edges.clear();
+// 	// ctx.mesh_.edges.create_edges(edges.size());
+// 	// for (int e = 0; e < edges.size(); e++) {
+// 	// 	ctx.mesh_.edges.set_vertex(e, 0, edges[e].first);
+// 	// 	ctx.mesh_.edges.set_vertex(e, 1, edges[e].second);
+// 	// }
+
+// 	CellCornerAttribute<bool> processed(ctx.hex_bound->hex, false);
+// 	while (!border.empty()) {
+// 		auto hi = border.front();
+// 		border.pop();
+// 		auto h = Volume::Halfedge(ctx.hex_bound->hex, hi);
+// 		processed[h] = true;
+
+// 		bool on_volume_border = h.facet().on_boundary();
+
+// 		int count = 0;
+// 		for (auto around_h : h.iter_CCW_around_edge()) {
+// 			count++;
+// 		}
+
+// 		if (count == 2 || count == 4) {
+// 			auto opp = h.opposite_f().opposite_c();
+
+// 			if (!opp.active())
+// 				continue;
+			
+// 			auto nh = opp.opposite_f().next().next();
+// 			cell_facets_hovered_attr[nh.facet()] = 2;
+// 			border.push(nh);
+
+// 		} else if (count == 3 && on_volume_border) {
+// 			// Choose
+// 			// auto nh = h.opposite_f().opposite_c().opposite_f().next().next();
+// 			auto nh = h.opposite_f().opposite_c().opposite_f().opposite_c().opposite_f().next().next();
+// 			cell_facets_hovered_attr[nh.facet()] = 2;
+// 			border.push(nh);
+// 			border.push(nh.prev());
+// 			border.push(nh.next());
+// 		}
+
+// 	}
+
+
+// }
 
 void PatchPadTool::compute_patches_for_selection() {
 
-	// border_h.clear();
 	// Compute patches
 	{
-		DisjointSet ds(ctx.hex_bound->quad.nfacets());
+		DisjointSet ds(ctx.hex_bound->hex.nfacets());
 
 		for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
 			
@@ -168,15 +286,39 @@ void PatchPadTool::compute_patches_for_selection() {
 
 			double v = Tetrahedron(h.from().pos(), h.to().pos(), bary, bary_opp).volume();
 
-			// We expect to merge adjacents facets that are almost coplanar
-			bool should_merge = angle > 0.4;
-			// We can also merge adjacents facets that are not coplanar but have a concave angle
-			if (extends_to_concave)
-				should_merge = should_merge ||  v > 0;
+			// Try to make traversing padding
+			bool success = false;
 
-			if (should_merge) {
-				ds.merge(f, opp_f);
-			}
+			double th = cos(threshold * (M_PI / 180.));
+
+			// We expect to merge adjacents facets that are almost coplanar
+			// if (angle > 0.4) {
+			// if (angle > 0.95 || v > 0) {
+			if (angle > th) {
+				auto hf = ctx.hex_bound->hex_facet(f);
+				auto opp_hf = ctx.hex_bound->hex_facet(opp_f);
+				ds.merge(hf, opp_hf);
+			} /* else if (v > 0) {
+
+				// Extends halfedge on border until that reach model border
+				auto cur_h = ctx.hex_bound->hex_halfedge(h);
+				
+				while (cur_h.opposite_f().opposite_c().active()) {
+					auto opp = cur_h.opposite_f().opposite_c();
+					ds.merge(cur_h.facet(), opp.opposite_f().facet());
+					cur_h = opp.opposite_f().next().next();
+				}
+
+				success = true;
+			}*/
+
+
+			// // If fail, we can also merge adjacents facets that are not coplanar but have a concave angle
+			// if (!success && v > 0) {
+			// 	auto hf = ctx.hex_bound->hex_facet(f);
+			// 	auto opp_hf = ctx.hex_bound->hex_facet(opp_f);
+			// 	ds.merge(hf, opp_hf);
+			// }
 
 		}
 
@@ -197,41 +339,40 @@ void PatchPadTool::hover_callback(double x, double y, int source) {
 		return;
 
 
-	int patch = patches[ctx.hovered_facet];
+	auto hex_hovered_f = ctx.hex_bound->hex_facet(ctx.hovered_facet);
+	int patch = patches[hex_hovered_f];
 
 	// Attribute hovered / selected, enable visualizing hovered / selected facets
 	GEO::Attribute<int> hovered_attr(
 		ctx.mesh_.facets.attributes(), "hovered"
 	);
+	GEO::Attribute<int> cell_facets_hovered_attr(
+		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+	);
 
-	{
-		std::vector<int> old_hovered_facets = hovered_facets;
-
-		// Remove old hovered facets as hovered
-		for (auto f : old_hovered_facets) {
-			hovered_attr[f] = 0;
-		}
-	}
-
-	// Clear current hovered facet to recompute them
-	hovered_facets.clear();
-	
-	// If model facet is the same patch as hovered facet, mark it as hovered
-	for (auto f : ctx.hex_bound->quad.iter_facets()) {
-		if (patches[f] != patch)
+	// Reset, clear old hovered facets, keep selected facets
+	for (auto f : ctx.hex_bound->hex.iter_facets()) {
+		if (cell_facets_hovered_attr[f] == 2)
 			continue;
 
-		// Convert UM facet index to GEO facet index
-		// auto gf = um_bindings::geo_facet_index_from_um_facet_index(f, 6);
+		if (patches[f] == patch)
+			cell_facets_hovered_attr[f] = 1;
+		else
+			cell_facets_hovered_attr[f] = 0;
 
-		hovered_attr[f] = 1;
-		hovered_facets.push_back(f);
+		if (ctx.hex_bound->quad_facet(f) >= 0)
+			hovered_attr[ctx.hex_bound->quad_facet(f)] = cell_facets_hovered_attr[f];
 	}
 
-	// Keep selected facets as selected
-	for (auto f : selected_facets) {
-		hovered_attr[f] = 2;
-	}
+	// If model facet is the same patch as hovered facet, mark it as hovered
+	// for (auto f : ctx.hex_bound->hex.iter_facets()) {
+		
+
+		
+	// 	if (ctx.hex_bound->quad_facet(f) >= 0)
+	// 		hovered_attr[ctx.hex_bound->quad_facet(f)] = cell_facets_hovered_attr[f];
+	// }
+
 }
 
 void PatchPadTool::mouse_button_callback(int button, int action, int mods, int source) {
@@ -239,25 +380,52 @@ void PatchPadTool::mouse_button_callback(int button, int action, int mods, int s
 	GEO::Attribute<int> hovered_attr(
 		ctx.mesh_.facets.attributes(), "hovered"
 	);
+	GEO::Attribute<int> cell_facets_hovered_attr(
+		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+	);
 
-	{
-		std::vector<int> old_selected_facets = selected_facets;
+	// Remove all previous selected facets
+	for (auto f : ctx.hex_bound->hex.iter_facets()) {
 
-		for (auto f : old_selected_facets) {
-			hovered_attr[f] = 0;
-		}
+		if (cell_facets_hovered_attr[f] == 2)
+			cell_facets_hovered_attr[f] = 0;
 
-		for (auto f : hovered_facets) {
-			hovered_attr[f] = 0;
-		}
+		if (ctx.hex_bound->quad_facet(f) >= 0)
+			hovered_attr[ctx.hex_bound->quad_facet(f)] = cell_facets_hovered_attr[f];
 	}
 
-	selected_facets = hovered_facets;
-
-	for (auto f : selected_facets) {
-		hovered_attr[f] = 2;
+	// Hovered facets become selected facets
+	for (auto f : ctx.hex_bound->hex.iter_facets()) {
+		if (cell_facets_hovered_attr[f] == 1)
+			cell_facets_hovered_attr[f] = 2;
+		
+		if (ctx.hex_bound->quad_facet(f) >= 0)
+			hovered_attr[ctx.hex_bound->quad_facet(f)] = cell_facets_hovered_attr[f];
 	}
 
+
+	// // Check validity
+	// bool valid = true;
+	// for (auto f : ctx.hex_bound->hex.iter_facets()) {
+	// 	if (cell_facets_hovered_attr[f] == 2) {
+	// 		for (auto h : f.iter_halfedges()) {
+	// 			auto opp = h.opposite_f().opposite_c();
+	// 			if (opp.active() && cell_facets_hovered_attr[opp.opposite_f().facet()] != 2) {
+	// 				valid = false;
+	// 				break;
+	// 			}
+	// 		}
+	// 	}
+	// }
+	
+	// std::cout << "Padding valid: " << valid << std::endl;
+
+	// extend_patches();
+
+}
+
+void PatchPadTool::fix_padding() {
+	should_fix = true;
 }
 
 void PatchPadTool::scroll_callback(double xoffset, double yoffset) {
@@ -268,34 +436,15 @@ void PatchPadTool::validate_callback() {
 
 	CellFacetAttribute<bool> to_pad(ctx.hex_bound->hex, false);
 
-	CellFacetAttribute<int> v_hovered(ctx.hex_bound->hex, -1);
-
-	{
-		FacetAttribute<int> s_hovered(ctx.hex_bound->quad, -1);
-		um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(ctx.mesh_, "hovered", ctx.hex_bound->quad, s_hovered.ptr);
-		// Transfert attribute from surface to volume
-		ctx.hex_bound->set_attribute_to_volume(s_hovered, v_hovered);
-	}
+	GEO::Attribute<int> cell_facets_hovered_attr(
+		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+	);
 
 	for (auto f : ctx.hex_bound->hex.iter_facets()) {
-		// If facet is selected, pad it
-		if (v_hovered[f] == 2) {
+		if (cell_facets_hovered_attr[f] == 2) {
 			to_pad[f] = true;
 		}
 	}
-
-	// // Extends halfedge on border until that reach model border
-	// for (auto hi : border_h) {
-	// 	auto h = ctx.hex_bound->hex_halfedge(hi);
-		
-	// 	auto cur_h = h;
-		
-	// 	while (cur_h.opposite_f().opposite_c().active()) {
-	// 		auto opp = cur_h.opposite_f().opposite_c();
-	// 		cur_h = opp.opposite_f().next().next();
-	// 		to_pad[cur_h.facet()] = true;
-	// 	}
-	// }
 
 	// Necessary for altering hex, because hex / quad share points !
 	ctx.hex_bound->clear_surface();
