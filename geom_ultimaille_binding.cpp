@@ -204,7 +204,7 @@ namespace um_bindings {
 
 	void geo_mesh_from_um_hex(UM::Hexahedra &m, GEO::Mesh &m_out, bool clear) {
 		// TODO see if necessary ?
-		assert(m.connected());
+		// assert(m.connected());
 
 		if (clear)
 			m_out.clear(false, false);

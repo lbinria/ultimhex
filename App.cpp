@@ -496,6 +496,13 @@ void App::mouse_button_callback(int button, int action, int mods, int source) {
 		context_.left_mouse_pressed = false;
 	}
 
+	if (action == EVENT_ACTION_DOWN && button == 1) {
+		context_.right_mouse_pressed = true;
+		context_.click_pos = picked_point_;
+	}
+	else if (action == EVENT_ACTION_UP && button == 1) {
+		context_.right_mouse_pressed = false;
+	}
 
 	if (action == EVENT_ACTION_DOWN && button == 0) {
 		// TODO add function select_hovered

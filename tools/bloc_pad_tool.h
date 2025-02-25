@@ -22,41 +22,44 @@ struct BlocPadTool : public Tool {
 	void validate_callback() override;
 
 
+	void compute_patches_for_selection();
+
 	bool is_compatible() override;
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
+
+	void switch_view();
+
 	void clear() override {
 		step = 0;
-		start_f_idx = -1;
+		last_hovered_f = -1;
+		// hexs.clear();
+		// hex_preview_facet_2_hex_facet.clear();
+		patches.clear();
 
-		depth = 1;
-		hovered_bloc_facets.clear();
-		selected_bloc_facets.clear();
-		hovered_bloc_cells.clear();
-		selected_bloc_cells.clear();
-		wireframe.clear();
-
-		bloc_surface.clear();
-
-		ctx.view.show_volume_ = true;
+		// Clear selection attribute
+		GEO::Attribute<int> hovered_attr(
+			ctx.mesh_.facets.attributes(), "hovered"
+		);
+		GEO::Attribute<int> cell_facets_hovered_attr(
+			ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+		);
+		
+		for (auto f : ctx.hex_bound->quad.iter_facets())
+			hovered_attr[f] = 0;
+		for (auto f : ctx.hex_bound->hex.iter_facets())
+			cell_facets_hovered_attr[f] = 0;
 	}
 
-	void switch_view(bool to_wireframe);
-
 	int step = 0;
-	int start_f_idx = -1;
-	std::vector<int> selected_region_cells;
+	int last_hovered_f;
+	// std::vector<int> hexs;
+	// std::vector<int> hex_preview_facet_2_hex_facet;
+	bool is_outgoing_padding = true;
 
-	int depth = 1;
+	std::vector<int> patches;
 
-	std::vector<int> hovered_bloc_facets;
-	std::vector<int> selected_bloc_facets;
-	std::vector<int> hovered_bloc_cells;
-	std::vector<int> selected_bloc_cells;
 
-	std::vector<int> bloc_surface;
-
-	std::vector<UM::Segment3> wireframe;
 
 };

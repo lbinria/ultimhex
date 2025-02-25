@@ -164,6 +164,7 @@ struct Context {
 
 	GEO::vec3 click_pos;
 	bool left_mouse_pressed = false;
+	bool right_mouse_pressed = false;
 	GUIMode gui_mode = Camera;
 	GUIMode switch_mode = Camera;
 
@@ -179,6 +180,9 @@ struct Context {
 	// TetBoundary tet_bound;
 	std::unique_ptr<TetBoundary> tet_bound;
 	std::unique_ptr<HexBoundary> hex_bound;
+
+	// Preview mesh
+	UM::Hexahedra hex_preview;
 
 	MeshMetadata mesh_metadata;
 

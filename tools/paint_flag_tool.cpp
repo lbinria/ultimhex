@@ -213,9 +213,12 @@ bool PaintFlagTool::draw_object_properties() {
 				value = -1;
 			}
 
+			// ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.f, 0.f, 0.f, 1.f));
 			if(ImGui::Button("-X")) {
 				value = 0;
 			}
+			// ImGui::PopStyleColor();
+
 			ImGui::SameLine();
 			if(ImGui::Button("-Y")) {
 				value = 1;
