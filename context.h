@@ -79,7 +79,7 @@ struct ViewBinding {
 
 struct Context {
 
-	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), /*tet_bound(tet),*/ /*hex_bound(hex),*/ view(view) {
+	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), view(view) {
 		hex_bound = std::make_unique<HexBoundary>(hex);
 		tet_bound = std::make_unique<TetBoundary>(tet);
 	}

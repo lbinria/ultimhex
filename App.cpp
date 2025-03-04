@@ -722,7 +722,6 @@ bool App::load(const std::string& filename) {
 		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
 		// Update hexbound
 		context_.hex.connect();
-		// context_.hex_bound->update();
 		context_.hex_bound = std::make_unique<HexBoundary>(context_.hex);
 		um_bindings::geo_mesh_from_hexboundary(*context_.hex_bound, context_.mesh_);
 

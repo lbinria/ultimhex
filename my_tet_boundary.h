@@ -4,9 +4,10 @@
 
 using namespace UM;
 
+
 struct HexBoundary {
 
-	inline  HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) :hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+	inline HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) :hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
  
 		quad.points = hex.points;
 		
@@ -15,6 +16,47 @@ struct HexBoundary {
 			hex_facet_[f_quad] = f_hex;
 			quad_facet_[f_hex] = f_quad;
 			for(int lv = 0; lv < 4; lv++) quad.vert(f_quad, lv) = f_hex.vertex(lv);
+		}
+
+		quad.connect();
+	}
+
+	inline HexBoundary(Hexahedra &hex, CellAttribute<bool> filter) : hex(hex), quad_facet_(hex), hex_facet_(quad), quad() {
+
+		PointAttribute<bool> visible_point(hex, false);
+		int n_verts = 0;
+		for (auto c : hex.iter_corners()) {
+			if (!filter[c.cell()] || visible_point[c.vertex()])
+				continue;
+			
+			visible_point[c.vertex()] = true;
+			++n_verts;
+		}
+
+		quad.points.create_points(n_verts);
+		std::vector<int> hexverts_2_boundverts(hex.nverts(), -1);
+
+		int i = 0;
+		for (auto v : hex.iter_vertices()) {
+			if (!visible_point[v])
+				continue;
+
+			quad.points[i] = hex.points[v];
+			hexverts_2_boundverts[v] = i;
+			++i;
+		}
+
+		for (auto f : hex.iter_facets()) {
+			if (!filter[f.cell()])
+				continue;
+
+			int f_quad = quad.create_facets(1);
+			hex_facet_[f_quad] = f;
+			quad_facet_[f] = f_quad;
+
+			for (int lv = 0; lv < 4; lv++) {
+				quad.vert(f_quad, lv) = hexverts_2_boundverts[f.vertex(lv)];
+			}
 		}
 
 		quad.connect();
@@ -53,6 +95,7 @@ struct HexBoundary {
 	Quads quad;
 	FacetAttribute<int> hex_facet_;
 };
+
 
 struct TetBoundary {
 

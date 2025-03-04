@@ -54,8 +54,6 @@ struct BlocPadTool : public Tool {
 
 	int step = 0;
 	int last_hovered_f;
-	// std::vector<int> hexs;
-	// std::vector<int> hex_preview_facet_2_hex_facet;
 	bool is_outgoing_padding = true;
 
 	std::vector<int> patches;
