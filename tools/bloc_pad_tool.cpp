@@ -18,7 +18,16 @@ bool BlocPadTool::draw_object_properties() {
 		return true;
 	}
 
-	ImGui::Checkbox("Outgoing padding ?", &is_outgoing_padding);
+	if (ctx.gui_mode == BlocPadding || ctx.switch_mode == BlocPadding) {
+		if (ImGui::Button("Facet selection")) {
+			select_mode = 0;
+		}
+		if (ImGui::Button("Chart selection")) {
+			compute_patches();
+			select_mode = 1;
+		}
+	}
+
 
 	return false;
 }
@@ -39,9 +48,21 @@ void BlocPadTool::draw(GEO::vec4f hovered_color, GEO::vec4f selected_color, GEO:
 }
 
 void BlocPadTool::hover_callback(double x, double y, int source) {
-	if (step > 0 || !ctx.is_facet_hovered())
+	if (/*step > 0 ||*/ !ctx.is_facet_hovered())
 		return;
 
+
+	std::vector<int> hovered_facets;
+
+	// Chart selection mode
+	if (select_mode == 1) {
+		for (auto f : ctx.hex_bound->quad.iter_facets()) {
+			if (patches[ctx.hex_bound->hex_facet(f)] == patches[ctx.hex_bound->hex_facet(ctx.hovered_facet)])
+				hovered_facets.push_back(f);
+		}
+	} else {
+		hovered_facets.push_back(ctx.hovered_facet);
+	}
 
 	// Attribute hovered / selected, enable visualizing hovered / selected facets
 	GEO::Attribute<int> hovered_attr(
@@ -51,45 +72,86 @@ void BlocPadTool::hover_callback(double x, double y, int source) {
 		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
 	);
 
-	// Set last hovered facet as not hovered, if not selected
-	if (last_hovered_f >= 0 && hovered_attr[last_hovered_f] < 2) {
-		hovered_attr[last_hovered_f] = 0;
-		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 0;
+	// Reset last hovered facets as not hovered, if not selected
+	for (auto last_hovered_f : last_hovered_facets) {
+		if (last_hovered_f >= 0 && hovered_attr[last_hovered_f] == 1) {
+			hovered_attr[last_hovered_f] = 0;
+			cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 0;
+		}
 	}
 
 	// Last hovered facet become current hovered facet
-	last_hovered_f = ctx.hovered_facet;
+	last_hovered_facets = hovered_facets;
 
-	// If not selected, facet is hovered
-	if (hovered_attr[last_hovered_f] < 2) {
-		hovered_attr[last_hovered_f] = 1;
-		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 1;
-	}
+	for (auto f : hovered_facets) {
+		// If not selected, facet is hovered
+		if (hovered_attr[f] < 2) {
+			hovered_attr[f] = 1;
+			cell_facets_hovered_attr[ctx.hex_bound->hex_facet(f)] = 1;
+		}
 
-	if (ctx.left_mouse_pressed) {
-		hovered_attr[last_hovered_f] = 2;
-		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 2;
-	} else if (ctx.right_mouse_pressed) {
-		hovered_attr[last_hovered_f] = 0;
-		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 0;
+		if (ctx.left_mouse_pressed) {
+			hovered_attr[f] = 2;
+			cell_facets_hovered_attr[ctx.hex_bound->hex_facet(f)] = 2;
+		} else if (ctx.right_mouse_pressed) {
+			hovered_attr[f] = 0;
+			cell_facets_hovered_attr[ctx.hex_bound->hex_facet(f)] = 0;
+		}
 	}
 
 }
 
+// void BlocPadTool::hover_callback(double x, double y, int source) {
+// 	if (/*step > 0 ||*/ !ctx.is_facet_hovered())
+// 		return;
+
+
+// 	std::vector<int> hovered_facets;
+
+// 	// Chart selection mode
+// 	if (select_mode == 1) {
+// 		for (auto f : ctx.hex_bound->quad.iter_facets()) {
+// 			if (patches[f] == patches[ctx.hovered_facet])
+// 				hovered_facets.push_back(f);
+// 		}
+// 	} else {
+// 		hovered_facets.push_back(ctx.hovered_facet);
+// 	}
+
+// 	// Attribute hovered / selected, enable visualizing hovered / selected facets
+// 	GEO::Attribute<int> hovered_attr(
+// 		ctx.mesh_.facets.attributes(), "hovered"
+// 	);
+// 	GEO::Attribute<int> cell_facets_hovered_attr(
+// 		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+// 	);
+
+// 	// Reset last hovered facet as not hovered, if not selected
+// 	if (last_hovered_f >= 0 && hovered_attr[last_hovered_f] == 1) {
+// 		hovered_attr[last_hovered_f] = 0;
+// 		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 0;
+// 	}
+
+// 	// Last hovered facet become current hovered facet
+// 	last_hovered_f = ctx.hovered_facet;
+
+// 	// If not selected, facet is hovered
+// 	if (hovered_attr[last_hovered_f] < 2) {
+// 		hovered_attr[last_hovered_f] = 1;
+// 		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 1;
+// 	}
+
+// 	if (ctx.left_mouse_pressed) {
+// 		hovered_attr[last_hovered_f] = 2;
+// 		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 2;
+// 	} else if (ctx.right_mouse_pressed) {
+// 		hovered_attr[last_hovered_f] = 0;
+// 		cell_facets_hovered_attr[ctx.hex_bound->hex_facet(last_hovered_f)] = 0;
+// 	}
+
+// }
+
 void BlocPadTool::mouse_button_callback(int button, int action, int mods, int source) {
-
-	if (step == 1 && ctx.is_cell_hovered()) {
-		GEO::Attribute<bool> cell_filter(
-			ctx.mesh_.cells.attributes(), "filter"
-		);
-
-		cell_filter[ctx.hovered_cell] = false;
-		ctx.mesh_gfx_.set_filter(GEO::MeshElementsFlags::MESH_CELLS);
-
-	}
-
-	// if (step > 0 && last_hovered_f < 0)
-	// 	return;
 
 }
 
@@ -97,8 +159,7 @@ void BlocPadTool::scroll_callback(double xoffset, double yoffset) {
 
 }
 
-void BlocPadTool::compute_patches_for_selection() {
-
+void BlocPadTool::compute_patches() {
 	// Compute patches
 	{
 		DisjointSet ds(ctx.hex_bound->hex.nfacets());
@@ -151,13 +212,56 @@ void BlocPadTool::compute_patches_for_selection() {
 	}
 }
 
+void BlocPadTool::compute_feature_lines() {
+
+	compute_patches();
+
+	std::vector<std::pair<int, int>> edges;
+
+	// Get patches edge borders
+	int n1 = 0;
+	int n2 = 0;
+	int eee = 0;
+	for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
+		eee++;
+		auto opp = h.opposite();
+
+		if (!opp.active()) {
+			// Add to edge border
+			edges.push_back({h.from(), h.to()});
+			n1++;
+			continue;
+		}
+
+		auto f = h.facet();
+		auto opp_f = opp.facet();
+		
+		if (patches[f] != patches[opp_f]) {
+			// Add edge to border
+			edges.push_back({h.from(), h.to()});
+			n2++;
+		}
+
+	}
+
+	ctx.mesh_.edges.clear();
+	// Add feature to GEO model (allow to view them)
+	ctx.mesh_.edges.create_edges(edges.size());
+	for (int e = 0; e < edges.size(); e++) {
+		ctx.mesh_.edges.set_vertex(e, 0, edges[e].first);
+		ctx.mesh_.edges.set_vertex(e, 1, edges[e].second);
+	}
+}
+
 void BlocPadTool::validate_callback() {
 
+	// Attribute hovered / selected, enable visualizing hovered / selected facets
 	GEO::Attribute<int> cell_facets_hovered_attr(
 		ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
 	);
 
 	if (step == 0) {
+
 
 		int n_cells = 0;
 		CellAttribute<bool> selected_cell(ctx.hex_bound->hex, false);
@@ -180,7 +284,7 @@ void BlocPadTool::validate_callback() {
 				// Get opp facets
 				auto next_f = cur_f.opposite_f().next().next().opposite_f().opposite_c();
 				
-				if (!next_f.active() || cell_facets_hovered_attr[next_f] == 3 /* reach a stop facet */)
+				if (!next_f.active())
 					// Extremity is reached !
 					cell_facets_hovered_attr[cur_f.opposite_f().next().next().opposite_f().facet()] = 2;
 
@@ -191,11 +295,11 @@ void BlocPadTool::validate_callback() {
 		}
 
 
+		/*
 		// Filter
 		GEO::Attribute<bool> cell_filter(
 			ctx.mesh_.cells.attributes(), "filter"
 		);
-
 
 		for (auto c : ctx.hex_bound->hex.iter_cells()) {
 			cell_filter[c] = selected_cell[c];
@@ -204,70 +308,93 @@ void BlocPadTool::validate_callback() {
 		// Switch view to preview selection
 		ctx.view.change_mode(ViewBinding::Mode::Volume);
 		ctx.mesh_gfx_.set_filter(GEO::MeshElementsFlags::MESH_CELLS);
+		*/
+
+
+
+		ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex, selected_cell);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+
+		// Attribute hovered / selected, enable visualizing hovered / selected facets
+		GEO::Attribute<int> hovered_attr(
+			ctx.mesh_.facets.attributes(), "hovered"
+		);
+		GEO::Attribute<int> cell_facets_hovered_attr(
+			ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
+		);
+
+		for (auto f : ctx.hex_bound->quad.iter_facets()) {
+			hovered_attr[f] = 2;
+			cell_facets_hovered_attr[ctx.hex_bound->hex_facet(f)] = 2;
+		}	
+
+
+
+		ctx.view.change_mode(ViewBinding::Mode::Surface);
+		
+
+		
 
 
 
 		// Compute feature lines
-		compute_patches_for_selection();
+		// compute_feature_lines();
 
-		std::vector<std::pair<int, int>> edges;
-
-		// Get patches edge borders
-		int n1 = 0;
-		int n2 = 0;
-		int eee = 0;
-		for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
-			eee++;
-			auto opp = h.opposite();
-
-			if (!opp.active()) {
-				// Add to edge border
-				edges.push_back({h.from(), h.to()});
-				n1++;
-				continue;
-			}
-
-			auto f = h.facet();
-			auto opp_f = opp.facet();
-			
-			if (patches[f] != patches[opp_f]) {
-				// Add edge to border
-				edges.push_back({h.from(), h.to()});
-				n2++;
-			}
-
-		}
-
-		ctx.mesh_.edges.clear();
-		// Add feature to GEO model (allow to view them)
-		ctx.mesh_.edges.create_edges(edges.size());
-		for (int e = 0; e < edges.size(); e++) {
-			ctx.mesh_.edges.set_vertex(e, 0, edges[e].first);
-			ctx.mesh_.edges.set_vertex(e, 1, edges[e].second);
-		}
 
 		step = 1;
 
 	} else if (step == 1) {
 
-		ctx.hex_preview.connect();
+		// Try to check validity
+		bool valid = true;
+		for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
+			if (cell_facets_hovered_attr[h.facet()] != 2)
+				continue;
+
+
+			// Check opp
+			auto opp = h.opposite_f().opposite_c();
+			if (!opp.active()) {
+				continue;
+			}
+
+			int count = 0;
+			for (auto eh : h.iter_CCW_around_edge()) {
+				if (cell_facets_hovered_attr[eh.facet()] == 2)
+					count++;
+			}
+			// if (cell_facets_hovered_attr[h.opposite_f().facet()] == 2)
+			// 	count++;
+
+			// opp = h.opposite_c();
+
+			// if (opp.active() && cell_facets_hovered_attr[opp.opposite_f().facet()] == 2)
+			// 	count++;
+
+			// opp = h.opposite_f().opposite_c();
+
+			// if (opp.active() && cell_facets_hovered_attr[opp.opposite_f().facet()] == 2)
+			// 	count++;
+
+			if (count != 2) {
+				valid = false;
+				break;
+			}
+		}
+
+		std::cout << "Padding valid ? " << valid << std::endl;
+
 
 		CellFacetAttribute<bool> pad_face(ctx.hex_bound->hex, false);
 		
-		GEO::Attribute<bool> cell_filter(
-			ctx.mesh_.cells.attributes(), "filter"
+		GEO::Attribute<int> cell_facets_hovered_attr(
+			ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
 		);
 
 		//
 		for (auto f : ctx.hex_bound->hex.iter_facets()) {
-			if (!cell_filter[f.cell()])
-				continue;
-
-			pad_face[f] = !f.opposite().active() || !cell_filter[f.opposite().cell()];
-
-			// Exclude extremities ?
-			if (is_outgoing_padding && cell_facets_hovered_attr[f] == 2)
-				pad_face[f] = false;
+			pad_face[f] = cell_facets_hovered_attr[f] == 2;
 		}
 
 		// Beurk ! Need to encapsulate hex Bound !!!!
@@ -283,6 +410,37 @@ void BlocPadTool::validate_callback() {
 		ctx.view.change_mode(ViewBinding::Mode::Volume);
 		ctx.view.show_vertices_ = false;
 
+		// CellFacetAttribute<bool> pad_face(ctx.hex_bound->hex, false);
+		
+		// GEO::Attribute<bool> cell_filter(
+		// 	ctx.mesh_.cells.attributes(), "filter"
+		// );
+
+		// //
+		// for (auto f : ctx.hex_bound->hex.iter_facets()) {
+		// 	if (!cell_filter[f.cell()])
+		// 		continue;
+
+		// 	pad_face[f] = !f.opposite().active() || !cell_filter[f.opposite().cell()];
+
+		// 	// Exclude extremities ?
+		// 	if (is_outgoing_padding && cell_facets_hovered_attr[f] == 2)
+		// 		pad_face[f] = false;
+		// }
+
+		// // Beurk ! Need to encapsulate hex Bound !!!!
+		// ctx.hex_bound = NULL;
+		// BenjaminAPI::pad(ctx.hex, pad_face);
+
+		// // Reconstruct
+		// ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+		// um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+
+		// ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+		// switch_view();
+		// ctx.view.change_mode(ViewBinding::Mode::Volume);
+		// ctx.view.show_vertices_ = false;
+
 
 	}
 
@@ -294,15 +452,18 @@ bool BlocPadTool::is_compatible() {
 }
 
 void BlocPadTool::escape_callback() {
+	// Reset mesh
+	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex_bound->hex);
+	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+
 	// Clear tool
 	clear();
 
 	// Reset wireframe
 	ctx.mesh_.edges.clear();
 
-
-
+	// Return to default view
 	switch_view();
-
 }
 

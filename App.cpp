@@ -60,7 +60,8 @@ App::App(const std::string name) :
 	patch_pad_tool(context_),
 	new_bloc_pad_tool(context_),
 	paint_flag_tool(context_),
-	polycubify_tool(context_)
+	polycubify_tool(context_),
+	hex_collapse_tool(context_)
 {
 	
 }
@@ -69,12 +70,14 @@ void App::ImGui_initialize() {
     Application::ImGui_initialize();
     set_style("Dark");
 	
-	// set_full_screen(true);
     if(GEO::FileSystem::is_file("gui.ini")) {
         // Layout modification, saved with ImGui::SaveIniSettingsToDisk()
         // Larger docked object properties panel
         ImGui::LoadIniSettingsFromDisk("gui.ini");
     }
+
+	// set_full_screen(true);
+	App::load("polycubified.geogram.json");
 }
 
 
@@ -469,6 +472,7 @@ void App::cursor_pos_callback(double x, double y, int source) {
 
 	// Refresh element hovered, check whether one of them has changed
 	bool has_changed = refresh_hovered();
+	has_changed = true;
 
 	// Only trigger hover callback if at least one hover elements has changed !
 	if (has_changed) {

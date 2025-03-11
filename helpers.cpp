@@ -608,7 +608,6 @@ namespace helpers {
 		std::vector<int> indirection_map(hex.nverts());
 		std::vector<bool> cells_to_kill(hex.ncells(), false);
 		{
-			// EdgeGraph eg(hex);
 			for (auto v : hex.iter_vertices())
 				indirection_map[v] = v;
 
@@ -631,7 +630,7 @@ namespace helpers {
 		// hex.delete_cells(cells_to_kill);
 
 		// Remove isolated vertices
-		hex.delete_isolated_vertices();
+		// hex.delete_isolated_vertices();
 		// hex.connect();
 	}
 

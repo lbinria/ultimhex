@@ -27,7 +27,8 @@ enum GUIMode {
 	BlocPadding = 5,
 	PatchPadding = 6,
 	NewBlocPadding = 7,
-	Polycubify = 8
+	Polycubify = 8,
+	HexCollapse = 9
 };
 
 struct ViewBinding {
@@ -180,9 +181,7 @@ struct Context {
 	// TetBoundary tet_bound;
 	std::unique_ptr<TetBoundary> tet_bound;
 	std::unique_ptr<HexBoundary> hex_bound;
-
-	// Preview mesh
-	UM::Hexahedra hex_preview;
+	std::unique_ptr<EdgeGraph> eg;
 
 	MeshMetadata mesh_metadata;
 

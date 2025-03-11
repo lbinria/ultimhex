@@ -172,7 +172,7 @@ namespace um_bindings {
 	void geo_mesh_from_hexboundary(HexBoundary &m, GEO::Mesh &m_out) {
 
 		// m_out.clear(true, true);
-		m_out.clear();
+		m_out.clear(false, false);
 
 		int v_off = m_out.vertices.create_vertices(m.hex.nverts());
 		int f_off = m_out.facets.create_facets(m.quad.nfacets(), 4);
@@ -184,10 +184,20 @@ namespace um_bindings {
 		}
 
 		for (auto f : m.quad.iter_facets()) {
-			m_out.facets.set_vertex(f + f_off, 0, m.quad.vert(f, 0) + v_off);
-			m_out.facets.set_vertex(f + f_off, 1, m.quad.vert(f, 1) + v_off);
-			m_out.facets.set_vertex(f + f_off, 2, m.quad.vert(f, 2) + v_off);
-			m_out.facets.set_vertex(f + f_off, 3, m.quad.vert(f, 3) + v_off);
+			auto v0 = m.quad.vert(f, 0);
+			auto v1 = m.quad.vert(f, 1);
+			auto v2 = m.quad.vert(f, 2);
+			auto v3 = m.quad.vert(f, 3);
+			if (m.quad2hex_verts.size() > 0) {
+				v0 = m.quad2hex_verts[v0];
+				v1 = m.quad2hex_verts[v1];
+				v2 = m.quad2hex_verts[v2];
+				v3 = m.quad2hex_verts[v3];
+			}
+			m_out.facets.set_vertex(f + f_off, 0, v0 + v_off);
+			m_out.facets.set_vertex(f + f_off, 1, v1 + v_off);
+			m_out.facets.set_vertex(f + f_off, 2, v2 + v_off);
+			m_out.facets.set_vertex(f + f_off, 3, v3 + v_off);
 		}
 
 		for (auto c : m.hex.iter_cells()) {

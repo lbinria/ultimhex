@@ -73,7 +73,7 @@ void PatchPadTool::compute_features() {
 	// }
 
 	// Display surface with feature lines
-	ctx.view.change_mode(ViewBinding::Mode::Surface);
+	ctx.view.change_mode(ViewBinding::Mode::Volume);
 	ctx.view.attribute_ = "facets.hovered";
 	ctx.view.attribute_name_ = "hovered";
 	ctx.view.attribute_min_ = 0;

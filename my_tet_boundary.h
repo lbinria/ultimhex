@@ -7,8 +7,11 @@ using namespace UM;
 
 struct HexBoundary {
 
-	inline HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) :hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+	inline HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
  
+		hex2quad_verts.clear();
+		quad2hex_verts.clear();
+
 		quad.points = hex.points;
 		
 		for (auto f_hex : hex.iter_facets()) if (!f_hex.opposite().active()) {
@@ -21,42 +24,38 @@ struct HexBoundary {
 		quad.connect();
 	}
 
-	inline HexBoundary(Hexahedra &hex, CellAttribute<bool> filter) : hex(hex), quad_facet_(hex), hex_facet_(quad), quad() {
+	inline HexBoundary(Hexahedra &hex, CellAttribute<bool> &selected_cell) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+		
+		// Extract surface of filtered cells
+		PointAttribute<bool> is_processed(hex, false);
+		// std::vector<int> hex2quad_verts(hex.nverts(), -1);
+		hex2quad_verts.resize(hex.nverts(), -1);
+		quad2hex_verts.clear();
 
-		PointAttribute<bool> visible_point(hex, false);
-		int n_verts = 0;
 		for (auto c : hex.iter_corners()) {
-			if (!filter[c.cell()] || visible_point[c.vertex()])
+			if (!selected_cell[c.cell()] || is_processed[c.vertex()])
 				continue;
 			
-			visible_point[c.vertex()] = true;
-			++n_verts;
+			is_processed[c.vertex()] = true;
+			int off = quad.points.create_points(1);
+			quad.points[off] = c.vertex().pos();
+			hex2quad_verts[c.vertex()] = off;
+			quad2hex_verts.push_back(c.vertex());
 		}
 
-		quad.points.create_points(n_verts);
-		std::vector<int> hexverts_2_boundverts(hex.nverts(), -1);
-
-		int i = 0;
-		for (auto v : hex.iter_vertices()) {
-			if (!visible_point[v])
-				continue;
-
-			quad.points[i] = hex.points[v];
-			hexverts_2_boundverts[v] = i;
-			++i;
-		}
-
-		for (auto f : hex.iter_facets()) {
-			if (!filter[f.cell()])
+		for (auto f_hex : hex.iter_facets()) {
+			if (!selected_cell[f_hex.cell()] || (f_hex.opposite().active() && selected_cell[f_hex.opposite().cell()]))
 				continue;
 
 			int f_quad = quad.create_facets(1);
-			hex_facet_[f_quad] = f;
-			quad_facet_[f] = f_quad;
+			hex_facet_[f_quad] = f_hex;
+			quad_facet_[f_hex] = f_quad;
 
 			for (int lv = 0; lv < 4; lv++) {
-				quad.vert(f_quad, lv) = hexverts_2_boundverts[f.vertex(lv)];
+				quad.vert(f_quad, lv) = hex2quad_verts[f_hex.vertex(lv)];
 			}
+
+
 		}
 
 		quad.connect();
@@ -94,6 +93,9 @@ struct HexBoundary {
 
 	Quads quad;
 	FacetAttribute<int> hex_facet_;
+
+	std::vector<int> hex2quad_verts;
+	std::vector<int> quad2hex_verts;
 };
 
 

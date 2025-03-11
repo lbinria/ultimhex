@@ -2,15 +2,16 @@
 
 #include <ultimaille/all.h>
 #include <geogram_gfx/third_party/imgui/imgui.h>
+#include <nicostuff/algo/framework/benjamin_API.h>
 
 #include "tool.h"
 
 
-struct BlocPadTool : public Tool {
+struct HexCollapseTool : public Tool {
 
-	BlocPadTool(Context &ctx) : Tool(ctx) {}
+	HexCollapseTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Bloc padding"; }
+	std::string get_name() { return "Hex collapse"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -30,34 +31,30 @@ struct BlocPadTool : public Tool {
 	void escape_callback() override;
 
 
-	void switch_view();
+	void compute_layers();
 
 	void clear() override {
-		step = 0;
-		last_hovered_f = -1;
-		patches.clear();
-
-		// Clear selection attribute
-		GEO::Attribute<int> hovered_attr(
-			ctx.mesh_.facets.attributes(), "hovered"
-		);
-		GEO::Attribute<int> cell_facets_hovered_attr(
-			ctx.mesh_.cell_facets.attributes(), "cell_facets_hovered"
-		);
-		
-		for (auto f : ctx.hex_bound->quad.iter_facets())
-			hovered_attr[f] = 0;
-		for (auto f : ctx.hex_bound->hex.iter_facets())
-			cell_facets_hovered_attr[f] = 0;
+		layers.clear();
+		last_hovered_cells.clear();
+		hovered_cells.clear();
+		selected_cells.clear();
+		selected_layer = -1;
+		hovered_h = -1;
 	}
 
-	int select_mode = 0;
-	int step = 0;
-	int last_hovered_f;
-	std::vector<int> last_hovered_facets;
+	void reset() {
+		clear();
+		compute_layers();
+	}
 
-	std::vector<int> patches;
+	private:
 
+	std::vector<int> layers;
+	std::vector<int> last_hovered_cells;
+	std::vector<int> hovered_cells;
+	std::vector<int> selected_cells;
+	int selected_layer = -1;
+	int hovered_h = -1;
 
 
 };
