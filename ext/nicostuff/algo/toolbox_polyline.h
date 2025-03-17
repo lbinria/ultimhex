@@ -16,6 +16,7 @@
 		double ave_edge_size();
 		void kill_isolated_vertices();
 		int add_segment(vec3 A, vec3 B);
+		int add_segment(int v0, int v1);
 	PolyLine& pl;
 };
 

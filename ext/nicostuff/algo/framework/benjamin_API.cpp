@@ -9,12 +9,12 @@
 using namespace UM::Linear;
 namespace BenjaminAPI {
 
-	void smooth_vector_on_tet(TetBoundary& bound, FacetAttribute<int>& flag, CellAttribute<vec3>& dir,int dim) {
+	void smooth_vector_on_tet(TetBoundary& bound, FacetAttribute<int>& flag, CellAttribute<vec3>& dir, int dim) {
 		Triangles& tri = bound.tri;
 		Tetrahedra& tet = bound.tet;
 
 		LeastSquares ls(3 * tet.ncells());
-		for (auto c : tet.iter_cells()) FOR(d, 3) ls.X[d + 3 * c] = d==dim ?1:0;
+		for (auto c : tet.iter_cells()) FOR(d, 3) ls.X[d + 3 * c] = d == dim ? 1 : 0;
 		// boundary constraint 
 		for (auto f_tri : tri.iter_facets()) {
 			vec3 n = Triangle3(f_tri).normal();
@@ -31,9 +31,22 @@ namespace BenjaminAPI {
 
 		ls.solve();
 		for (auto c : tet.iter_cells()) FOR(d, 3) dir[c][d] = ls.value(d + 3 * c);
+
+#if 0
+		{// render the field
+			PointSet pts;
+			PointAttribute<vec3> field(pts);
+			pts.create_points(tet.ncells());
+			for (auto c : tet.iter_cells()){
+				pts[c] = Tetrahedron(c).bary_verts();
+				field[c] = dir[c];
+			}
+			Drop(pts, field).apply("dir");
+		}
+#endif
 	}
 
-	void integrate_vector_on_tet(TetBoundary& bound, FacetAttribute<int>& flag, PointAttribute<double>& scalar, CellAttribute<vec3>& dir,bool snap = false) {
+	void integrate_vector_on_tet(TetBoundary& bound, FacetAttribute<int>& flag, PointAttribute<double>& scalar, CellAttribute<vec3>& dir,bool snap ) {
 		Triangles& tri = bound.tri;
 		Tetrahedra& tet = bound.tet;
 		Trace::step("Integrate the objective gradient");
@@ -43,11 +56,12 @@ namespace BenjaminAPI {
 			for (auto f_tri : tri.iter_facets()) {
 				if (flag[f_tri] == 0) continue;
 				if (snap) {
-					for (auto h : f_tri.iter_halfedges()) if (h.from().halfedge() == h)
-						ls.add_to_constraints(X(h.from()) - (.5+std::floor(.5 + scalar[h.from()])));
+					for (auto h : f_tri.iter_halfedges()) 
+						//if (h.from().halfedge() == h)
+							//ls.add_to_constraints(X(h.from()) - (.5 + std::floor(.5 + scalar[h.from()])));
+							ls.add_to_constraints(X(h.from()) - scalar[h.from()]);
 				}
-				else for (auto h : f_tri.iter_halfedges())
-					ls.add_to_constraints(X(h.from()) - X(h.to()));
+				else for (auto h : f_tri.iter_halfedges()) ls.add_to_constraints(X(h.from()) - X(h.to()));
 			}
 			for (auto c : tet.iter_cells()) {
 				mat<3, 4> grd = Tetrahedron(c).grad_operator();
@@ -72,12 +86,22 @@ namespace BenjaminAPI {
 
 
 
-	void hextract(Tetrahedra& tet, PointAttribute<vec3>& U, Hexahedra& hex, int nhex_wanted = 10000) {
+	void hextract(Tetrahedra& tet, PointAttribute<vec3>& U, Hexahedra& hex, int nhex_wanted ) {
 		Drop(tet, U).apply("U");
 
 		// hextract
 		CellCornerAttribute<vec3> U_corner(tet);
 		for (auto c : tet.iter_corners()) U_corner[c] = U[c.vertex()];
+		DropVolume(tet).add(U_corner,"U")._just_save_filename("C:\\NICO\\tmp\\polyGP.geogram").apply();
+		//for (auto c : tet.iter_corners()) U_corner[c] += vec3(.5, .5, .5);
+
+		// show boundary pb
+
+		PointAttribute<vec3> U_danger(tet);
+		for (auto v : tet.iter_vertices()) FOR(d, 3) U_danger[v][d] += .5 ;
+		for (auto v : tet.iter_vertices()) FOR(d, 3) U_danger[v][d] = std::abs(U[v][d]  - std::floor(.5+U[v][d]));
+		Drop(tet, U_danger).apply("U_danger");
+
 
 		ReadOnlyMeshExtract3d xtract(tet, U_corner);
 		CellFacetAttribute<int> emb_out(hex);
@@ -103,7 +127,7 @@ namespace BenjaminAPI {
 
 
 	void polycubify(Tetrahedra& tet, CellFacetAttribute<int>& tet_flag, Hexahedra& hex, int nhex_wanted) {
-		Trace::SwitchDropInScope drop_switch(false);
+		//Trace::SwitchDropInScope drop_switch(false);
 		TetBoundary bound(tet);
 		PointAttribute<vec3> U(tet);
 
@@ -124,12 +148,11 @@ namespace BenjaminAPI {
 			smooth_vector_on_tet(bound, flag, dir,d);
 			PointAttribute<double> scalar(tet);
 			Trace::step("integrate");
-			integrate_vector_on_tet(bound, flag, scalar, dir);
+			integrate_vector_on_tet(bound, flag, scalar, dir, false);
 			Trace::step("show");
 			Drop(bound.tri, scalar)._skip_value(-2).apply("scalar");
 			for (auto v : tet.iter_vertices()) U[v][d] = scalar[v];
 		}
-
 		{// rescale
 			double volume = 0;
 			for (auto c : tet.iter_cells())
@@ -151,21 +174,34 @@ namespace BenjaminAPI {
 			}
 			CellAttribute<vec3> dir(tet);
 			for (auto c : tet.iter_cells()) dir[c] = Tetrahedron(c).grad(vec4{ U[c.vertex(0)][d], U[c.vertex(1)][d], U[c.vertex(2)][d], U[c.vertex(3)][d]});
+			
+			for (auto c : tet.iter_cells()) if (dir[c].norm2() < 1e-10) dir[c] = vec3(1e-5, 0, 0);
+
 			PointAttribute<double> scalar(tet);
 			for (auto v : tet.iter_vertices()) scalar[v] = U[v][d];
+
+			for (auto f : bound.tri.iter_facets()) {
+				if (flag[f] ==0) continue;
+				for (auto h : f.iter_halfedges())
+					scalar[h.from()] = std::floor(scalar[h.from()])+.5;
+			}
+
+
+
+
+			Drop(bound.tri, scalar)._skip_value(-2).apply("input scalar");
 			Trace::step("integrate");
 			integrate_vector_on_tet(bound, flag, scalar, dir,true);
 			Trace::step("show");
-			Drop(bound.tri, scalar)._skip_value(-2).apply("scalar");
+			Drop(bound.tri, scalar)._skip_value(-2).apply("integrated scalar");
 			for (auto v : tet.iter_vertices()) U[v][d] = scalar[v];
 		}
 
-
+	
 		for (auto v : tet.iter_vertices()) std::swap(U[v], v.pos());
 		DropVolume(tet).apply("tapotte");
 		for (auto v : tet.iter_vertices()) std::swap(U[v], v.pos());
 		Drop(tet, tet_flag).apply("input");
-
 		hextract(tet, U, hex, nhex_wanted);
 	}
 

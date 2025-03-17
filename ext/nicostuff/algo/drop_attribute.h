@@ -368,10 +368,7 @@ struct Drop<C, FacetAttribute<T>> {
             FOR(fv, m.facet_size(f)) other.vert(nf, fv) = m.vert(f, fv);
         }
         other.delete_isolated_vertices();
-        if (__just_save_filename.compare("") == 0)
-            DropSurface(other)._just_save_filename(__just_save_filename).add(other_attr, "attr")._show_vertices(false)._show_edges(__show_edges)._active_facet_attribute("attr").apply(name);
-        else
-            DropSurface(other)._just_save_filename(__just_save_filename).add(other_attr, "attr")._show_vertices(false)._show_edges(__show_edges)._active_facet_attribute("attr").apply(name);
+        DropSurface(other)._just_save_filename(__just_save_filename).add(other_attr, "attr")._show_vertices(false)._show_edges(__show_edges)._active_facet_attribute("attr").apply(name);
     }
 };
 

@@ -19,6 +19,7 @@ struct NicoFramework :Parameters{
 	    add("directory", "output_path", "C:/NICO/prog/output/tmp").type_of_param("system").description("the directory to ouputs: .lua, .csv and results");
 	    add("directory", "result_path", "C:/NICO/prog/output/result").type_of_param("system").description("the directory to ouput results");
 	    add("bool", "show_dropped_mesh", "true").type_of_param("system").description("Lauch a viewer to see dropped meshes");
+		//add("file", "graphite", "C:/NICO/prog/GraphiteThree/bin/win64/graphite.exe").type_of_param("system").description("Viewer graphite.exe location");
 		add("file", "graphite", "C:/NICO/prog/GraphiteThree/build/Windows/bin/Release/graphite.exe").type_of_param("system").description("Viewer graphite.exe location");
 		add("file", "gmsh", "C:/NICO/prog/gmsh/gmsh.exe").type_of_param("system").description("gmsh.exe location");
 		add("input", "input",input_file).type_of_param("system").description("The input mesh");

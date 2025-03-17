@@ -1,7 +1,11 @@
 #include "dirty/readonly_mesh_extract_3d.h"
 #include "toolbox.h"
 
+using namespace Linear;
+
 #define quit(x) {plop(x);Trace::abort();}
+inline Tetrahedron uvw_tet(CellCornerAttribute<vec3>& uvw, Volume::Cell c) { return Tetrahedron(uvw[c.corner(0)], uvw[c.corner(1)], uvw[c.corner(2)], uvw[c.corner(3)]); }
+inline Triangle3 uvw_tri(CellCornerAttribute<vec3>& uvw, Volume::Facet f) { return Triangle3(uvw[f.corner(0)], uvw[f.corner(1)], uvw[f.corner(2)]); }
 
 
 vec3 ReadOnlyMeshExtract3d::AxisDirection::dir_vec[6] = { vec3(1,0,0), vec3(0,1,0), vec3(0,0,1),vec3(-1,0,0), vec3(0,-1,0), vec3(0,0,-1) };
@@ -29,7 +33,7 @@ int ReadOnlyMeshExtract3d::AxisDirection::dir_inv[6] = { 3,4,5,0,1,2 };
 //		std::cerr << "," << transition_rot_times_direction[t][a];
 //}
 //return;
-int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times_direction[24][6] = { 
+int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times_direction[24][6] = {
 	{ 0, 1, 2, 3, 4, 5 },
 	{ 1,3,2,4,0,5 },
 { 3,4,2,0,1,5 },
@@ -53,7 +57,7 @@ int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times_direction[24][6
 { 3,5,4,0,2,1 },
 { 4,5,0,1,2,3 },
 { 0,5,1,3,2,4 },
-{ 1,5,3,4,2,0 }};
+{ 1,5,3,4,2,0 } };
 //int crossarray[6][6] = { {-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1},{-1,-1,-1,-1,-1,-1} };
 //FOR(a, 6)FOR(b, 6) FOR(c, 6) {
 //	ReadOnlyMeshExtract3d::AxisDirection da(a);
@@ -77,8 +81,8 @@ int ReadOnlyMeshExtract3d::AxisDirection::cross[6][6] = {
 	{  4, 0,-1, 1, 3,-1 }
 };
 
-int dir2face[6] = { 1,3,5,0,2,4};
-int face2dir[6] = {3,0,4,1,5,2};
+int dir2face[6] = { 1,3,5,0,2,4 };
+int face2dir[6] = { 3,0,4,1,5,2 };
 
 
 inline mat<3, 3> mat_from_coeffs(double a00, double a01, double a02, double a10, double a11, double a12, double a20, double a21, double a22) {
@@ -99,9 +103,9 @@ mat_from_coeffs(1,0,0,0,1,0,0,0,1),
 	mat_from_coeffs(0,0,1,-1,0,0,0,-1,0),mat_from_coeffs(1,0,0,0,0,1,0,-1,0),mat_from_coeffs(0,0,-1,1,0,0,0,-1,0)
 };
 int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_inverse[24] = {
-	0,3,2,1,8,5,15,22,4,14,21,11,12,23,9,6,16,17,18,19,20,10,7,13 
+	0,3,2,1,8,5,15,22,4,14,21,11,12,23,9,6,16,17,18,19,20,10,7,13
 };
-int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times[24][24]= {
+int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times[24][24] = {
 {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23},
 {1,2,3,0,5,6,7,4,9,10,11,8,13,14,15,12,17,18,19,16,21,22,23,20},
 {2,3,0,1,6,7,4,5,10,11,8,9,14,15,12,13,18,19,16,17,22,23,20,21},
@@ -131,21 +135,19 @@ int ReadOnlyMeshExtract3d::AxisPermutation::transition_rot_times[24][24]= {
 //2,2,2,2,-1,-1,-1,0,-1,1,-1,-1,-1,-1,1,-1,-1,0,-1,1,-1,-1,0,-1 };
 
 
-inline Triangle3 uvw_tri(CellCornerAttribute<vec3>& uvw, Volume::Facet f) { return Triangle3(uvw[f.corner(0)], uvw[f.corner(1)], uvw[f.corner(2)]); }
-
 ReadOnlyMeshExtract3d::ReadOnlyMeshExtract3d(Tetrahedra& tet, CellCornerAttribute<vec3>& uvw) :tet(tet), off_hex(tet), uvw(uvw),
-link(hex), hex_center_U(hex), tet_cell(hex, -1), emb(hex, { -1,vec3(0,0,0) }), reverted(hex), active(hex,true){
+link(hex), hex_center_U(hex), tet_cell(hex, -1), emb(hex, { -1,vec3(0,0,0) }), reverted(hex), active(hex, true) {
 	double geom_ave_edge_size = ToolBox(tet).ave_edge_size();
 	double map_ave_edge_size = 0;
 	for (auto h : tet.iter_halfedges()) map_ave_edge_size += (uvw[h.from_corner()] - uvw[h.to_corner()]).norm();
-	map_ave_edge_size /= 3*tet.nfacets();
+	map_ave_edge_size /= 3 * tet.nfacets();
 	ave_edge_size = geom_ave_edge_size / map_ave_edge_size;
 }
 
 ReadOnlyMeshExtract3d::AxisDirection cross(ReadOnlyMeshExtract3d::AxisDirection a, ReadOnlyMeshExtract3d::AxisDirection b) {
 	return ReadOnlyMeshExtract3d::AxisDirection(ReadOnlyMeshExtract3d::AxisDirection::cross[a][b]);
 }
-Volume::Facet direction_to_face(Volume::Cell c,ReadOnlyMeshExtract3d::AxisDirection dir) { return c.facet(dir2face[dir]); }
+Volume::Facet direction_to_face(Volume::Cell c, ReadOnlyMeshExtract3d::AxisDirection dir) { return c.facet(dir2face[dir]); }
 ReadOnlyMeshExtract3d::AxisDirection face_to_direction(Volume::Facet f) { return ReadOnlyMeshExtract3d::AxisDirection(face2dir[f % 6]); }
 
 ReadOnlyMeshExtract3d::AxisDirection halfedge_to_direction(Volume::Halfedge h) { return cross(face_to_direction(h.facet()), face_to_direction(h.opposite_f().facet())); }
@@ -156,9 +158,9 @@ Volume::Halfedge direction_to_halfedge(Volume::Facet f, ReadOnlyMeshExtract3d::A
 }
 
 
-using namespace Linear;
+
 void ReadOnlyMeshExtract3d::reduce_GP_var(ConstrainedLeastSquares& cls, PointAttribute<bool>& need_jitter) {
-	
+
 	for (auto f : tet.iter_facets()) {
 		if (f.on_boundary()) continue;
 		if (f.opposite() > f) continue;
@@ -173,9 +175,9 @@ void ReadOnlyMeshExtract3d::reduce_GP_var(ConstrainedLeastSquares& cls, PointAtt
 			Volume::Corner c0 = h.from_corner();
 			Volume::Corner c1 = h.opposite_c().to_corner();
 			FOR(c0_coord, 3) {
-				LinExpr l = (-1)*X(c0_coord + 3 * c0)+ tf.t[c0_coord];						
-				FOR(c1_coord, 3) l = l+ R[c0_coord][c1_coord] * X(c1_coord + 3 * c1);	// rotation				
-				cls.add_to_constraints(l );
+				LinExpr l = (-1) * X(c0_coord + 3 * c0) + tf.t[c0_coord];
+				FOR(c1_coord, 3) l = l + R[c0_coord][c1_coord] * X(c1_coord + 3 * c1);	// rotation				
+				cls.add_to_constraints(l);
 			}
 		}
 	}
@@ -215,7 +217,7 @@ void ReadOnlyMeshExtract3d::pre_process() {
 	auto  grid_point_on_triangle = [&](Volume::Facet f) {
 		Triangle3 tri(uvw[f.corner(0)], uvw[f.corner(1)], uvw[f.corner(2)]);
 		//Triangle3 tri(uvw[f.corner(0)] + vec3(.5, .5, .5), uvw[f.corner(1)] + vec3(.5, .5, .5), uvw[f.corner(2)]+vec3(.5, .5, .5));
-		
+
 		BBox3 box;
 		FOR(lv, 3) box.add(tri[lv]);
 		box.dilate(1e-2);
@@ -226,12 +228,12 @@ void ReadOnlyMeshExtract3d::pre_process() {
 					double eps = 1e-5;
 					double eps2 = eps * eps;
 					// near extremities
-					FOR(lv, 3) if((P-tri[lv]).norm2()<eps2) return true;
-					
+					FOR(lv, 3) if ((P - tri[lv]).norm2() < eps2) return true;
+
 					// near edge
 					FOR(lh, 3) {
 						vec3 A = tri[lh];
-						vec3 B = tri[(lh+1)%3];
+						vec3 B = tri[(lh + 1) % 3];
 						// not in the segment
 						if ((P - A) * (B - A) < 0) continue;
 						if ((P - B) * (A - B) < 0) continue;
@@ -254,7 +256,36 @@ void ReadOnlyMeshExtract3d::pre_process() {
 		}
 		return false;
 		};
+	auto  grid_point_on_halfedge = [&](Volume::Halfedge h) {
+		Segment3 seg(uvw[h.from_corner()], uvw[h.to_corner()]);
+		//Segment3 seg(uvw[h.from_corner()]+vec3(.5,.5,.5), uvw[h.to_corner()] + vec3(.5, .5, .5));
+		BBox3 box;
+		FOR(lv, 2) box.add(seg[lv]);
+		box.dilate(1e-2);
+		for (int i = std::floor(box.min[0]); i < std::ceil(box.max[0]); i++) {
+			for (int j = std::floor(box.min[1]); j < std::ceil(box.max[1]); j++) {
+				for (int k = std::floor(box.min[2]); k < std::ceil(box.max[2]); k++) {
+					vec3 P = vec3(i, j, k);
+					double eps = 1e-5;
+					double eps2 = eps * eps;
+					// near extremities
+					FOR(lv, 2) if ((P - seg[lv]).norm2() < eps2) return true;
 
+					// near edge
+					FOR(lh, 3) {
+						vec3 A = seg[0];
+						vec3 B = seg[1];
+						// not in the segment
+						if ((P - A) * (B - A) < 0) continue;
+						if ((P - B) * (A - B) < 0) continue;
+						if ((A - B).norm2() < eps2) continue;// degenerated edge
+						if (cross(B - A, P - A).norm2() / (B - A).norm2() < eps2) return true;
+					}
+				}
+			}
+		}
+		return false;
+		};
 
 	auto show_bad_triangles = [&]() {
 		Triangles tri;
@@ -262,27 +293,32 @@ void ReadOnlyMeshExtract3d::pre_process() {
 			ToolBox(tri).add_triangle({ f.vertex(0).pos(), f.vertex(1).pos(), f.vertex(2).pos() });
 		DropSurface(tri).apply("grid_point_on_triangle");
 		Drop(tet, uvw).apply_neg_det("negdej");
-	};
+		};
+
+
+
+
+
 
 
 	show_bad_triangles();
-	PointAttribute<bool> lock(tet,false);
-	//WARNING: remove because no lock on polycube --- lock_singular_vertices(tet, uvw, lock);
+	PointAttribute<bool> lock(tet);
+	lock_singular_vertices(tet, uvw, lock);
 	int last_nfail = std::numeric_limits<int>::max();
 	FOR(it, 4) {
 		std::cerr << "Jitter iteration " << it << std::endl;
 		int nfail = 0;
-		PointAttribute<bool> need_jitter(tet,false);
-		for (auto f : tet.iter_facets()) 
-			if (grid_point_on_triangle(f)) 
+		PointAttribute<bool> need_jitter(tet, false);
+		for (auto f : tet.iter_facets())
+			if (grid_point_on_triangle(f))
 				for (auto h : f.iter_halfedges()) {
 					if (!lock[h.from()]) {
-						need_jitter[h.from()] = true; 
+						need_jitter[h.from()] = true;
 						nfail++;
 					}
 				}
 		plop(nfail);
-		if (nfail==0 || nfail>=last_nfail) break;
+		if (nfail == 0 || nfail >= last_nfail) break;
 		last_nfail = nfail;
 		ConstrainedLeastSquares cls(3 * tet.ncorners());
 		reduce_GP_var(cls, need_jitter);
@@ -297,7 +333,7 @@ void ReadOnlyMeshExtract3d::pre_process() {
 			if (row[0].index == const_index) return false;
 			reduced[row[0].index] = val / row[0].value;
 			return true;
-		};
+			};
 
 		auto propagate_uvw_changes = [&]() {
 			for (auto c : tet.iter_corners()) {
@@ -313,7 +349,7 @@ void ReadOnlyMeshExtract3d::pre_process() {
 		propagate_uvw_changes();
 
 
-		for(auto c:tet.iter_corners()) if (need_jitter[c.vertex()])
+		for (auto c : tet.iter_corners()) if (need_jitter[c.vertex()])
 			FOR(d, 3) change_uvw(c, d, uvw[c][d] + .1 * rand_range(-1, 1));
 		//for (auto f : tet.iter_facets()) if (grid_point_on_triangle(f)) for (auto h : f.iter_halfedges()) {
 		//	if (lock[h.from()]) continue;
@@ -338,9 +374,9 @@ Volume::Halfedge ReadOnlyMeshExtract3d::link_opposite(Volume::Halfedge h) {
 	if (reverted[f.cell()] == reverted[link[f].q_id]) {
 		dir_f = dir_f.inverse();
 	}
-	 else dir_h= dir_h.inverse();
+	else dir_h = dir_h.inverse();
 
-	Volume::Facet fopp = direction_to_face(Volume::Cell(hex,link[f].q_id), dir_f);
+	Volume::Facet fopp = direction_to_face(Volume::Cell(hex, link[f].q_id), dir_f);
 	for (auto hopp : fopp.iter_halfedges()) {
 		if (halfedge_to_direction(hopp) == dir_h.inverse())
 			return hopp;
@@ -368,12 +404,12 @@ void ReadOnlyMeshExtract3d::smooth_hex_network() {
 		for (auto f : hex.iter_facets()) if (link[f].active())
 			ls.add_to_energy(X(f.cell()) - X(link[f].q_id));
 		ls.solve();
-		for (auto c : hex.iter_cells()) FOR(lv,8)
+		for (auto c : hex.iter_cells()) FOR(lv, 8)
 			c.vertex(lv).pos()[d] += ls.value(c) - G[c][d];
 	}
 }
 
-void ReadOnlyMeshExtract3d::show_hex_network(bool show_hex,bool show_ribbons) {
+void ReadOnlyMeshExtract3d::show_hex_network(bool show_hex, bool show_ribbons) {
 	if (show_hex) {
 		CellAttribute<int> orient(hex, 0);
 		for (auto c : hex.iter_cells()) if (active[c]) orient[c] = reverted[c] ? -1 : 1;  else orient[c] = -2;
@@ -381,7 +417,7 @@ void ReadOnlyMeshExtract3d::show_hex_network(bool show_hex,bool show_ribbons) {
 	}
 	//{
 
-	if(show_ribbons){
+	if (show_ribbons) {
 		Polygons poly;
 		FacetAttribute<int> polyattr(poly, 0);
 		double c0 = .5;// shrink coefficient
@@ -392,15 +428,15 @@ void ReadOnlyMeshExtract3d::show_hex_network(bool show_hex,bool show_ribbons) {
 			if (!opp.active()) continue;
 			vec3 G = Quad3(h.facet()).bary_verts();
 			vec3 Gopp = Quad3(opp.facet()).bary_verts();
-			
-			if (reverted[h.cell()] == reverted[opp.cell()]) 
-			Glyphs::Ribbon(poly,
-				c1 * h.from().pos() + c0 * G, c1 * h.to().pos() + c0 * G,
-				G - Hexahedron(h.cell()).bary_verts(),
-				c1 * opp.to().pos() + c0 * Gopp, c1 * opp.from().pos() + c0 * Gopp,
-				Gopp - Hexahedron(opp.cell()).bary_verts(),
-				10).portion_only(0,.5).apply(polyattr, (h.opposite_f().facet())%6);
-			else 
+
+			if (reverted[h.cell()] == reverted[opp.cell()])
+				Glyphs::Ribbon(poly,
+					c1 * h.from().pos() + c0 * G, c1 * h.to().pos() + c0 * G,
+					G - Hexahedron(h.cell()).bary_verts(),
+					c1 * opp.to().pos() + c0 * Gopp, c1 * opp.from().pos() + c0 * Gopp,
+					Gopp - Hexahedron(opp.cell()).bary_verts(),
+					10).portion_only(0, .5).apply(polyattr, (h.opposite_f().facet()) % 6);
+			else
 				Glyphs::Ribbon(poly,
 					c1 * h.from().pos() + c0 * G, c1 * h.to().pos() + c0 * G,
 					G - Hexahedron(h.cell()).bary_verts(),
@@ -422,35 +458,35 @@ using namespace Linear;
 
 Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(uvw[t.corner(0)], uvw[t.corner(1)], uvw[t.corner(2)], uvw[t.corner(3)]); }
 
- void ReadOnlyMeshExtract3d::create_hex(Volume::Cell t, int i, int j, int k) {
-	 Tetrahedron tet_U = uvw_tet(t);
-	 vec4 bc = tet_U.bary_coords(vec3(i, j, k));
-	 um_assert(bc[0] >=0 && bc[1] >= 0 && bc[2] >= 0 && bc[3] >= 0) ;
-	 int off_f = hex.create_cells(1);
-	 int off_v = hex.points.create_points(8);
-	 FOR(lv, 8) hex.vert(off_f, lv) = off_v + lv;
-	 tet_cell[off_f] = t;
-	 hex_center_U[off_f] = vec3(i, j,k);
-	 reverted[off_f] = (uvw_tet(t).volume() < 0);
+void ReadOnlyMeshExtract3d::create_hex(Volume::Cell t, int i, int j, int k) {
+	Tetrahedron tet_U = uvw_tet(t);
+	vec4 bc = tet_U.bary_coords(vec3(i, j, k));
+	um_assert(bc[0] >= 0 && bc[1] >= 0 && bc[2] >= 0 && bc[3] >= 0);
+	int off_f = hex.create_cells(1);
+	int off_v = hex.points.create_points(8);
+	FOR(lv, 8) hex.vert(off_f, lv) = off_v + lv;
+	tet_cell[off_f] = t;
+	hex_center_U[off_f] = vec3(i, j, k);
+	reverted[off_f] = (uvw_tet(t).volume() < 0);
 
-	 // rendering purpose
-	 {
-		 Tetrahedron tet_X = Tetrahedron(t);
-		 vec3 G = (bc[0] * tet_X[0] + bc[1] * tet_X[1] + bc[2] * tet_X[2] + bc[3] * tet_X[3]);
-		 double s = .5 * ave_edge_size;
-		 mat3x3 grad = {
-			 tet_X.grad(vec4{uvw[t.corner(0)][0], uvw[t.corner(1)][0], uvw[t.corner(2)][0], uvw[t.corner(3)][0]}),
-			 tet_X.grad(vec4{uvw[t.corner(0)][1], uvw[t.corner(1)][1], uvw[t.corner(2)][1], uvw[t.corner(3)][1]}),
-			 tet_X.grad(vec4{uvw[t.corner(0)][2], uvw[t.corner(1)][2], uvw[t.corner(2)][2], uvw[t.corner(3)][2]})
-		 };
-		 grad = grad.invert_transpose();
-		 FOR(d, 3) grad[d].normalize();
-		 FOR(di, 2)FOR(dj, 2)FOR(dk, 2)
-		 hex.points[off_v + dk*4+dj*2+di] = G + s *(double(di)-.5) *grad[0] + s * (double(dj) - .5) * grad[1] + s * (double(dk) - .5) * grad[2];
-	 }
- }
+	// rendering purpose
+	{
+		Tetrahedron tet_X = Tetrahedron(t);
+		vec3 G = (bc[0] * tet_X[0] + bc[1] * tet_X[1] + bc[2] * tet_X[2] + bc[3] * tet_X[3]);
+		double s = .5 * ave_edge_size;
+		mat3x3 grad = {
+			tet_X.grad(vec4{uvw[t.corner(0)][0], uvw[t.corner(1)][0], uvw[t.corner(2)][0], uvw[t.corner(3)][0]}),
+			tet_X.grad(vec4{uvw[t.corner(0)][1], uvw[t.corner(1)][1], uvw[t.corner(2)][1], uvw[t.corner(3)][1]}),
+			tet_X.grad(vec4{uvw[t.corner(0)][2], uvw[t.corner(1)][2], uvw[t.corner(2)][2], uvw[t.corner(3)][2]})
+		};
+		grad = grad.invert_transpose();
+		FOR(d, 3) grad[d].normalize();
+		FOR(di, 2)FOR(dj, 2)FOR(dk, 2)
+			hex.points[off_v + dk * 4 + dj * 2 + di] = G + s * (double(di) - .5) * grad[0] + s * (double(dj) - .5) * grad[1] + s * (double(dk) - .5) * grad[2];
+	}
+}
 
- void ReadOnlyMeshExtract3d::generate_hexes() {
+void ReadOnlyMeshExtract3d::generate_hexes() {
 	for (auto t : tet.iter_cells()) {
 		if (t % 1000 == 0) std::cerr << "tet " << t << " / " << tet.ncells() << std::endl;
 		off_hex[t] = hex.ncells();
@@ -459,15 +495,15 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 			//plop(tet_U.volume()); 
 			continue;
 		}
-		BBox3 box; 
-		FOR(lv,4) box.add(uvw[t.corner(lv)]);
+		BBox3 box;
+		FOR(lv, 4) box.add(uvw[t.corner(lv)]);
 		for (int i = std::floor(box.min[0]); i < std::ceil(box.max[0]); i++) {
 			for (int j = std::floor(box.min[1]); j < std::ceil(box.max[1]); j++) {
 				for (int k = std::floor(box.min[2]); k < std::ceil(box.max[2]); k++) {
-					vec4 bc = tet_U.bary_coords(vec3(i, j,k));
+					vec4 bc = tet_U.bary_coords(vec3(i, j, k));
 					if (bc[0] < 0 || bc[1] < 0 || bc[2] < 0 || bc[3] < 0) continue;
 					//if (std::abs(tet_U.volume()) < 1e-18) continue;//Trace::alert("Hex create on low volume");
-					create_hex(t, i, j,k);
+					create_hex(t, i, j, k);
 				}
 			}
 		}
@@ -476,17 +512,14 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 }
 
 
- Volume::Cell ReadOnlyMeshExtract3d::search_hex(Volume::Cell t, vec3 ijk) {
+Volume::Cell ReadOnlyMeshExtract3d::search_hex(Volume::Cell t, vec3 ijk) {
 	for (int obj_hex = off_hex[t];
 		obj_hex < ((t + 1 == tet.ncells()) ? hex.ncells() : off_hex[t + 1]);
 		obj_hex++) {
 		if ((hex_center_U[obj_hex] - ijk).norm2() < 1e-5)
 			return Volume::Cell(hex, obj_hex);
 	}
-	return Volume::Cell(hex, -1);;
-	// ALERT show debug information and quit
 	plop(uvw_tet(t).volume());
-	FOR(lv, 4) plop(uvw_tet(t)[lv]);
 	for (int obj_hex = off_hex[t];
 		obj_hex < ((t + 1 == tet.ncells()) ? hex.ncells() : off_hex[t + 1]);
 		obj_hex++) {
@@ -497,21 +530,21 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 	um_assert(!"position reached");
 }
 
- void ReadOnlyMeshExtract3d::connect_hexes() {
-	 bool verbose = false;
-	 for (auto f : hex.iter_facets()) {
-		 if (verbose ) std::cerr << "#######################################################################\n";;
-		 vec3 out_position(0, 0, 0);
-		 Volume::Cell seed_tet(tet, tet_cell[f.cell()]);
+void ReadOnlyMeshExtract3d::connect_hexes() {
+	bool verbose = false;
+	for (auto f : hex.iter_facets()) {
+		if (verbose) std::cerr << "#######################################################################\n";;
+		vec3 out_position(0, 0, 0);
+		Volume::Cell seed_tet(tet, tet_cell[f.cell()]);
 		vec3 O = hex_center_U[f.cell()];
-		Volume::Cell cur_tet= seed_tet;
+		Volume::Cell cur_tet = seed_tet;
 
 		TransitionFunction tf;
 		Volume::Facet in_facet(tet, -1);
 		int niter = 0;
 		while (true) {
-			bool seed_is_reverted	= (uvw_tet(seed_tet).volume() < 0);
-			bool cur_is_reverted	= (uvw_tet(cur_tet).volume() < 0);
+			bool seed_is_reverted = (uvw_tet(seed_tet).volume() < 0);
+			bool cur_is_reverted = (uvw_tet(cur_tet).volume() < 0);
 			Tetrahedron tet_U = uvw_tet(cur_tet);
 			FOR(lv, 4) tet_U[lv] = tf.apply(tet_U[lv]);
 
@@ -522,11 +555,11 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 				plop(cur_tet);
 				plop(seed_tet);
 				plop(tet_U.volume());
-				FOR(lv,4) plop(tet_U[lv]);
-				FOR(lf,4)drop_triangle(Triangle3(seed_tet.facet(lf)),"failtet");
-				drop_point(Hexahedron(f.cell()).bary_verts(),"bary");
+				FOR(lv, 4) plop(tet_U[lv]);
+				FOR(lf, 4)drop_triangle(Triangle3(seed_tet.facet(lf)), "failtet");
+				drop_point(Hexahedron(f.cell()).bary_verts(), "bary");
 				drop_point(out_position, "out_position");
-				
+
 				quit(niter);
 				//Trace::abort();
 			}
@@ -535,21 +568,15 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 			{// test if  destination is reached
 
 				vec3 dest = O;
-				if (seed_is_reverted == cur_is_reverted) 
+				if (seed_is_reverted == cur_is_reverted)
 					dest += AxisDirection(face2dir[f % 6]).vector();
-				
+
 				vec4 bc = tet_U.bary_coords(dest);
-				if (tet_U.volume()>1e-10)
 				if (bc[0] > 0 && bc[1] > 0 && bc[2] > 0 && bc[3] > 0) {
 					auto obj_q = search_hex(cur_tet, tf.inverted().apply(dest));
-					if (!obj_q.active()) {
-						plop("What a failure :(");
-						link[f] = Link(-1,-1);
-					}
-					else {
-						link[f] = Link(obj_q, tf.m.inverse().id);
-						um_assert(link[f].m != -1);
-					}break;
+					link[f] = Link(obj_q, tf.m.inverse().id);
+					um_assert(link[f].m != -1);
+					break;
 				}
 			}
 
@@ -564,10 +591,10 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 
 			if (verbose)  plop(O);
 			if (verbose)  plop(dir);
-			
+
 			bool search_fail = false;
 			for (int lf = 0;; lf++) {
-				if (lf ==4) {
+				if (lf == 4) {
 					break;
 					plop(Tetrahedron(seed_tet).bary_coords(O));
 					plop(int(f));
@@ -581,15 +608,15 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 					//quit(niter);
 					search_fail = true;
 				};
-			//for (auto cir_facet : cur_tet.iter_facets()) {
+				//for (auto cir_facet : cur_tet.iter_facets()) {
 				Volume::Facet cir_facet = cur_tet.facet(lf);
 				Triangle3 tri_U(uvw[cir_facet.corner(0)], uvw[cir_facet.corner(1)], uvw[cir_facet.corner(2)]);
 				FOR(lv, 3) tri_U[lv] = tf.apply(tri_U[lv]);
-				
+
 				vec3 w;
-				FOR(i,3) w[i] = Tetrahedron(O,O + dir, tri_U[(i+1)%3], tri_U[(i+2)%3]).volume();
+				FOR(i, 3) w[i] = Tetrahedron(O, O + dir, tri_U[(i + 1) % 3], tri_U[(i + 2) % 3]).volume();
 				if (!cur_is_reverted)FOR(i, 3)w[i] *= -1;
-				
+
 				if (verbose)  plop(w);
 				// do not go back
 				if (cir_facet == in_facet) continue;
@@ -600,14 +627,14 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 				if (w[2] < 0) continue;
 
 
-				vec3 I = (w[0] * tri_U[0] + w[1] * tri_U[1] + w[2] * tri_U[2] ) / (w[0] + w[1] + w[2]);
+				vec3 I = (w[0] * tri_U[0] + w[1] * tri_U[1] + w[2] * tri_U[2]) / (w[0] + w[1] + w[2]);
 				if (verbose) plop(w);
 				if (verbose) plop(I);
 
-				out_position = (w[0] * cir_facet.vertex(0).pos() + w[1] * cir_facet.vertex(1).pos() + w[2] * cir_facet.vertex(2).pos() ) / (w[0] + w[1] + w[2]);
+				out_position = (w[0] * cir_facet.vertex(0).pos() + w[1] * cir_facet.vertex(1).pos() + w[2] * cir_facet.vertex(2).pos()) / (w[0] + w[1] + w[2]);
 				// goto next facet or reach boundary
 				if (cir_facet.opposite().active()) {
-					in_facet= cir_facet.opposite();
+					in_facet = cir_facet.opposite();
 					TransitionFunction ntf(cir_facet, uvw);
 					ntf.force_integer_translation();
 					//if (tf.m != 0 && ntf.m != 0) plop(tf.m);
@@ -624,24 +651,24 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 		}
 	}
 	// enforce link symmetry
-	 for (auto f : hex.iter_facets()) if (link[f].active()) {
-		 auto opp = link_opposite_facet(f);
-		 if (link[opp].active() && link_opposite_facet(opp) == f) continue;
-		 link[f] = Link();
+	for (auto f : hex.iter_facets()) if (link[f].active()) {
+		auto opp = link_opposite_facet(f);
+		if (link[opp].active() && link_opposite_facet(opp) == f) continue;
+		link[f] = Link();
 		um_assert(!link[f].active());
-	 }
-	 //check that links are symmetric
-	 for (auto f : hex.iter_facets())
-		 if (link[f].active()) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
+	}
+	//check that links are symmetric
+	for (auto f : hex.iter_facets())
+		if (link[f].active()) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
 }
 
 
 
- void ReadOnlyMeshExtract3d::propagate_boundary() {
+void ReadOnlyMeshExtract3d::propagate_boundary() {
 	for (auto f_seed : hex.iter_facets()) {
 		if (link[f_seed].active()) continue;
 		auto f = f_seed;
-		while (f.active() ) {
+		while (f.active()) {
 
 			AxisDirection dir_f = face_to_direction(f);
 			f = 2 * (f / 2) + 1 - (f % 2);
@@ -650,104 +677,103 @@ Tetrahedron ReadOnlyMeshExtract3d::uvw_tet(Volume::Cell t) { return Tetrahedron(
 			if (reverted[f.cell()] != reverted[link[f].q_id])
 				dir_f = dir_f.inverse();
 			f = direction_to_face(Volume::Cell(hex, link[f].q_id), dir_f);
-			um_assert(link[f].q_id!=-1);
-			um_assert(emb[f].f_id==-1);
+			um_assert(link[f].q_id != -1);
+			um_assert(emb[f].f_id == -1);
 			emb[f] = emb[f_seed];
 		}
 	}
 }
 
 
- bool ReadOnlyMeshExtract3d::can_cancel(Volume::Facet seed_f) {
-	 auto lnk = link[seed_f];
-	 if (!lnk.active()) return false;
-	 Volume::Cell c0 = seed_f.cell();
-	 Volume::Cell c1(hex, lnk.q_id);
-	 um_assert(c0 != c1);
-	 um_assert(active[c0]);
-	 um_assert(active[c1]);
-	 Link inv_lnk(c0, lnk.m.inverse());
-	 FOR(lf, 6) {
-		 Volume::Facet f0 = c0.facet(lf);
-		 Volume::Facet f1 = direction_to_face(c1, lnk.m * face_to_direction(f0));
-		 if (c0 == link[f0].q_id) return false;
-		 if (c1 == link[f1].q_id) return false;
-	 }
-	 return true;
- }
+bool ReadOnlyMeshExtract3d::can_cancel(Volume::Facet seed_f) {
+	auto lnk = link[seed_f];
+	if (!lnk.active()) return false;
+	Volume::Cell c0 = seed_f.cell();
+	Volume::Cell c1(hex, lnk.q_id);
+	um_assert(c0 != c1);
+	um_assert(active[c0]);
+	um_assert(active[c1]);
+	Link inv_lnk(c0, lnk.m.inverse());
+	FOR(lf, 6) {
+		Volume::Facet f0 = c0.facet(lf);
+		Volume::Facet f1 = direction_to_face(c1, lnk.m * face_to_direction(f0));
+		if (c0 == link[f0].q_id) return false;
+		if (c1 == link[f1].q_id) return false;
+	}
+	return true;
+}
 
 
- void ReadOnlyMeshExtract3d::cancel(Volume::Facet seed_f) {
-	 auto lnk = link[seed_f];
-	 um_assert(lnk.active());
-	 Volume::Cell c0 = seed_f.cell();
-	 Volume::Cell c1(hex, lnk.q_id);
-	 um_assert(c0 != c1);
-	 um_assert(active[c0]);
-	 um_assert(active[c1]);
-	 Link inv_lnk(c0, lnk.m.inverse());
-	 FOR(lf, 6) {
-		 Volume::Facet f0 = c0.facet(lf);
-		 Volume::Facet f1 = direction_to_face( c1, lnk.m* face_to_direction(f0));
-		 if (c1 == link[f0].q_id) continue;
-		 if (c0 == link[f0].q_id) continue;
+void ReadOnlyMeshExtract3d::cancel(Volume::Facet seed_f) {
+	auto lnk = link[seed_f];
+	um_assert(lnk.active());
+	Volume::Cell c0 = seed_f.cell();
+	Volume::Cell c1(hex, lnk.q_id);
+	um_assert(c0 != c1);
+	um_assert(active[c0]);
+	um_assert(active[c1]);
+	Link inv_lnk(c0, lnk.m.inverse());
+	FOR(lf, 6) {
+		Volume::Facet f0 = c0.facet(lf);
+		Volume::Facet f1 = direction_to_face(c1, lnk.m * face_to_direction(f0));
+		if (c1 == link[f0].q_id) continue;
+		if (c0 == link[f0].q_id) continue;
 
-		 Volume::Facet opp0 = link_opposite_facet(f0);
-		 Volume::Facet opp1 = link_opposite_facet(f1);
+		Volume::Facet opp0 = link_opposite_facet(f0);
+		Volume::Facet opp1 = link_opposite_facet(f1);
 
-		 if (opp1.active()) link[opp1] = link[opp1].followed_by(inv_lnk).followed_by(link[f0]);
-		 if (opp0.active()) link[opp0] = link[opp0].followed_by(lnk).followed_by(link[f1]);
+		if (opp1.active()) link[opp1] = link[opp1].followed_by(inv_lnk).followed_by(link[f0]);
+		if (opp0.active()) link[opp0] = link[opp0].followed_by(lnk).followed_by(link[f1]);
 
-		 //link[f0] = lnk;
-		 //link[f1] = inv_lnk;
+		//link[f0] = lnk;
+		//link[f1] = inv_lnk;
 
-	 }
-	 active[c0] = false;
-	 active[c1] = false;
+	}
+	active[c0] = false;
+	active[c1] = false;
 }
 
 
 
- void ReadOnlyMeshExtract3d::untangle() {
-	 //check that links are symmetric
-	 for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
-	 for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(f) != f);
+void ReadOnlyMeshExtract3d::untangle() {
+	//check that links are symmetric
+	for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
+	for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(f) != f);
 
-	 for (bool loop_only : {true, false}) {
-		 bool nothing_done ;
-		 do {
-			 nothing_done = true;
-			 for (auto f : hex.iter_facets()) {
-				 if (!active[f.cell()]) continue;
-				 um_assert(f.active());
-				 if (!link[f].active()) continue;
-				 if (!active[link[f].q_id]) continue;
-				 auto opp = link_opposite_facet(f);
-				 if (loop_only && (emb[f.halfedge(0).opposite_f().facet()].f_id != -1 || emb[opp.halfedge(0).opposite_f().facet()].f_id != -1)) continue;
+	for (bool loop_only : {true, false}) {
+		bool nothing_done;
+		do {
+			nothing_done = true;
+			for (auto f : hex.iter_facets()) {
+				if (!active[f.cell()]) continue;
+				um_assert(f.active());
+				if (!link[f].active()) continue;
+				if (!active[link[f].q_id]) continue;
+				auto opp = link_opposite_facet(f);
+				if (loop_only && (emb[f.halfedge(0).opposite_f().facet()].f_id != -1 || emb[opp.halfedge(0).opposite_f().facet()].f_id != -1)) continue;
 
-				 if (reverted[f.cell()] == reverted[link[f].q_id]) continue;
-				 if (can_cancel(f)) 
-				 {
-					 cancel(f);
-					 nothing_done = false;
-				 }
-			 }
-		 }
-		 while (!nothing_done);
-	 }
-	 // show lasting revert
-	 CellAttribute<bool> badcell(hex);
-	 for (auto c : hex.iter_cells()) badcell[c] = active[c] && reverted[c];
-	 for (auto c : hex.iter_cells()) if (badcell[c]) Trace::alert("Reverted elements detected after untangling");
-	 Drop(hex, badcell)._skip_value(false).apply("BAD CELL");
+				if (reverted[f.cell()] == reverted[link[f].q_id]) continue;
+				if (can_cancel(f))
+				{
+					cancel(f);
+					nothing_done = false;
+				}
+			}
+		} while (!nothing_done);
+	}
+	// show lasting revert
+	CellAttribute<bool> badcell(hex);
+	for (auto c : hex.iter_cells()) badcell[c] = active[c] && reverted[c];
+	for (auto c : hex.iter_cells()) if (badcell[c]) Trace::alert("Reverted elements detected after untangling");
+	Drop(hex, badcell)._skip_value(false).apply("BAD CELL");
 
 
-	 for (auto f : hex.iter_facets()) if (link[f].active() && active[f.cell()]) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
-	 for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(f) != f);
-	 for (auto f : hex.iter_facets()) if (link[f].active() && active[f.cell()]) um_assert(active[link_opposite_facet(f).cell()]);
+	for (auto f : hex.iter_facets()) if (link[f].active() && active[f.cell()]) um_assert(link_opposite_facet(link_opposite_facet(f)) == f);
+	for (auto f : hex.iter_facets()) if (link[f].active()) um_assert(link_opposite_facet(f) != f);
+	for (auto f : hex.iter_facets()) if (link[f].active() && active[f.cell()]) um_assert(active[link_opposite_facet(f).cell()]);
 
 }
- 
+
 // 
 //
 // void ReadOnlyMeshExtract3d::place_vertices() {
@@ -859,7 +885,7 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 		std::tie(eigen_val, eigen_vect) = eigendecompose_symmetric(AtA);
 	}
 	else
-		if (eigen_val[2] < .5* eigen_val[0]) {
+		if (eigen_val[2] < .5 * eigen_val[0]) {
 			dim = 1;
 			vec3 x = cross(eigen_vect.col(0), eigen_vect.col(1));
 			add_plane(G, 10 * x);
@@ -876,8 +902,23 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 
 
 
- void ReadOnlyMeshExtract3d::convert_to_hexes(Hexahedra& hexout, CellFacetAttribute<int>& emb_out) {
+void ReadOnlyMeshExtract3d::convert_to_hexes(Hexahedra& hexout, CellFacetAttribute<int>& emb_out) {
 
+	// remove inactive hexes... an update links accordingly
+	{
+		std::vector<int> old2new(hex.ncells());
+		CellAttribute<int> new2old(hex);
+		for (auto c : hex.iter_cells()) new2old[c] = c;
+		std::vector<bool> to_kill(hex.ncells());
+		for (auto c : hex.iter_cells()) to_kill[c] = !active[c];
+		hex.delete_cells(to_kill);
+		hex.delete_isolated_vertices();
+
+
+		for (auto c : hex.iter_cells()) old2new[new2old[c]] = c;
+		for (auto f : hex.iter_facets()) if (link[f].q_id >= 0) link[f].q_id = old2new[link[f].q_id];
+
+	}
 
 	// Merge vertices
 	DisjointSet ds(hex.nverts());
@@ -888,6 +929,9 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 		ds.merge(h.from(), opp.to());
 	}
 
+	//PointAttribute<int> id2grp(hex);
+	//int nverts = ds.get_sets_id(id2grp.ptr->data);
+	//Drop(hex.points, id2grp).apply("grps");
 	std::vector<int> id2grp;
 	int nverts = ds.get_sets_id(id2grp);
 	hexout.create_cells(hex.ncells());
@@ -906,6 +950,8 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 	DropVolume(hexout).apply("hex_no_boundary_fit");
 	ToolBox(hexout).drop_boundary();
 
+	for (auto v : hex.iter_vertices()) v.pos() = .8 * v.pos() + .2 * hexout.points[id2grp[v]];
+	DropVolume(hex).apply("hex"); return;
 
 
 
@@ -915,13 +961,13 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 		if (!active[f.cell()])continue;
 		if (link[f].active()) continue;
 		if (!f.on_boundary()) continue;
-		if (emb[f].f_id == -1)  continue; 
+		if (emb[f].f_id == -1)  continue;
 		for (auto h : f.iter_halfedges()) {
 			Volume::Vertex v = h.from();
 			auto it = boundaries.find(v);
 			if (it == boundaries.end()) boundaries[v] = std::vector<vec3>();
 			boundaries[v].push_back(emb[f].pos);
-			boundaries[v].push_back(Triangle3(Volume::Facet(tet,emb[f].f_id)).normal());
+			boundaries[v].push_back(Triangle3(Volume::Facet(tet, emb[f].f_id)).normal());
 		}
 	}
 
@@ -932,60 +978,55 @@ std::tuple<int, vec3, mat3x3> get_fitting_constraint(std::vector<vec3>& pt, std:
 			if (it != boundaries.end()) nb[v] = it->second.size();
 		}
 		Drop(hexout.points, nb).apply("nb_adj_faces");
-		
+
 		CellFacetAttribute<int> embf(hexout, -1);
 		for (auto f : hexout.iter_facets()) if (active[f.cell()] && !link[f].active() && f.on_boundary())
-			embf[f]=emb[f].f_id ;
+			embf[f] = emb[f].f_id;
 		Drop(hexout, embf).apply("embf");
 	}// DEBUG OUTPUT END
 
-	plop(0);
 	for (auto v : hexout.iter_vertices()) {
 		auto it = boundaries.find(v);
-		if (it == boundaries.end()) continue; 
-		if (it->second.size() < 6) { 
-			Trace::alert("Boundary vertex with less than 3 boundary facets"); 
-			continue; 
+		if (it == boundaries.end()) continue;
+		if (it->second.size() < 6) {
+			Trace::alert("Boundary vertex with less than 3 boundary facets");
+			continue;
 		}
-		std::vector<vec3> pt,n;
+		std::vector<vec3> pt, n;
 		for (auto data : it->second) if (pt.size() == n.size()) pt.push_back(data); else n.push_back(data);
 		auto [dim, pos, ani] = get_fitting_constraint(pt, n);
 		v.pos() = pos;
 	}
-	std::vector<bool> to_kill(hexout.ncells(),true);
-	for(auto c:hex.iter_cells()) to_kill[c] = !active[c];
-	hexout.delete_cells(to_kill);
-	hexout.delete_isolated_vertices();
-	hexout.connect();
- }
+
+
+}
 
 
 
 
- void ReadOnlyMeshExtract3d::apply(Hexahedra& hex_out, CellFacetAttribute<int>& emb_out) {
+void ReadOnlyMeshExtract3d::apply(Hexahedra& hex_out, CellFacetAttribute<int>& emb_out) {
 
 
 
 
-	 Trace::step("Pre-process");		pre_process();
-	 //return;
-	 //Drop(tet, uvw).apply("glo");
-	 Trace::step("Generate hexes");		generate_hexes();
-	 //show_hex_network(true, false);
-	 Trace::step("Connect hexes");		connect_hexes();
-	 //smooth_hex_network();
-	 //show_hex_network();
-	 Trace::step("Propagate boundary");	propagate_boundary();
-	 //sanity_check();
+	Trace::step("Pre-process");		pre_process();
+	//return;
+	Trace::step("Generate hexes");		generate_hexes();
+	//show_hex_network(true, false);
+	Trace::step("Connect hexes");		connect_hexes();
+	//smooth_hex_network();
+	//show_hex_network();
+	Trace::step("Propagate boundary");	propagate_boundary();
+	//sanity_check();
 
-	 //show_hex_network(true, true);
-	 Trace::step("Untangle");			untangle();
-	 //show_hex_network(true, true);
-	 //sanity_check();
+	show_hex_network(true, true);
+	Trace::step("Untangle");			untangle();
+	show_hex_network(true, true);
+	//sanity_check();
 
-	 //Trace::step("Place vertices");	place_vertices();
-	 //sanity_check();	 
+	//Trace::step("Place vertices");	place_vertices();
+	//sanity_check();	 
 
-	 Trace::step("Export hexes");
-	 convert_to_hexes(hex_out,emb_out);
- }
+	Trace::step("Export hexes");
+	convert_to_hexes(hex_out, emb_out);
+}

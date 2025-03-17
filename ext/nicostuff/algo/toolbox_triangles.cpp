@@ -85,8 +85,9 @@ void ToolBoxTriangles::copy_from(Triangles& other,bool duplicate_vertices) {
 		double a_val = std::pow(ToolBoxTriangles(m).ave_edge_size(), 3) / 6.;
 		char tmp[1024];
 		if (with_inner_vertices)
-			sprintf(tmp, "pq1.1va%f", a_val);
-		else std::strcpy(tmp, "pv");
+			sprintf(tmp, "YMpq1.1va%f", 20.*a_val);
+			//sprintf(tmp, "YMpq1.1va%f", a_val);
+		else std::strcpy(tmp, "Mpv");
 		param.parse_commandline(tmp);
 		tetrahedralize(&param, &in_mesh, &out);
 

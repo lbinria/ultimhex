@@ -27,10 +27,6 @@ else()
     add_compile_options(-Wall -Wextra -pedantic)
 endif()
 
-# Include project directory
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/tools
-)
 
 # Get development version of ultimaille directly from git repository 
 include(FetchContent)
@@ -41,32 +37,27 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(ultimaille)
 
-# Add ultimaille directory to get ultimaille CMakeLists
-include_directories(${ultimaille_SOURCE_DIR})
-
-include_directories(ext)
-
-
-# # Get development version of ultimaille directly from git repository 
-# include(FetchContent)
-# FetchContent_Declare(
-#   geogram
-#   GIT_REPOSITORY https://github.com/BrunoLevy/geogram.git
-#   GIT_TAG        main
-# )
-# FetchContent_MakeAvailable(geogram)
-# include_directories(${geogram_SOURCE_DIR})
-
-# Geogram
+# Add Geogram
 add_subdirectory(ext/geogram)
+# Add Nicostuff
 add_subdirectory(ext/nicostuff)
-
-# Add include nicostuff
-include_directories(ext)
 
 # Add executable binary
 file(GLOB SOURCES *.h *.cpp tools/*.h tools/*.cpp)
 add_executable(ultimhex ${SOURCES})
+
+# Add ultimaille directory to get ultimaille CMakeLists
+include_directories(${ultimaille_SOURCE_DIR})
+
+# Include ext
+target_include_directories(ultimhex PRIVATE 
+  ext/nicostuff/algo/framework
+  ext/nicostuff/algo
+  ext/nicostuff
+  ext
+)
+
+
 
 # Link binary with ultimaille
 target_link_libraries(ultimhex PRIVATE ${CMAKE_DL_LIBS} ultimaille geogram geogram_gfx algo_nicostuff m $<$<BOOL:${OpenMP_CXX_FOUND}>:OpenMP::OpenMP_CXX>)

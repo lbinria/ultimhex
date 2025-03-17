@@ -87,3 +87,9 @@ ToolBoxPolyLine::ToolBoxPolyLine(PolyLine& pl) :pl(pl) {  }
 		pl.points[v + 1] = B;
 		return s;
 	}
+	int ToolBoxPolyLine::add_segment(int v0,int v1) {
+		int s = pl.create_edges(1);
+		pl.vert(s, 0) = v0;
+		pl.vert(s, 1) = v1;
+		return s;
+	}

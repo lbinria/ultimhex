@@ -17,16 +17,16 @@
 #include "mesh_metadata.h"
 
 // Tools
-#include <filter_tool.h>
-#include <camera_tool.h>
-#include <hover_tool.h>
-#include <layer_stack_redefinition_tool.h>
-#include <paint_flag_tool.h>
+#include "tools/filter_tool.h"
+#include "tools/camera_tool.h"
+#include "tools/hover_tool.h"
+#include "tools/layer_stack_redefinition_tool.h"
+#include "tools/paint_flag_tool.h"
 #include "tools/layer_pad_tool.h"
 #include "tools/bloc_pad_tool.h"
 #include "tools/patch_pad_tool.h"
-#include <polycubify_tool.h>
-#include <hex_collapse_tool.h>
+#include "tools/polycubify_tool.h"
+#include "tools/hex_collapse_tool.h"
 
 // std libs
 #include <optional>

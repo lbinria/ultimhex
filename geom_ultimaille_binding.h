@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-// #include <utility>
 
 #include <ultimaille/all.h>
 #include <geogram/mesh/mesh.h>

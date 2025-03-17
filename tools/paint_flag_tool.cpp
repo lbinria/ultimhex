@@ -1,7 +1,5 @@
 #include "paint_flag_tool.h"
 
-#include <nicostuff/algo/framework/benjamin_API.h>
-
 #include "../geom_ultimaille_binding.h"
 #include "../context.h"
 #include "../gl_draw.h"
