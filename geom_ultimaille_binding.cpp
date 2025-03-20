@@ -169,7 +169,7 @@ namespace um_bindings {
 
 	}
 
-	void geo_mesh_from_hexboundary(HexBoundary &m, GEO::Mesh &m_out) {
+	void geo_mesh_from_hexboundary(MyHexBoundary &m, GEO::Mesh &m_out) {
 
 		// m_out.clear(true, true);
 		m_out.clear(false, false);

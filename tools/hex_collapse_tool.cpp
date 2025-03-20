@@ -11,14 +11,10 @@
 bool HexCollapseTool::draw_object_properties() {
 
 	if (ImGui::Button("Select hex layer to collapse")) {
-
-
 		ctx.gui_mode = HexCollapse;
 		reset();
 		return true;
 	}
-
-
 
 	return false;
 }
@@ -125,8 +121,6 @@ void HexCollapseTool::validate_callback() {
 	
 	std::vector<int> selected_halfedges;
 
-	EdgeGraph eg(ctx.hex_bound->hex);
-
 	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
 		if (layers[h] != selected_layer)
 			continue;
@@ -142,51 +136,31 @@ void HexCollapseTool::validate_callback() {
 
 	}
 
-	helpers::collapse(ctx.hex_bound->hex, selected_halfedges);
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex_bound->hex);
+	{
+		// Visualize embedding before collapse
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		write_by_extension("before_collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+	}
+
+	// Clear temporary because we'll delete points shared between hex / quad of hex bound
+	ctx.hex_bound->clear_surface();
+	helpers::collapse(ctx.hex, selected_halfedges, *ctx.emb_attr);
+
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
+	{
+		// Visualize feedback
+		// CellFacetAttribute<int> emb(ctx.hex_bound->hex, -1);
+		// emb.ptr->data = ctx.emb;
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		write_by_extension("collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+	}
 	reset();
 }
-
-// void HexCollapseTool::validate_callback() {
-	
-// 	std::vector<bool> halfedge_selection(ctx.hex_bound->hex.ncorners(), false);
-// 	std::vector<int> selected_halfedges;
-
-// 	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
-// 		if (layers[h] != selected_layer)
-// 			continue;
-
-
-// 		auto cur_h = h;
-// 		for (int i = 0; i < 4; i++) {
-// 			if (halfedge_selection[cur_h])
-// 				continue;
-
-// 			selected_halfedges.push_back(cur_h);
-// 			halfedge_selection[cur_h] = true;
-// 			cur_h = h.opposite_f().next().next();
-// 		}
-
-// 		// for (auto ha : h.iter_CCW_around_edge()) {
-// 		// 	if (halfedge_selection[ha])
-// 		// 		continue;
-			
-// 		// 	selected_halfedges.push_back(ha);
-// 		// 	halfedge_selection[ha] = true;
-// 		// }
-// 	}
-
-// 	helpers::collapse(ctx.hex_bound->hex, selected_halfedges);
-
-// 	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex_bound->hex);
-// 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-// 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-
-
-// }
 
 bool HexCollapseTool::is_compatible() { 
 	return ctx.mesh_metadata.cell_type == MESH_HEX;

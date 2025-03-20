@@ -61,7 +61,8 @@ App::App(const std::string name) :
 	new_bloc_pad_tool(context_),
 	paint_flag_tool(context_),
 	polycubify_tool(context_),
-	hex_collapse_tool(context_)
+	hex_collapse_tool(context_),
+	smooth_tool(context_)
 {
 	
 }
@@ -76,8 +77,9 @@ void App::ImGui_initialize() {
         ImGui::LoadIniSettingsFromDisk("gui.ini");
     }
 
-	// set_full_screen(true);
-	App::load("polycubified.geogram.json");
+	set_full_screen(true);
+	// App::load("polycubified.geogram.json");
+	App::load("/home/tex/Projects/mambo/Basic/B16.step");
 }
 
 
@@ -726,7 +728,7 @@ bool App::load(const std::string& filename) {
 		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
 		// Update hexbound
 		context_.hex.connect();
-		context_.hex_bound = std::make_unique<HexBoundary>(context_.hex);
+		context_.hex_bound = std::make_unique<MyHexBoundary>(context_.hex);
 		um_bindings::geo_mesh_from_hexboundary(*context_.hex_bound, context_.mesh_);
 
 		context_.view.change_mode(ViewBinding::Mode::Volume);

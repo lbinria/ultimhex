@@ -601,7 +601,7 @@ namespace helpers {
 
 
 
-	void collapse(UM::Hexahedra &hex, std::vector<int> layer) {
+	void collapse(UM::Hexahedra &hex, std::vector<int> layer, CellFacetAttribute<int> &emb_attr) {
 		// Use edge graph
 		// Compute indirection map of vertice to vertice, set vertice to vertice at the begging, but set from() to to() for collapsing
 
@@ -611,13 +611,34 @@ namespace helpers {
 			for (auto v : hex.iter_vertices())
 				indirection_map[v] = v;
 
+
+			bool is_forward_collapse = true;
+			bool is_backward_collapse = true;
 			for (auto h_idx : layer) {
 				Volume::Halfedge h(hex, h_idx);
-				// auto e = eg.edge_from_halfedge(h);
-				indirection_map[h.from()] = h.to();
+				
+				if (!h.next().opposite_f().opposite_c().active())
+					is_forward_collapse = false;
+				if (!h.prev().opposite_f().opposite_c().active())
+					is_backward_collapse = false;
+
+				if (!is_forward_collapse && !is_backward_collapse) {
+					// "Hard" to collapse
+					return;
+				}
+			}
+
+			for (auto h_idx : layer) {
+				Volume::Halfedge h(hex, h_idx);
+				if (is_backward_collapse)
+					indirection_map[h.from()] = h.to();
+				else 
+					indirection_map[h.to()] = h.from();
+
 				cells_to_kill[h.cell()] = true;
 			}
 		}
+
 
 		for (int c = 0; c < hex.ncells(); c++) {
 			for (int lv = 0; lv < 8; lv++) {
@@ -625,13 +646,43 @@ namespace helpers {
 			}
 		}
 
+		// propagate embedding
+		{
+			bool done = false;
+			while (!done) {
+				done = true;
+				for (auto f : hex.iter_facets()) {
+					if (emb_attr[f] < 0 || !cells_to_kill[f.cell()]) 
+						continue;
+					
+					auto f_next = f.halfedge(0).opposite_f().next().next().opposite_f().facet().opposite();
+					
+					if (f_next.active()) {
+						std::swap(emb_attr[f], emb_attr[f_next]);
+						done = false;
+					}
+				}
+			}
+		}
+
+
+
 		// Remove degenerate hex
-		// hex.disconnect();
-		// hex.delete_cells(cells_to_kill);
+		hex.disconnect();
+		hex.delete_cells(cells_to_kill);
 
 		// Remove isolated vertices
-		// hex.delete_isolated_vertices();
-		// hex.connect();
+		hex.delete_isolated_vertices();
+		hex.connect();
+
+		// std::vector<int> new_emb(hex.nfacets());
+		// for (auto f : hex.iter_facets()) {
+		// 	if (cells_to_kill[f.cell()]) 
+		// 		continue;
+			
+		// 	new_emb[f] = emb_attr[f];
+		// }
+		// emb_attr = new_emb;
 	}
 
 	void layer_along(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {

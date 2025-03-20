@@ -31,7 +31,7 @@ namespace helpers {
 	std::vector<int> get_cells_layer(Hexahedra &hex);
 	std::vector<UM::vec3> remap_poly(std::vector<UM::vec3> poly, int n);
 
-	void collapse(UM::Hexahedra &hex, std::vector<int> layer);
+	void collapse(UM::Hexahedra &hex, std::vector<int> layer, CellFacetAttribute<int> &emb_attr);
 
 	void layer_from_halfedge(UM::Hexahedra &hex, int he, std::function<void(UM::Volume::Halfedge&)> f);
 	void layer_along(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f);

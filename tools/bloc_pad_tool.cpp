@@ -192,9 +192,6 @@ void BlocPadTool::compute_patches() {
 
 			double v = Tetrahedron(h.from().pos(), h.to().pos(), bary, bary_opp).volume();
 
-			// Try to make traversing padding
-			bool success = false;
-
 			// double th = cos(threshold * (M_PI / 180.));
 
 			// We expect to merge adjacents facets that are almost coplanar
@@ -312,7 +309,7 @@ void BlocPadTool::validate_callback() {
 
 
 
-		ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex, selected_cell);
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected_cell);
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
@@ -402,7 +399,7 @@ void BlocPadTool::validate_callback() {
 		BenjaminAPI::pad(ctx.hex, pad_face);
 
 		// Reconstruct
-		ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
@@ -453,7 +450,7 @@ bool BlocPadTool::is_compatible() {
 
 void BlocPadTool::escape_callback() {
 	// Reset mesh
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex_bound->hex);
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex_bound->hex);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 

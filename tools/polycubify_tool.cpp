@@ -12,8 +12,17 @@ void PolycubifyTool::run_nicostuff() {
 	UM::CellFacetAttribute<int> tet_flag(ctx.tet, -1);
 	um_bindings::um_attr_from_geo_attr<GEO::MESH_CELL_FACETS>(ctx.mesh_, "tet_flag", ctx.tet, tet_flag.ptr);
 
+	// CellFacetAttribute<int> emb(ctx.hex, -1);
+
 	try {
-		BenjaminAPI::polycubify(ctx.tet, tet_flag, ctx.hex, nhex_wanted);
+		// Polycubify and fill embedding
+		ctx.emb_attr = std::make_unique<CellFacetAttribute<int>>(ctx.hex, -1);
+		BenjaminAPI::polycubify(ctx.tet, tet_flag, ctx.hex, nhex_wanted, *ctx.emb_attr);
+
+		// Make chart segmentation & init embedding
+		ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
+		BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, false);
+
 	} catch (const std::runtime_error &e) {
 		Logger::warn("An error occur when trying to polycubify. Detail: " + std::string(e.what()));
 		std::cout << "polycubify fail" << std::endl;
@@ -21,11 +30,19 @@ void PolycubifyTool::run_nicostuff() {
 	}
 
 	// Replace current GEO mesh by UM Hex
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 
 	// Replace current GEO mesh by UM Hex
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 
+
+	// Visualize feedback
+	{
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		write_by_extension("poly_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+		write_by_extension("poly_trichart.geogram", ctx.tet_bound->tri, {{}, {{"trichart", ctx.tri_chart.get()->ptr}}, {}});
+	}
 	// TODO encapsulate in atomic unit ! + try catch to guarentee consistency
 
 	// Write mesh
@@ -34,7 +51,7 @@ void PolycubifyTool::run_nicostuff() {
 	ctx.mesh_metadata = { 
 		.filename = "polycubified.geogram", 
 		.cell_type = GEO::MESH_HEX, 
-		.attributes = {} 
+		.attributes = {}
 	};
 	write_by_extension(ctx.mesh_metadata.filename, ctx.hex_bound->hex, {{}, {}, {}, {}});
 	ctx.mesh_metadata.save();
@@ -146,7 +163,7 @@ void PolycubifyTool::run_robust_polycube() {
 	// TODO below boilerplate code ! should refactor
 
 	// Replace current GEO mesh by UM Hex
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 

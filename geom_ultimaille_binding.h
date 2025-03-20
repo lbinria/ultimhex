@@ -123,7 +123,7 @@ namespace um_bindings {
 	/**
 	 * Get geogram mesh from ultimaille hex + quad surface
 	 */
-	void geo_mesh_from_hexboundary(HexBoundary &m, GEO::Mesh &m_out);
+	void geo_mesh_from_hexboundary(MyHexBoundary &m, GEO::Mesh &m_out);
 
 	/**
 	 * Get geogram facet attribute from ultimaille facet attribute

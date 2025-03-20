@@ -28,7 +28,9 @@ enum GUIMode {
 	PatchPadding = 6,
 	NewBlocPadding = 7,
 	Polycubify = 8,
-	HexCollapse = 9
+	HexCollapse = 9,
+	Smooth = 10,
+	Embedit = 11
 };
 
 struct ViewBinding {
@@ -81,7 +83,7 @@ struct ViewBinding {
 struct Context {
 
 	Context(Mesh &mesh, MeshGfx &mesh_gfx, ViewBinding view) : mesh_(mesh), mesh_gfx_(mesh_gfx), view(view) {
-		hex_bound = std::make_unique<HexBoundary>(hex);
+		hex_bound = std::make_unique<MyHexBoundary>(hex);
 		tet_bound = std::make_unique<TetBoundary>(tet);
 	}
 
@@ -178,10 +180,13 @@ struct Context {
 	UM::Tetrahedra tet;
 	UM::Hexahedra hex;
 
-	// TetBoundary tet_bound;
 	std::unique_ptr<TetBoundary> tet_bound;
-	std::unique_ptr<HexBoundary> hex_bound;
-	std::unique_ptr<EdgeGraph> eg;
+	std::unique_ptr<MyHexBoundary> hex_bound;
+
+	// Embedding
+	std::unique_ptr<CellFacetAttribute<int>> emb_attr;
+	std::unique_ptr<FacetAttribute<int>> tri_chart;
+	std::vector<int> emb;
 
 	MeshMetadata mesh_metadata;
 

@@ -89,7 +89,7 @@ void LayerPad2::validate_callback() {
 	ctx.hex.disconnect();
 	ctx.hex.connect();
 	
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 
 	// um_bindings::geo_mesh_from_um_hex(ctx.hex, ctx.mesh_);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);

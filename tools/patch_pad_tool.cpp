@@ -73,7 +73,7 @@ void PatchPadTool::compute_features() {
 	// }
 
 	// Display surface with feature lines
-	ctx.view.change_mode(ViewBinding::Mode::Volume);
+	ctx.view.change_mode(ViewBinding::Mode::Surface);
 	ctx.view.attribute_ = "facets.hovered";
 	ctx.view.attribute_name_ = "hovered";
 	ctx.view.attribute_min_ = 0;
@@ -251,7 +251,7 @@ void PatchPadTool::validate_callback() {
 
 	// Recreate surface from hex
 	// Should update hex bound surface
-	ctx.hex_bound = std::make_unique<HexBoundary>(ctx.hex);
+	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 

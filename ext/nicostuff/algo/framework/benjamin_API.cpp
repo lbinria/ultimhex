@@ -3,6 +3,9 @@
 #include <fullhex/hextract.h>
 #include <volume/hex_edit.h>
 
+#include <surface/feature_curve_detector.h>
+#include <surface/pointset_in_surface.h>
+
 
 #include "dirty/readonly_mesh_extract_3d.h"
 
@@ -86,7 +89,7 @@ namespace BenjaminAPI {
 
 
 
-	void hextract(Tetrahedra& tet, PointAttribute<vec3>& U, Hexahedra& hex, int nhex_wanted ) {
+	void hextract(Tetrahedra& tet, PointAttribute<vec3>& U, Hexahedra& hex, int nhex_wanted, CellFacetAttribute<int> &emb_out) {
 		Drop(tet, U).apply("U");
 
 		// hextract
@@ -104,9 +107,8 @@ namespace BenjaminAPI {
 
 
 		ReadOnlyMeshExtract3d xtract(tet, U_corner);
-		CellFacetAttribute<int> emb_out(hex);
+		// CellFacetAttribute<int> emb_out(hex);
 		xtract.apply(hex, emb_out);
-
 	}
 
 
@@ -126,7 +128,8 @@ namespace BenjaminAPI {
 
 
 
-	void polycubify(Tetrahedra& tet, CellFacetAttribute<int>& tet_flag, Hexahedra& hex, int nhex_wanted) {
+
+	void polycubify(Tetrahedra& tet, CellFacetAttribute<int>& tet_flag, Hexahedra& hex, int nhex_wanted, CellFacetAttribute<int> &emb_out) {
 		//Trace::SwitchDropInScope drop_switch(false);
 		TetBoundary bound(tet);
 		PointAttribute<vec3> U(tet);
@@ -202,13 +205,245 @@ namespace BenjaminAPI {
 		DropVolume(tet).apply("tapotte");
 		for (auto v : tet.iter_vertices()) std::swap(U[v], v.pos());
 		Drop(tet, tet_flag).apply("input");
-		hextract(tet, U, hex, nhex_wanted);
+		hextract(tet, U, hex, nhex_wanted, emb_out);
+
+
+		Trace::step("Generate tet mesh and transfert flag");
+		{
+			KNN<3> knn(*(bound.tri.points.data));
+			Trace::step("transfert emb from tet facet to tri facet");
+			for (auto hex_f : hex.iter_facets()) {
+				if (!hex_f.on_boundary()) {
+					emb_out[hex_f] = -1;
+					continue;
+				}
+				Volume::Facet tet_f(tet, emb_out[hex_f]);
+				int tri_verts[3];
+				FOR(lv, 3) tri_verts[lv] = knn.query(tet_f.vertex(lv).pos(), 1)[0];
+				for (auto h : Surface::Vertex(bound.tri, tri_verts[0]).iter_halfedges()) {
+					if (h.to() == tri_verts[1] && h.prev().from() == tri_verts[2])
+						emb_out[hex_f] = h.facet();
+				}
+			}
+		}
+
+		{ // fill empty emb by neigborgs
+			HexBoundary hexbound(hex);
+			bool done = false;
+
+			while (!done) {
+				done = true;
+				for (auto h : hexbound.quad.iter_halfedges()) {
+					auto opp = h.opposite();
+					if (!opp.active()) { Trace::alert("non manifold boundary detected"); continue; }
+					if (emb_out[hexbound.hex_facet(h.facet())] == -1) {
+						emb_out[hexbound.hex_facet(h.facet())] = emb_out[hexbound.hex_facet(opp.facet())];
+						done = false;
+					}
+				}
+			}
+		}
+
+	}
+
+	void polycubify(Tetrahedra& tet, CellFacetAttribute<int>& tet_flag, Hexahedra& hex, int nhex_wanted) {
+		CellFacetAttribute<int> emb_out(hex, -1);
+		polycubify(tet, tet_flag, hex, nhex_wanted, emb_out);
 	}
 
 	bool pad(Hexahedra& hex, CellFacetAttribute<bool>& pad_face) {
 		HexPad padder(hex);
 		padder.apply(pad_face); 
 		return true;
+	}
+
+	void embeditinit(Triangles &tri, FacetAttribute<int> &tri_chart, Hexahedra &hex, CellFacetAttribute<int> &emb_attr, bool gmsh_chart) {
+		// Triangles tri;
+		// auto tri_attr = read_by_extension(path + "/tri.geogram", tri);
+		tri.connect();
+
+		// Hexahedra hex;
+		// auto attr = read_by_extension(path + "/hex.geogram", hex);
+		// CellFacetAttribute<int> emb_attr("emb", attr, hex, -1);
+		hex.connect();
+
+		// FacetAttribute<int> tri_chart(tri);
+		// if (gmsh_chart) {
+		// 	FacetAttribute<int> gmsh_tri_chart("region", tri_attr, tri);
+		// 	for (auto f : tri.iter_facets()) tri_chart[f] = gmsh_tri_chart[f];
+		// }
+		// else
+		// {
+			CornerAttribute<int> feature(tri);
+			FeatureEdgeDetector(tri).dihedral_angle().threshold().remove_small_features().remove_small_features().remove_small_features().apply(feature, false);
+			// Drop(tri, feature)._wireframe(true).apply_half_edge("features");
+
+			DisjointSet ds(tri.nfacets());
+			for (auto h : tri.iter_halfedges()) {
+				auto opp = h.opposite();
+				um_assert(opp.active());
+				if (feature[h] == -1)
+					ds.merge(h.facet(), opp.facet());
+			}
+			ds.get_sets_id(tri_chart.ptr->data);
+		// }
+		// Drop(tri, tri_chart).apply("tri_chart");
+
+		HexBoundary bound(hex);
+		Quads& quad = bound.quad;
+		FacetAttribute<int> quad_chart(quad);
+		for (auto f : quad.iter_facets()) 
+			quad_chart[f] = tri_chart[emb_attr[bound.hex_facet(f)]];
+		
+		// Drop(quad, quad_chart).apply("tri_chart");
+
+		// if (run_from_graphite) {
+		// 	DropSurface(tri).add(tri_chart, "chart")._just_save_filename(path + "/trichart.geogram").apply();
+		// 	DropSurface(quad).add(quad_chart, "chart")._just_save_filename(path + "/quadchart.geogram").apply();
+		// }
+	}
+
+	void check_hex_validity(Hexahedra& hex, CellFacetAttribute<int>& emb, std::string msg) {
+		EdgeGraph eg(hex);
+		for (auto e : eg.iter_edges()) if (!e.opposite().active()) {
+			Trace::abort(msg + ": hex mesh has a non manifold edge");
+		}
+		for (auto f : hex.iter_facets()) if (f.on_boundary() && emb[f] < 0) {
+			Trace::abort(msg + " : hex mesh a facet without embedding");
+		}
+	}
+
+	struct EmbeddedHexSmoother {
+		EmbeddedHexSmoother(
+			Hexahedra& hex,
+			CellFacetAttribute<int>& emb_attr,
+			Triangles& tri,
+			FacetAttribute<int>& tri_chart) : hex(hex), emb_attr(emb_attr), tri(tri), tri_chart(tri_chart),
+			bound(hex, true), quad(bound.quad), emb(bary) {
+			bary.create_points(quad.nfacets());
+			for (auto f : quad.iter_facets()) bary[f] = Quad3(f).bary_verts();
+			CornerAttribute<bool> feature(tri, false);
+			for (auto h : tri.iter_halfedges()) feature[h] = (tri_chart[h.facet()] != tri_chart[h.opposite().facet()]);
+			emb.init_from_triangles(tri, &feature);
+			for (auto f : quad.iter_facets())  emb.set_embedding(f, 2, emb_attr[bound.hex_facet(f)]);
+
+		}
+
+		Hexahedra& hex;
+		CellFacetAttribute<int>& emb_attr;
+
+		Triangles& tri;
+		FacetAttribute<int>& tri_chart;
+		HexBoundary bound;
+		Quads &quad;
+		PointSet bary;
+		PointSetEmbedding  emb;
+
+
+		void bary2verts(std::string name) {
+			for (auto v : quad.iter_vertices()) {
+				vec3 sum_P(0, 0, 0);
+				double n = 0;
+				for (auto h : v.iter_halfedges()) {
+					sum_P += bary[h.facet()];
+					n += 1;
+				}
+				if (n > 0) v.pos() = sum_P / n;
+			}
+			DropSurface(quad).apply(name);
+		};
+
+		void show_boundary_constraints(){// show boundary constraints
+			PointAttribute<vec3> n(bary);
+			for (auto f : quad.iter_facets())n[f] = Triangle3(Surface::Facet(tri, emb.id[f])).normal();;
+			Drop(bary, n).apply("n");
+			DropPointSet(bary).apply("bary");
+			DropPointSet(emb.pts).apply("emb.pts");
+		}
+
+		void lscm() {
+			LeastSquares ls(3 * quad.nverts());
+			for (auto f_quad : quad.iter_facets()) {
+				Surface::Facet f_tri(tri, emb.id[f_quad]);
+				vec3 G = Triangle3(f_tri).bary_verts();
+				vec3 n = Triangle3(f_tri).normal();
+				Quaternion q;
+				q.v = n * std::sin(M_PI / 4.);
+				q.w = std::cos(M_PI / 4.);
+				mat3x3 R = q.rotation_matrix();
+				for (auto h : f_quad.iter_halfedges()) {
+					auto other = h.prev().opposite();
+					FOR(dim, 3) {
+						LinExpr line = X(dim + 3 * h.to()) - X(dim + 3 * h.from());
+						FOR(d, 3) line += R[dim][d] * (X(d + 3 * other.to()) - X(d + 3 * other.from()));
+						ls.add_to_energy(line);
+					}
+					{
+						LinExpr line = -n * G;
+						FOR(d, 3) line += n[d] * X(d + 3 * h.from());
+						ls.add_to_energy(10. * line);
+					}
+				}
+			}
+			ls.solve();
+			for (auto v : quad.iter_vertices()) FOR(d, 3)v.pos()[d] = ls.value(d + 3 * v);
+		}
+
+
+		void smooth_inside() {
+			LeastSquares ls(3 * quad.nverts());
+			// fitting
+			for (auto f : quad.iter_facets()) for (auto h : f.iter_halfedges()) 
+				FOR(d,3) ls.fix(d + 3 * h.from(),h.from().pos()[d]);
+			// LAPLACIEN == no long edges
+			double eps = 1;
+			for (auto h : hex.iter_halfedges()) FOR(d, 3)
+				ls.add_to_energy(eps * (X(d + 3 * h.to()) - X(d + 3 * h.from())));
+			ls.solve();
+			for (auto v : quad.iter_vertices()) FOR(d, 3) v.pos()[d] = ls.value(d + 3 * v);
+			DropVolume(hex).apply("smoothhex");
+		}
+
+		void apply() {
+			
+			
+			FOR(it, 3) {
+				emb.project();
+				PointAttribute<vec3> dest(bary);
+				for (auto f : quad.iter_facets()) dest[f] = Quad3(f).bary_verts();
+				emb.move_toward(dest);
+				show_boundary_constraints();
+				lscm();
+				DropSurface(quad).apply("lscm");
+			}
+
+			smooth_inside();
+			DropVolume(hex).apply("smooth_inside");
+
+			//PointAttribute<vec3> dest(bary);
+			//FOR(v, bary.size()) dest[v] = bary[v] + vec3(0, 3, 0);
+			//bary2verts("quad_init");
+			//emb.project();
+			//bary2verts("quad_proj");
+			//emb.move_toward(dest);
+			//bary2verts("quad_walk");
+			//emb.project();
+			//bary2verts("quad_reproj");
+			//show_boundary_constraints();
+		}
+
 	};
+
+	void smooth(Hexahedra &hex, CellFacetAttribute<int>&emb_attr, Triangles &tri, FacetAttribute<int> &tri_chart) {
+
+		EmbeddedHexSmoother smoother(hex, emb_attr, tri, tri_chart);
+		smoother.apply();
+		
+		check_hex_validity(hex, emb_attr, "hex mesh validity test FAILED ");
+	}
+
+
+
+
 	
 };

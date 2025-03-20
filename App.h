@@ -27,6 +27,7 @@
 #include "tools/patch_pad_tool.h"
 #include "tools/polycubify_tool.h"
 #include "tools/hex_collapse_tool.h"
+#include "tools/smooth_tool.h"
 
 // std libs
 #include <optional>
@@ -98,9 +99,10 @@ protected:
 	LayerPad2 new_bloc_pad_tool;
 	PolycubifyTool polycubify_tool;
 	HexCollapseTool hex_collapse_tool;
+	SmoothTool smooth_tool;
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[10] = {
+	std::unique_ptr<Tool> tools[11] = {
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<FilterTool>(filter_tool), 
@@ -110,7 +112,8 @@ protected:
 		std::make_unique<PatchPadTool>(patch_pad_tool),
 		std::make_unique<LayerPad2>(new_bloc_pad_tool),
 		std::make_unique<PolycubifyTool>(polycubify_tool),
-		std::make_unique<HexCollapseTool>(hex_collapse_tool)
+		std::make_unique<HexCollapseTool>(hex_collapse_tool),
+		std::make_unique<SmoothTool>(smooth_tool)
 	};
 
 	enum MeshVolumeType {
@@ -121,7 +124,8 @@ protected:
 	bool is_loading = false;
 
 	bool load_step = false;
-	float size_factor = 0.2;
+	// float size_factor = 0.2;
+	float size_factor = 0.5;
 	char * gmsh_path = "gmsh";
 
 	// TODO move to gui_base

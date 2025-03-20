@@ -5,9 +5,9 @@
 using namespace UM;
 
 
-struct HexBoundary {
+struct MyHexBoundary {
 
-	inline HexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+	inline MyHexBoundary(Hexahedra& hex/*,bool duplicate_vertices=false*/) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
  
 		hex2quad_verts.clear();
 		quad2hex_verts.clear();
@@ -24,7 +24,7 @@ struct HexBoundary {
 		quad.connect();
 	}
 
-	inline HexBoundary(Hexahedra &hex, CellAttribute<bool> &selected_cell) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+	inline MyHexBoundary(Hexahedra &hex, CellAttribute<bool> &selected_cell) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
 		
 		// Extract surface of filtered cells
 		PointAttribute<bool> is_processed(hex, false);

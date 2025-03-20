@@ -6,11 +6,11 @@
 #include "tool.h"
 
 
-struct PolycubifyTool : public Tool {
+struct SmoothTool : public Tool {
 
-	PolycubifyTool(Context &ctx) : Tool(ctx) {}
+	SmoothTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Polycubify"; }
+	std::string get_name() { return "Smooth"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -25,27 +25,7 @@ struct PolycubifyTool : public Tool {
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
-	void clear() override {
-		nhex_wanted = 2000;
-		current_algo = Nicostuff;
-	}
-
-	bool check_flag_validity();
-
-	void run_nicostuff();
-	void run_robust_polycube();
-
-	enum PolycubeAlgo {
-		Nicostuff,
-		RobustPolycube
-	};
-
-	const char * algos[2] = { "Nicostuff", "RobustPolycube" };
-	int current_algo = Nicostuff;
-
-	// int nhex_wanted = 10000;
-	int nhex_wanted = 2000;
-
+	void clear() override {}
 
 
 };
