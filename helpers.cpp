@@ -602,8 +602,7 @@ namespace helpers {
 
 
 	void collapse(UM::Hexahedra &hex, std::vector<int> layer, CellFacetAttribute<int> &emb_attr) {
-		// Use edge graph
-		// Compute indirection map of vertice to vertice, set vertice to vertice at the begging, but set from() to to() for collapsing
+		
 
 		std::vector<int> indirection_map(hex.nverts());
 		std::vector<bool> cells_to_kill(hex.ncells(), false);
@@ -617,10 +616,17 @@ namespace helpers {
 			for (auto h_idx : layer) {
 				Volume::Halfedge h(hex, h_idx);
 				
-				if (!h.next().opposite_f().opposite_c().active())
-					is_forward_collapse = false;
-				if (!h.prev().opposite_f().opposite_c().active())
-					is_backward_collapse = false;
+				for (auto ha : h.iter_CCW_around_edge()) {
+					if (!ha.next().opposite_f().opposite_c().active()) {
+						is_forward_collapse = false;
+						break;
+					}
+					if (!ha.prev().opposite_f().opposite_c().active()) {
+						is_backward_collapse = false;
+						break;
+					}
+				}
+
 
 				if (!is_forward_collapse && !is_backward_collapse) {
 					// "Hard" to collapse
@@ -674,15 +680,6 @@ namespace helpers {
 		// Remove isolated vertices
 		hex.delete_isolated_vertices();
 		hex.connect();
-
-		// std::vector<int> new_emb(hex.nfacets());
-		// for (auto f : hex.iter_facets()) {
-		// 	if (cells_to_kill[f.cell()]) 
-		// 		continue;
-			
-		// 	new_emb[f] = emb_attr[f];
-		// }
-		// emb_attr = new_emb;
 	}
 
 	void layer_along(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f) {

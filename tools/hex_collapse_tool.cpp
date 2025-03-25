@@ -16,6 +16,8 @@ bool HexCollapseTool::draw_object_properties() {
 		return true;
 	}
 
+	ImGui::Checkbox("Auto smooth#chk_auto_smooth_collapse_tool", &auto_smooth);
+
 	return false;
 }
 
@@ -146,6 +148,9 @@ void HexCollapseTool::validate_callback() {
 	// Clear temporary because we'll delete points shared between hex / quad of hex bound
 	ctx.hex_bound->clear_surface();
 	helpers::collapse(ctx.hex, selected_halfedges, *ctx.emb_attr);
+
+	if (auto_smooth)
+		BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
 
 	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);

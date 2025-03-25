@@ -15,6 +15,9 @@ bool EmbeditTool::draw_object_properties() {
 		// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, ctx.emb_attr.get()->ptr, "emb", ctx.mesh_);
 
 		// TODO here should transfert emb from hex cellfacet to quad facet...
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, surf_emb_attr.ptr, "emb", ctx.mesh_);
 
 		// Display surface with embedding attr
 		ctx.view.change_mode(ViewBinding::Mode::Surface);

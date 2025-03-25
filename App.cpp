@@ -62,7 +62,8 @@ App::App(const std::string name) :
 	paint_flag_tool(context_),
 	polycubify_tool(context_),
 	hex_collapse_tool(context_),
-	smooth_tool(context_)
+	smooth_tool(context_),
+	embedit_tool(context_)
 {
 	
 }
@@ -79,7 +80,15 @@ void App::ImGui_initialize() {
 
 	set_full_screen(true);
 	// App::load("polycubified.geogram.json");
-	App::load("/home/tex/Projects/mambo/Basic/B16.step");
+	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
+	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
+
+	Hexahedra hop;
+	auto attrs = read_by_extension("/home/tex/Projects/ultimhex/polycubified.geogram", hop);
+
+
+	App::load("/home/tex/Projects/ultimhex/polycubified.geogram.json");
+
 }
 
 
@@ -354,53 +363,6 @@ void App::GL_initialize() {
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
 }
 
-// std::vector<std::pair<int, UM::vec3>> compute_patches(UM::Triangles &tri, FacetAttribute<int> &tri_flag) {
-
-// 	DisjointSet ds(tri.nfacets());
-
-//     for (auto h : tri.iter_halfedges()) {
-// 		auto f = h.facet();
-// 		auto opp_f = h.opposite().facet();
-
-// 		if (tri_flag[f] != tri_flag[opp_f])
-// 			continue;
-
-//         ds.merge(h.facet(), h.opposite().facet());
-//     }
-
-//     // Get associate facet id to group id
-//     std::vector<int> setIds;
-//     ds.get_sets_id(setIds);
-
-// 	// Extract by groups
-// 	std::map<int, std::vector<int>> element_by_group;
-//     for (long unsigned int i = 0; i < setIds.size(); i++) {
-// 		element_by_group[setIds[i]].push_back(i);
-//     }
-
-// 	std::vector<std::pair<int, UM::vec3>> flag_dirs;
-
-// 	// Get bary of each group
-// 	for (auto kv : element_by_group) {
-// 		// Compute bary of all facets
-// 		UM::vec3 bary{0,0,0};
-// 		for (auto f_idx : kv.second) {
-// 			Triangle3 t = UM::Surface::Facet(tri, f_idx);
-// 			bary += t.bary_verts();
-// 		}
-// 		bary /= kv.second.size();
-// 		std::cout << kv.first << ", bary: " << bary << std::endl;
-
-// 		// Get flag of group
-// 		int flag = tri_flag[kv.second.front()];
-// 		flag_dirs.push_back({flag, bary});
-// 	}
-
-//     std::cout << "n set: " << ds.nsets() << std::endl;
-//     std::cout << "n set: " << element_by_group.size() << std::endl;
-// 	return flag_dirs;
-// }
-
 // Return true if has changed, else false
 bool App::refresh_hovered() {
 	// Try to pick cell
@@ -607,7 +569,7 @@ bool App::save(const std::string& filename) {
 		nlohmann::json json_data = {
 			{"filename", mesh_filename.filename().string()},
 			{"cell_type", context_.mesh_metadata.cell_type},
-			{"attributes", nlohmann::json::array()}
+			{"attributes", nlohmann::json::array({ "emb" })}
 		};
 		std::ofstream ofs(filename);
 		
@@ -732,6 +694,15 @@ bool App::load(const std::string& filename) {
 		um_bindings::geo_mesh_from_hexboundary(*context_.hex_bound, context_.mesh_);
 
 		context_.view.change_mode(ViewBinding::Mode::Volume);
+
+		// Load embedding TODO beurk ! should load before instead of loading with geogram !
+		Hexahedra hh;
+		auto attrs = read_by_extension(mesh_filename, hh);
+		context_.emb_attr = std::make_unique<CellFacetAttribute<int>>("emb", attrs, hh, -1);
+		// Make chart segmentation & init embedding
+		context_.tri_chart = std::make_unique<FacetAttribute<int>>(context_.tet_bound->tri, -1);
+		BenjaminAPI::embeditinit(context_.tet_bound->tri, *context_.tri_chart, context_.hex_bound->hex, *context_.emb_attr, false);
+
 	}
 
 	is_loading = false;

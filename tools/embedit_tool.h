@@ -10,7 +10,7 @@ struct EmbeditTool : public Tool {
 
 	EmbeditTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Smooth"; }
+	std::string get_name() { return "Embedit"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;

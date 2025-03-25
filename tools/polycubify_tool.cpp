@@ -53,7 +53,7 @@ void PolycubifyTool::run_nicostuff() {
 		.cell_type = GEO::MESH_HEX, 
 		.attributes = {}
 	};
-	write_by_extension(ctx.mesh_metadata.filename, ctx.hex_bound->hex, {{}, {}, {}, {}});
+	write_by_extension(ctx.mesh_metadata.filename, ctx.hex_bound->hex, {{}, {}, {{"emb", ctx.emb_attr->ptr}}, {}});
 	ctx.mesh_metadata.save();
 
 	// View

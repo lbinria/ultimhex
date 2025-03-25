@@ -319,7 +319,7 @@ namespace BenjaminAPI {
 			CellFacetAttribute<int>& emb_attr,
 			Triangles& tri,
 			FacetAttribute<int>& tri_chart) : hex(hex), emb_attr(emb_attr), tri(tri), tri_chart(tri_chart),
-			bound(hex, true), quad(bound.quad), emb(bary) {
+			bound(hex), quad(bound.quad), emb(bary) {
 			bary.create_points(quad.nfacets());
 			for (auto f : quad.iter_facets()) bary[f] = Quad3(f).bary_verts();
 			CornerAttribute<bool> feature(tri, false);
@@ -441,9 +441,6 @@ namespace BenjaminAPI {
 		
 		check_hex_validity(hex, emb_attr, "hex mesh validity test FAILED ");
 	}
-
-
-
 
 	
 };

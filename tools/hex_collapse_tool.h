@@ -55,6 +55,7 @@ struct HexCollapseTool : public Tool {
 	std::vector<int> selected_cells;
 	int selected_layer = -1;
 	int hovered_h = -1;
+	bool auto_smooth = true;
 
 
 };
