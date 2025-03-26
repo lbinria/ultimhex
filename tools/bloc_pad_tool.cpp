@@ -396,7 +396,7 @@ void BlocPadTool::validate_callback() {
 
 		// Beurk ! Need to encapsulate hex Bound !!!!
 		ctx.hex_bound = NULL;
-		BenjaminAPI::pad(ctx.hex, pad_face);
+		BenjaminAPI::pad(ctx.hex, pad_face, *ctx.emb_attr);
 
 		// Reconstruct
 		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);

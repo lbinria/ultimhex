@@ -78,7 +78,7 @@ void LayerPadTool::validate_callback() {
 
 	begin = std::chrono::steady_clock::now();
 
-	BenjaminAPI::pad(ctx.hex, pad_face);
+	BenjaminAPI::pad(ctx.hex, pad_face, *ctx.emb_attr);
 
 	end = std::chrono::steady_clock::now();
 

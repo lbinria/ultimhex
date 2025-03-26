@@ -241,7 +241,7 @@ void PatchPadTool::validate_callback() {
 
 	// Necessary for altering hex, because hex / quad share points !
 	ctx.hex_bound->clear_surface();
-	BenjaminAPI::pad(ctx.hex_bound->hex, to_pad);
+	BenjaminAPI::pad(ctx.hex_bound->hex, to_pad, *ctx.emb_attr);
 
 
 	// Clear tool
@@ -257,6 +257,13 @@ void PatchPadTool::validate_callback() {
 
 	ctx.view.change_mode(ViewBinding::Mode::Volume);
 	
+
+	{
+		// Visualize embedding
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		write_by_extension("after_patch_pad_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+	}
 }
 
 bool PatchPadTool::is_compatible() { 

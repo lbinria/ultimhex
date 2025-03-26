@@ -672,36 +672,34 @@ bool App::load(const std::string& filename) {
 		context_.mesh_metadata.cell_type = MESH_TET;
 	}
 
-	// Check error while loading mesh
-    if(!mesh_load(mesh_filename, mesh_, flags)) {	
-		std::cout << "Unable to load mesh file: " << mesh_filename << std::endl;
-        return false;
-    }
-
-	// TODO bad ! must place camera correctly
-	normalize_mesh();
+	// // Check error while loading mesh
+    // if(!mesh_load(mesh_filename, mesh_, flags)) {	
+	// 	std::cout << "Unable to load mesh file: " << mesh_filename << std::endl;
+    //     return false;
+    // }
 
 	// Init UM tet from GEO mesh
-	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {
-		um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+	if (context_.mesh_metadata.cell_type == GEO::MESH_TET) {	
+
+		// Load tet
+		auto attrs = read_by_extension(mesh_filename, context_.tet);
 		context_.tet.connect();
+
+		um_bindings::geo_mesh_from_um_tet(context_.tet, mesh_);
+
 		context_.view.change_mode(ViewBinding::Mode::Surface);
 	}
 	else if (context_.mesh_metadata.cell_type == GEO::MESH_HEX) {
-		um_bindings::um_hex_from_geo_mesh(mesh_, context_.hex);
+
+		// Load hex
+		auto attrs = read_by_extension(mesh_filename, context_.hex);
+		context_.emb_attr = std::make_unique<CellFacetAttribute<int>>("emb", attrs, context_.hex, -1);
 		// Update hexbound
 		context_.hex.connect();
 		context_.hex_bound = std::make_unique<MyHexBoundary>(context_.hex);
 		um_bindings::geo_mesh_from_hexboundary(*context_.hex_bound, context_.mesh_);
 
-		context_.view.change_mode(ViewBinding::Mode::Volume);
-
-		// Load embedding TODO beurk ! should load before instead of loading with geogram !
-		Hexahedra hh;
-		auto attrs = read_by_extension(mesh_filename, hh);
-		context_.emb_attr = std::make_unique<CellFacetAttribute<int>>("emb", attrs, hh, -1);
-
-		// Load tet
+		// Load tet reference
 		read_by_extension(mesh_tet_filename, context_.tet);
 		context_.tet.connect();
 		context_.tet_bound = std::make_unique<TetBoundary>(context_.tet);
@@ -709,7 +707,11 @@ bool App::load(const std::string& filename) {
 		context_.tri_chart = std::make_unique<FacetAttribute<int>>(context_.tet_bound->tri, -1);
 		BenjaminAPI::embeditinit(context_.tet_bound->tri, *context_.tri_chart, context_.hex_bound->hex, *context_.emb_attr, false);
 
+		context_.view.change_mode(ViewBinding::Mode::Volume);
 	}
+
+	// TODO bad ! must place camera correctly
+	normalize_mesh();
 
 	is_loading = false;
 

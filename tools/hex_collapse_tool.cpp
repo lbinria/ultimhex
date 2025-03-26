@@ -155,11 +155,9 @@ void HexCollapseTool::validate_callback() {
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 		// Visualize feedback
-		// CellFacetAttribute<int> emb(ctx.hex_bound->hex, -1);
-		// emb.ptr->data = ctx.emb;
 		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
 		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
-		write_by_extension("collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+		write_by_extension("after_collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
 	}
 
 	if (auto_smooth)

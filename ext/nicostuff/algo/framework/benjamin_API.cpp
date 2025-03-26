@@ -251,9 +251,37 @@ namespace BenjaminAPI {
 		polycubify(tet, tet_flag, hex, nhex_wanted, emb_out);
 	}
 
-	bool pad(Hexahedra& hex, CellFacetAttribute<bool>& pad_face) {
+	bool pad(Hexahedra& hex, CellFacetAttribute<bool>& pad_face, CellFacetAttribute<int> &emb_attr) {
 		HexPad padder(hex);
 		padder.apply(pad_face); 
+
+		// Embedding propagate
+		{
+			for (auto f : hex.iter_facets()) {
+				if (!pad_face[f])
+					continue;
+				
+				auto opp = f.halfedge(0).opposite_c();
+				if (opp.active()) {
+					auto opp_f = opp.opposite_f().next().next().opposite_f().facet();
+					std::swap(emb_attr[f], emb_attr[opp_f]);
+				}
+
+				for (auto h : f.iter_halfedges()) {
+					auto x = h.opposite_f().facet();
+					auto opp = h.opposite_c();
+					if (opp.active()) {
+						auto adj_f = opp.opposite_f().facet();
+						
+						if (adj_f.on_boundary()) {
+							// Copy embedding of adjacent facet
+							emb_attr[adj_f] = emb_attr[x];
+						}
+					}
+				}
+			}
+		}
+
 		return true;
 	}
 
