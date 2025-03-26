@@ -50,10 +50,12 @@ void PolycubifyTool::run_nicostuff() {
 	// Save mesh metadata in json !!!!
 	ctx.mesh_metadata = { 
 		.filename = "polycubified.geogram", 
+		.tet_filename = "polycubified.tet.geogram",
 		.cell_type = GEO::MESH_HEX, 
 		.attributes = {}
 	};
 	write_by_extension(ctx.mesh_metadata.filename, ctx.hex_bound->hex, {{}, {}, {{"emb", ctx.emb_attr->ptr}}, {}});
+	write_by_extension(ctx.mesh_metadata.tet_filename, ctx.tet_bound->tet, {{}, {}, {{"chart", ctx.tri_chart->ptr}}, {}});
 	ctx.mesh_metadata.save();
 
 	// View

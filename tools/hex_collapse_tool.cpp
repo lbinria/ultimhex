@@ -16,7 +16,7 @@ bool HexCollapseTool::draw_object_properties() {
 		return true;
 	}
 
-	ImGui::Checkbox("Auto smooth#chk_auto_smooth_collapse_tool", &auto_smooth);
+	ImGui::Checkbox("Auto smooth##chk_auto_smooth_collapse_tool", &auto_smooth);
 
 	return false;
 }
@@ -147,7 +147,20 @@ void HexCollapseTool::validate_callback() {
 
 	// Clear temporary because we'll delete points shared between hex / quad of hex bound
 	ctx.hex_bound->clear_surface();
-	helpers::collapse(ctx.hex, selected_halfedges, *ctx.emb_attr);
+	helpers::collapse(ctx.hex_bound->hex, selected_halfedges, *ctx.emb_attr);
+
+
+	{
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+		// Visualize feedback
+		// CellFacetAttribute<int> emb(ctx.hex_bound->hex, -1);
+		// emb.ptr->data = ctx.emb;
+		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
+		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
+		write_by_extension("collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
+	}
 
 	if (auto_smooth)
 		BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
@@ -156,14 +169,7 @@ void HexCollapseTool::validate_callback() {
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
-	{
-		// Visualize feedback
-		// CellFacetAttribute<int> emb(ctx.hex_bound->hex, -1);
-		// emb.ptr->data = ctx.emb;
-		FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
-		ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
-		write_by_extension("collapse_emb.geogram", ctx.hex_bound->quad, {{}, {{"emb", surf_emb_attr.ptr}}, {}});
-	}
+
 	reset();
 }
 

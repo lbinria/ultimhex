@@ -20,6 +20,7 @@ struct MeshMetadata {
 	};
 
 	std::string filename;
+	std::string tet_filename;
 	GEO::MeshCellType cell_type;
 	std::vector<MetadataAttribute> attributes;
 

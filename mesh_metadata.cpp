@@ -31,6 +31,7 @@ json MeshMetadata::to_json() {
 	
 	json j;
 	j["filename"] = filename;
+	j["tet_filename"] = tet_filename;
 	j["cell_type"] = cell_type;
 	j["attributes"] = json_attributes;
 	
@@ -41,6 +42,7 @@ MeshMetadata MeshMetadata::from_json(json &j) {
 
 	MeshMetadata obj;
 	obj.filename = j["filename"].get<std::string>();
+	obj.tet_filename = j["tet_filename"].get<std::string>();
 	obj.cell_type = j["cell_type"].get<GEO::MeshCellType>();
 
 	std::vector<json> json_attributes = j["attributes"].get<std::vector<json>>();

@@ -658,12 +658,15 @@ namespace helpers {
 			while (!done) {
 				done = true;
 				for (auto f : hex.iter_facets()) {
+					// If cell is to kill and facet has an embedding (>= 0)
 					if (emb_attr[f] < 0 || !cells_to_kill[f.cell()]) 
 						continue;
 					
+					// We move its embedding to the opposite interior facet
 					auto f_next = f.halfedge(0).opposite_f().next().next().opposite_f().facet().opposite();
 					
 					if (f_next.active()) {
+						std::cout << "swap: " << emb_attr[f] << "<->" << emb_attr[f_next] << std::endl;
 						std::swap(emb_attr[f], emb_attr[f_next]);
 						done = false;
 					}

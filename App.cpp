@@ -82,11 +82,6 @@ void App::ImGui_initialize() {
 	// App::load("polycubified.geogram.json");
 	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
-
-	Hexahedra hop;
-	auto attrs = read_by_extension("/home/tex/Projects/ultimhex/polycubified.geogram", hop);
-
-
 	App::load("/home/tex/Projects/ultimhex/polycubified.geogram.json");
 
 }
@@ -333,8 +328,7 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show vertices", &show_vertices_);
 	ImGui::Checkbox("Show features", &show_features);
 
-	// ImGui::Checkbox("Show surface", &show_surface_);
-	// ImGui::Checkbox("Show volume", &show_volume_);
+
 	ImGui::TextUnformatted("View mode");
 	for (int i = 0; i < IM_ARRAYSIZE(context_.view.modes); i++)
 	{
@@ -624,6 +618,7 @@ bool App::load(const std::string& filename) {
 	is_loading = true;
 
 	std::string mesh_filename = filename;
+	std::string mesh_tet_filename = "";
 	std::filesystem::path filename_path(filename);
 
 
@@ -649,13 +644,19 @@ bool App::load(const std::string& filename) {
 		auto json = json::parse(content);
 		context_.mesh_metadata = MeshMetadata::from_json(json);
 		
-		std::filesystem::path metadata_filename = context_.mesh_metadata.filename;
+		std::filesystem::path metadata_filename(context_.mesh_metadata.filename);
+		std::filesystem::path metadata_tet_filename = context_.mesh_metadata.tet_filename;
+
 		if (metadata_filename.is_absolute()) {
 			mesh_filename = context_.mesh_metadata.filename;
 		} else {
-			std::filesystem::path relative_mesh_path = filename_path;
-			relative_mesh_path.replace_filename(context_.mesh_metadata.filename);
-			mesh_filename = relative_mesh_path;
+			std::filesystem::path a = filename_path;
+			std::filesystem::path b = filename_path;
+			a.replace_filename(context_.mesh_metadata.filename);
+			b.replace_filename(context_.mesh_metadata.tet_filename);
+
+			mesh_filename = a;
+			mesh_tet_filename = b;
 		}
 
 	// Load step, open file dialog to choose mesh size parameter
@@ -699,6 +700,11 @@ bool App::load(const std::string& filename) {
 		Hexahedra hh;
 		auto attrs = read_by_extension(mesh_filename, hh);
 		context_.emb_attr = std::make_unique<CellFacetAttribute<int>>("emb", attrs, hh, -1);
+
+		// Load tet
+		read_by_extension(mesh_tet_filename, context_.tet);
+		context_.tet.connect();
+		context_.tet_bound = std::make_unique<TetBoundary>(context_.tet);
 		// Make chart segmentation & init embedding
 		context_.tri_chart = std::make_unique<FacetAttribute<int>>(context_.tet_bound->tri, -1);
 		BenjaminAPI::embeditinit(context_.tet_bound->tri, *context_.tri_chart, context_.hex_bound->hex, *context_.emb_attr, false);
