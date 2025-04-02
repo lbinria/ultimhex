@@ -63,9 +63,10 @@ App::App(const std::string name) :
 	polycubify_tool(context_),
 	hex_collapse_tool(context_),
 	smooth_tool(context_),
-	embedit_tool(context_)
+	embedit_tool(context_),
+	path_constraint_padding_tool(context_)
 {
-	
+
 }
 
 void App::ImGui_initialize() {
@@ -78,10 +79,11 @@ void App::ImGui_initialize() {
         ImGui::LoadIniSettingsFromDisk("gui.ini");
     }
 
-	set_full_screen(true);
+	// set_full_screen(true);
 	// App::load("polycubified.geogram.json");
 	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
+	// App::load("/home/tex/Projects/mambo/Basic/B10.step");
 	App::load("/home/tex/Projects/ultimhex/polycubified.geogram.json");
 
 }
@@ -355,6 +357,11 @@ void App::GL_initialize() {
 	init_rgba_colormap("hover_selection", 2, 1, hover_selection_colors_.as_chars());
 	init_rgba_colormap("flagging", 7, 1, flagging_colors_.as_chars());
     // state_transition(state_); // not all state_transition() code has been executed if GL was not initialized (in particular because missing colormaps)
+
+	// Keep colormaps textures into view context
+	for (auto c : colormaps_) {
+		context_.view.colormaps.push_back(c.texture);
+	}
 }
 
 // Return true if has changed, else false
@@ -705,7 +712,8 @@ bool App::load(const std::string& filename) {
 		context_.tet_bound = std::make_unique<TetBoundary>(context_.tet);
 		// Make chart segmentation & init embedding
 		context_.tri_chart = std::make_unique<FacetAttribute<int>>(context_.tet_bound->tri, -1);
-		BenjaminAPI::embeditinit(context_.tet_bound->tri, *context_.tri_chart, context_.hex_bound->hex, *context_.emb_attr, false);
+		context_.quad_chart = std::make_unique<FacetAttribute<int>>(context_.hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(context_.tet_bound->tri, *context_.tri_chart, context_.hex_bound->hex, *context_.emb_attr, *context_.quad_chart, false);
 
 		context_.view.change_mode(ViewBinding::Mode::Volume);
 	}
@@ -749,7 +757,10 @@ void App::draw_object_properties() {
 		if (tool->is_compatible()) {
 			
 			if (tool->get_name() == "Camera" || tool->get_name() == "Hover" || ImGui::CollapsingHeader(tool->get_name().c_str())) {
-				tool->draw_object_properties();
+				auto last_tool = context_.gui_mode;
+				if (tool->draw_object_properties()) {
+					tools[last_tool]->clear();
+				}
 			}
 		}
 	}

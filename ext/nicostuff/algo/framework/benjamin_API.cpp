@@ -285,7 +285,7 @@ namespace BenjaminAPI {
 		return true;
 	}
 
-	void embeditinit(Triangles &tri, FacetAttribute<int> &tri_chart, Hexahedra &hex, CellFacetAttribute<int> &emb_attr, bool gmsh_chart) {
+	void embeditinit(Triangles &tri, FacetAttribute<int> &tri_chart, Hexahedra &hex, CellFacetAttribute<int> &emb_attr, FacetAttribute<int> &quad_chart, bool gmsh_chart) {
 		// Triangles tri;
 		// auto tri_attr = read_by_extension(path + "/tri.geogram", tri);
 		tri.connect();
@@ -319,7 +319,7 @@ namespace BenjaminAPI {
 
 		HexBoundary bound(hex);
 		Quads& quad = bound.quad;
-		FacetAttribute<int> quad_chart(quad);
+		// FacetAttribute<int> quad_chart(quad);
 		for (auto f : quad.iter_facets()) 
 			quad_chart[f] = tri_chart[emb_attr[bound.hex_facet(f)]];
 		
@@ -329,6 +329,123 @@ namespace BenjaminAPI {
 		// 	DropSurface(tri).add(tri_chart, "chart")._just_save_filename(path + "/trichart.geogram").apply();
 		// 	DropSurface(quad).add(quad_chart, "chart")._just_save_filename(path + "/quadchart.geogram").apply();
 		// }
+	}
+
+	void embeditapply(Hexahedra &hex, CellFacetAttribute<int> &emb_attr, Quads &quad, FacetAttribute<int> &quad_chart, Triangles &tri, FacetAttribute<int> &tri_chart) {
+
+		FacetAttribute<int> quad2hex_face(quad,-1);
+		{
+			for (auto f : hex.iter_facets()) {
+				if (!f.on_boundary()) continue;
+				Surface::Vertex v(quad, f.halfedge(0).from());
+				for (auto h : v.iter_halfedges()) if (h.to() == f.halfedge(0).to())
+					quad2hex_face[h.facet()] = f;
+			}
+			for (auto f : quad.iter_facets()) um_assert(quad2hex_face[f] != -1);
+		}
+
+		FacetAttribute<int> quad2tri_face(quad, -1);
+		FacetAttribute<vec3> bary_pos(quad);
+		{
+			PolyLine pl;
+			for (auto f_quad : quad.iter_facets()) {
+				int chart = quad_chart[f_quad];
+				vec3 G= Quad3(f_quad).bary_verts();
+				quad2tri_face[f_quad] = -1;
+				double best_dist2 = 1e20;
+				for (auto f_tri : tri.iter_facets()) {
+					if (tri_chart[f_tri] != chart) continue;
+					vec3 bc = Triangle3(f_tri).bary_coords(G);
+					FOR(lv, 3) bc[lv] = std::max(.001, std::min(.999, bc[lv]));
+					double sum = bc[0] + bc[1] + bc[2];
+					FOR(lv, 3) bc[lv] /= sum;
+					vec3 proj = bc[0] * f_tri.vertex(0).pos() + bc[1] * f_tri.vertex(1).pos() + bc[2] * f_tri.vertex(2).pos();
+					if ((proj - G).norm2() < best_dist2) {
+						quad2tri_face[f_quad] = f_tri;
+						bary_pos[f_quad] = proj;
+						best_dist2 = (proj - G).norm2();
+					}
+				}
+				ToolBox(pl).add_segment(G, bary_pos[f_quad]);
+				um_assert(quad2tri_face[f_quad] != -1);
+				emb_attr[quad2hex_face[f_quad]] = quad2tri_face[f_quad];
+			}
+			DropPolyLine(pl).apply("match");
+		}
+
+		// B. comment
+		// save_hex_if_valid(hex, emb_attr);
+
+		return;
+
+		// B. comment
+		// Drop(quad, quad_chart).apply("quadchart");
+
+		enum {BARY,DIFFUSION,LSCM
+		} proj_strat = LSCM;
+		switch (proj_strat) {
+		case BARY:
+			for (auto v : quad.iter_vertices()) {
+				vec3 sum_P(0, 0, 0);
+				double n = 0;
+				for (auto h : v.iter_halfedges()) {
+					sum_P += bary_pos[h.facet()];
+					n += 1;
+				}
+				v.pos() = sum_P / n;
+			}
+			break;
+		case (DIFFUSION):
+			FOR(dim, 3) {
+			double t = 10;
+			LeastSquares ls(quad.nverts());
+				for (auto v : quad.iter_vertices()) {
+					LinExpr line;
+					if (!v.halfedge().active()) continue;
+					for (auto h : v.iter_halfedges())
+						line += X(h.to()) - X(v);
+					ls.add_to_energy((X(v) - t * line) - v.pos()[dim]);
+				}
+				ls.solve();
+				for (auto v : quad.iter_vertices()) v.pos()[dim] = ls.value(v);
+			}
+			break;
+		case (LSCM):
+			{
+				LeastSquares ls(3*quad.nverts());
+				for (auto f_quad : quad.iter_facets()) {
+					Surface::Facet f_tri(tri, quad2tri_face[f_quad]);
+					vec3 G = Triangle3(f_tri).bary_verts();
+					vec3 n = Triangle3(f_tri).normal();
+					Quaternion q;
+					q.v = n * std::sin(M_PI / 4.);
+					q.w = std::cos(M_PI / 4.);
+					mat3x3 R = q.rotation_matrix();
+					for (auto h : f_quad.iter_halfedges()) {
+						//lscm
+						auto other = h.prev().opposite();
+						FOR(dim, 3) {
+							LinExpr line = X(dim + 3 * h.to()) - X(dim + 3 * h.from());
+							FOR(d, 3) line += R[dim][d] * (X(d + 3 * other.to()) - X(d + 3 * other.from()));
+							ls.add_to_energy(line);
+						}
+
+						{
+							LinExpr line  = -n *G;
+							FOR(d, 3) line += n[d] * X(d + 3 * h.from());
+							ls.add_to_energy(10.*line);
+						}
+					}
+					//FOR(lv,4) FOR(d,3) ls.add_to_energy(X(d+3*f_quad.vertex(lv))-G[d]);
+				}
+				ls.solve();
+				for (auto v : quad.iter_vertices()) FOR(d,3)v.pos()[d] = ls.value(d+3*v);
+			}
+			break;
+
+		}
+		// B. comment
+		// Drop(quad, quad_chart).apply("quadchartsmooth");
 	}
 
 	void check_hex_validity(Hexahedra& hex, CellFacetAttribute<int>& emb, std::string msg) {

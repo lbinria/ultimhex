@@ -371,36 +371,36 @@ namespace helpers {
 			}
 
 
-			for (auto f : hex.iter_facets()) {
-				if (start[f] > 0)
-					n_start++;
-			}
+			// for (auto f : hex.iter_facets()) {
+			// 	if (start[f] > 0)
+			// 		n_start++;
+			// }
 
-			std::cout << "n start: " << n_start << std::endl;
+			// std::cout << "n start: " << n_start << std::endl;
 
-			UM::Quads q_out;
-			FacetAttribute<int> start2(q_out, 0);
-			for (auto f : hex.iter_facets()) {
-				if (!fa[f])
-					continue;
+			// UM::Quads q_out;
+			// FacetAttribute<int> start2(q_out, 0);
+			// for (auto f : hex.iter_facets()) {
+			// 	if (!fa[f])
+			// 		continue;
 
 				
-				int v_off = q_out.points.create_points(4);
-				q_out.points[v_off] = f.vertex(0).pos();
-				q_out.points[v_off + 1] = f.vertex(1).pos();
-				q_out.points[v_off + 2] = f.vertex(2).pos();
-				q_out.points[v_off + 3] = f.vertex(3).pos();
+			// 	int v_off = q_out.points.create_points(4);
+			// 	q_out.points[v_off] = f.vertex(0).pos();
+			// 	q_out.points[v_off + 1] = f.vertex(1).pos();
+			// 	q_out.points[v_off + 2] = f.vertex(2).pos();
+			// 	q_out.points[v_off + 3] = f.vertex(3).pos();
 
-				int f_off = q_out.create_facets(1);
-				q_out.vert(f_off, 0) = v_off;
-				q_out.vert(f_off, 1) = v_off + 1;
-				q_out.vert(f_off, 2) = v_off + 2;
-				q_out.vert(f_off, 3) = v_off + 3;
+			// 	int f_off = q_out.create_facets(1);
+			// 	q_out.vert(f_off, 0) = v_off;
+			// 	q_out.vert(f_off, 1) = v_off + 1;
+			// 	q_out.vert(f_off, 2) = v_off + 2;
+			// 	q_out.vert(f_off, 3) = v_off + 3;
 
-				start2[f_off] = start[f];
+			// 	start2[f_off] = start[f];
 
-			};
-			write_by_extension("q_out.geogram", q_out, {{}, {{"f", start2.ptr}}, {}});
+			// };
+			// write_by_extension("q_out.geogram", q_out, {{}, {{"f", start2.ptr}}, {}});
 
 			// Map origin vertex id of poly to it's next vertices 
 			std::map<int, std::vector<int> > extrusion;
@@ -490,8 +490,8 @@ namespace helpers {
 			}
 
 
-			Quads qq;
-			qq.points.create_points(8);
+			// Quads qq;
+			// qq.points.create_points(8);
 
 			for (auto f : hex.iter_facets()) {
 				if (start[f] <= 0)
@@ -666,7 +666,6 @@ namespace helpers {
 					auto f_next = f.halfedge(0).opposite_f().next().next().opposite_f().facet().opposite();
 					
 					if (f_next.active()) {
-						std::cout << "swap: " << emb_attr[f] << "<->" << emb_attr[f_next] << std::endl;
 						std::swap(emb_attr[f], emb_attr[f_next]);
 						done = false;
 					}

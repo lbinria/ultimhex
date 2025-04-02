@@ -60,8 +60,6 @@ struct PatchPadTool : public Tool {
 	bool extends_to_concave = false;
 	bool traverse = false;
 
-	bool should_fix = false;
-
 	bool is_init_patches = false;
 	std::vector<int> patches;
 

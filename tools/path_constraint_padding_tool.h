@@ -6,11 +6,11 @@
 #include "tool.h"
 
 
-struct EmbeditTool : public Tool {
+struct PathConstraintPaddingTool : public Tool {
 
-	EmbeditTool(Context &ctx) : Tool(ctx) {}
+	PathConstraintPaddingTool(Context &ctx) : Tool(ctx) {}
 
-	std::string get_name() { return "Embedit"; }
+	std::string get_name() { return "Path constraint padding"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -25,23 +25,7 @@ struct EmbeditTool : public Tool {
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
-	void clear() override {
-		n_charts = 0;
-		selected_chart_color = 0;
-		mode = Paint;
-		is_init = false;
-	}
-
-	enum Mode {
-		Pick,
-		Paint
-	};
-
-	Mode mode;
-
-	bool is_init = false;
-	int n_charts = 0;
-	int selected_chart_color = 0;
+	void clear() override {}
 
 
 };

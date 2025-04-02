@@ -10,6 +10,7 @@
 #include "gui_base.h"
 
 #include <ultimaille/all.h>
+#include <nicostuff/algo/framework/benjamin_API.h>
 
 #include "geom_ultimaille_binding.h"
 
@@ -30,7 +31,8 @@ enum GUIMode {
 	Polycubify = 8,
 	HexCollapse = 9,
 	Smooth = 10,
-	Embedit = 11
+	Embedit = 11,
+	PathConstraintPadding = 12
 };
 
 struct ViewBinding {
@@ -53,6 +55,7 @@ struct ViewBinding {
 
 
 	index_t &current_colormap_index_;
+	std::vector<unsigned int> colormaps;
 	std::string &attribute_;
 	GEO::MeshElementsFlags &attribute_subelements_;
 	std::string &attribute_name_;
@@ -77,6 +80,41 @@ struct ViewBinding {
 	void change_mode(int i) {
 		change_mode((ViewBinding::Mode)i);
 	}
+
+	void switch_to_volume_select_mode() {
+		change_mode(ViewBinding::Mode::Volume);
+		attribute_subelements_ = GEO::MeshElementsFlags::MESH_CELLS;
+		attribute_ = "cells.cell_hovered";
+		attribute_name_ = "cell_hovered";
+		attribute_min_ = 0;
+		attribute_max_ = 2;
+	}
+
+	void switch_to_surface_select_mode() {
+		change_mode(ViewBinding::Mode::Surface);
+		attribute_subelements_ = GEO::MeshElementsFlags::MESH_FACETS;
+		attribute_ = "facets.hovered";
+		attribute_name_ = "hovered";
+		attribute_min_ = 0;
+		attribute_max_ = 2;
+	}
+
+	ImVec4 getColorFromTexture1D(GLuint textureID, int x) {
+		
+		glBindTexture(GL_TEXTURE_2D, textureID);
+
+		// Get the width
+		GLint width;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+
+		unsigned char pixels[width * 4];
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		
+		int i = x * 4;	
+
+		return ImVec4(pixels[i] / 255.f, pixels[i + 1] / 255.f, pixels[i + 2] / 255.f, pixels[i + 3]);
+	}
+
 
 };
 
@@ -165,6 +203,24 @@ struct Context {
 		brush_size = 1;
 	}
 
+
+	void recompute_hex() {
+		// Recompute hex boundary
+		hex_bound = std::make_unique<MyHexBoundary>(hex);
+		
+		// Make chart segmentation & init embedding
+		tri_chart = std::make_unique<FacetAttribute<int>>(tet_bound->tri, -1);
+		quad_chart = std::make_unique<FacetAttribute<int>>(hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(tet_bound->tri, *tri_chart, hex_bound->hex, *emb_attr, *quad_chart, false);
+
+		// Recompute geo mesh
+		um_bindings::geo_mesh_from_hexboundary(*hex_bound, mesh_);
+		// Refresh view
+		mesh_gfx_.set_mesh(&mesh_);
+	}
+
+
+
 	GEO::vec3 click_pos;
 	bool left_mouse_pressed = false;
 	bool right_mouse_pressed = false;
@@ -186,6 +242,7 @@ struct Context {
 	// Embedding
 	std::unique_ptr<CellFacetAttribute<int>> emb_attr;
 	std::unique_ptr<FacetAttribute<int>> tri_chart;
+	std::unique_ptr<FacetAttribute<int>> quad_chart;
 	std::vector<int> emb;
 
 	MeshMetadata mesh_metadata;

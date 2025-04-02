@@ -11,74 +11,23 @@ bool PatchPadTool::draw_object_properties() {
 	
 	ImGui::Checkbox("Extends to concave", &extends_to_concave);
 
-	// if (ImGui::InputFloat("Max angle", &threshold)) {
-	// 	threshold = std::clamp(threshold, 0.f, 180.f);
-	// }
-
 	ImGui::SliderFloat("Max angle", &threshold, 0.f, 180.f);
 	
-
 	if (ImGui::Button("Patch selection")) {
 		compute_features();
+		// Display surface with feature lines
+		ctx.view.switch_to_surface_select_mode();
+		ctx.gui_mode = GUIMode::PatchPadding;
 		return true;
 	}
 
-	if (ImGui::Button("Fix padding")) {
-		fix_padding();
-	}
-
-	return true;
+	return false;
 }
 
 void PatchPadTool::compute_features() {
 	// Clear existing feature lines
 	ctx.mesh_.edges.clear();
-
 	compute_patches_for_selection();
-
-	// Compute feature lines
-	// std::vector<std::pair<int, int>> edges;
-
-	// // Get patches edge borders
-	// int n1 = 0;
-	// int n2 = 0;
-	// int eee = 0;
-	// for (auto h : ctx.hex_bound->quad.iter_halfedges()) {
-	// 	eee++;
-	// 	auto opp = h.opposite();
-
-	// 	if (!opp.active()) {
-	// 		// Add to edge border
-	// 		edges.push_back({h.from(), h.to()});
-	// 		n1++;
-	// 		continue;
-	// 	}
-
-	// 	auto f = h.facet();
-	// 	auto opp_f = opp.facet();
-		
-	// 	if (patches[f] != patches[opp_f]) {
-	// 		// Add edge to border
-	// 		edges.push_back({h.from(), h.to()});
-	// 		n2++;
-	// 	}
-
-	// }
-
-	// // Add feature to GEO model (allow to view them)
-	// ctx.mesh_.edges.create_edges(edges.size());
-	// for (int e = 0; e < edges.size(); e++) {
-	// 	ctx.mesh_.edges.set_vertex(e, 0, edges[e].first);
-	// 	ctx.mesh_.edges.set_vertex(e, 1, edges[e].second);
-	// }
-
-	// Display surface with feature lines
-	ctx.view.change_mode(ViewBinding::Mode::Surface);
-	ctx.view.attribute_ = "facets.hovered";
-	ctx.view.attribute_name_ = "hovered";
-	ctx.view.attribute_min_ = 0;
-	ctx.view.attribute_max_ = 2;
-	ctx.gui_mode = PatchPadding;
 }
 
 void PatchPadTool::compute_patches_for_selection() {
@@ -215,10 +164,6 @@ void PatchPadTool::mouse_button_callback(int button, int action, int mods, int s
 			hovered_attr[ctx.hex_bound->quad_facet(f)] = cell_facets_hovered_attr[f];
 	}
 
-}
-
-void PatchPadTool::fix_padding() {
-	should_fix = true;
 }
 
 void PatchPadTool::scroll_callback(double xoffset, double yoffset) {

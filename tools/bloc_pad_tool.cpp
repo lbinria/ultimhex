@@ -33,11 +33,7 @@ bool BlocPadTool::draw_object_properties() {
 }
 
 void BlocPadTool::switch_view() {
-	ctx.view.change_mode(ViewBinding::Mode::Surface);
-	ctx.view.attribute_ = "facets.hovered";
-	ctx.view.attribute_name_ = "hovered";
-	ctx.view.attribute_min_ = 0;
-	ctx.view.attribute_max_ = 2;
+	ctx.view.switch_to_surface_select_mode();
 	ctx.mesh_gfx_.unset_filters();
 }
 
@@ -263,7 +259,8 @@ void BlocPadTool::validate_callback() {
 		int n_cells = 0;
 		CellAttribute<bool> selected_cell(ctx.hex_bound->hex, false);
 
-		// Extends facet selection to cells lace
+		// Extends facet selection to cells lace 
+		// There is some facets selected, we extrude them to their opposite facets until we reach border
 		for (auto f : ctx.hex_bound->hex.iter_facets()) {
 
 			if (cell_facets_hovered_attr[f] != 2)
@@ -330,14 +327,8 @@ void BlocPadTool::validate_callback() {
 
 		ctx.view.change_mode(ViewBinding::Mode::Surface);
 		
-
-		
-
-
-
 		// Compute feature lines
 		// compute_feature_lines();
-
 
 		step = 1;
 

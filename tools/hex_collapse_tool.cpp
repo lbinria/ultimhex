@@ -13,6 +13,8 @@ bool HexCollapseTool::draw_object_properties() {
 	if (ImGui::Button("Select hex layer to collapse")) {
 		ctx.gui_mode = HexCollapse;
 		reset();
+		ctx.view.switch_to_volume_select_mode();
+
 		return true;
 	}
 
@@ -85,12 +87,7 @@ void HexCollapseTool::hover_callback(double x, double y, int source) {
 			cell_hovered_attr[c] = 1;
 	}
 
-	ctx.view.change_mode(ViewBinding::Mode::Volume);
-	ctx.view.attribute_subelements_ = GEO::MeshElementsFlags::MESH_CELLS;
-	ctx.view.attribute_ = "cells.cell_hovered";
-	ctx.view.attribute_name_ = "cell_hovered";
-	ctx.view.attribute_min_ = 0;
-	ctx.view.attribute_max_ = 2;
+	ctx.view.switch_to_volume_select_mode();
 }
 
 void HexCollapseTool::mouse_button_callback(int button, int action, int mods, int source) {
@@ -163,9 +160,16 @@ void HexCollapseTool::validate_callback() {
 	if (auto_smooth)
 		BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
 
-	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
-	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+	ctx.recompute_hex();
+
+	// ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
+	// um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	// ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+
+	// // Make chart segmentation & init embedding
+	// ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
+	// ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);
+	// BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
 
 
 	reset();

@@ -16,6 +16,7 @@ bool LayerPad2::draw_object_properties() {
 	}
 
 	if(ImGui::Button("Redefine layers stack !")) {
+		ctx.view.switch_to_volume_select_mode();
 		ctx.gui_mode = NewBlocPadding;
 		return true;
 	}

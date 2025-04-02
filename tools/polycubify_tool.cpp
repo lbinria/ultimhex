@@ -21,7 +21,8 @@ void PolycubifyTool::run_nicostuff() {
 
 		// Make chart segmentation & init embedding
 		ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
-		BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, false);
+		ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
 
 	} catch (const std::runtime_error &e) {
 		Logger::warn("An error occur when trying to polycubify. Detail: " + std::string(e.what()));
