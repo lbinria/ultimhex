@@ -25,7 +25,36 @@ struct PathConstraintPaddingTool : public Tool {
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
-	void clear() override {}
+	void clear() override {
+		layer.clear();
+		last_hovered_facets.clear();
+		v_cell_facets_hovered_attr.clear();
+		mode = Select;
+	}
 
+	void reset_attr();
+	void puff_view(Volume::Halfedge &h);
+	void slice();
+
+	std::vector<int> layer;
+	std::vector<int> last_hovered_facets;
+
+	GEO::vector<int> v_cell_facets_hovered_attr;
+
+	float v_plane_center[3] = {0., 0., 0.};
+	
+	float v_plane_rot_x = 0.;
+	float v_plane_rot_y = 0.;
+	float v_plane_rot_z = 0.;
+	GEO::vec3 plane_center;
+	GEO::vec3 plane_rot;
+	GEO::vec3 v_plane_corners[4];
+
+	enum Mode {
+		Select,
+		Preview
+	};
+
+	Mode mode = Select;
 
 };

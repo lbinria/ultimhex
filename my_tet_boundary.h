@@ -61,6 +61,41 @@ struct MyHexBoundary {
 		quad.connect();
 	}
 
+	inline MyHexBoundary(Hexahedra &hex, CellFacetAttribute<bool> &selected) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+		
+		// Extract surface of filtered cells
+		PointAttribute<bool> is_processed(hex, false);
+		// std::vector<int> hex2quad_verts(hex.nverts(), -1);
+		hex2quad_verts.resize(hex.nverts(), -1);
+		quad2hex_verts.clear();
+
+		for (auto f_hex : hex.iter_facets()) {
+			if (!selected[f_hex])
+				continue;
+			
+			int f_quad = quad.create_facets(1);
+			hex_facet_[f_quad] = f_hex;
+			quad_facet_[f_hex] = f_quad;
+
+			for (int lv = 0; lv < 4; lv++) {
+				auto v = f_hex.vertex(lv);
+				if (!is_processed[v]) {
+					is_processed[v] = true;
+					int off = quad.points.create_points(1);
+					quad.points[off] = v.pos();
+					hex2quad_verts[v] = off;
+					quad2hex_verts.push_back(v);
+				}
+				quad.vert(f_quad, lv) = hex2quad_verts[f_hex.vertex(lv)];
+
+			}
+
+
+		}
+
+		quad.connect();
+	}
+
 	inline void clear_surface() {
 		quad.clear();
 	}

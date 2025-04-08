@@ -81,6 +81,46 @@ namespace helpers {
 		}
 	}
 
+	void puff(UM::Hexahedra &hex, UM::Volume::Halfedge start_h, std::vector<int> layer, CellFacetAttribute<bool> &selected) {
+		
+		auto cur_h = start_h;
+		
+		while (cur_h.active()) {
+
+			for (auto h : hex.iter_halfedges()) {
+				if (layer[h] != layer[cur_h])
+					continue;
+
+				selected[h.prev().opposite_f().facet()] = true;
+			}
+			
+			front_halfedge(cur_h, cur_h);
+		}
+
+		// Add next facets
+		
+
+		cur_h = start_h;
+		while (cur_h.active()) {
+
+			for (auto h : hex.iter_halfedges()) {
+				if (layer[h] != layer[cur_h])
+					continue;
+
+				selected[h.prev().opposite_f().facet()] = true;
+			}
+			
+			back_halfedge(cur_h, cur_h);
+		}
+	}
+
+	void cross_puff(UM::Hexahedra &hex, std::vector<int> layer, CellFacetAttribute<bool> &selected) {
+		auto h = *hex.iter_halfedges().begin();
+		puff(hex, h, layer, selected);
+		puff(hex, h.prev(), layer, selected);
+		puff(hex, h.prev().opposite_f().next(), layer, selected);
+	}
+
 	int get_facets_layers(UM::Hexahedra &hex, CellFacetAttribute<int> &layer) {
 
 		DisjointSet ds(hex.nfacets());
@@ -152,6 +192,29 @@ namespace helpers {
 		}
 
 		return ds.get_sets_id(layer.ptr->data);
+	}
+
+	/**
+	 * Get all layers of hex
+	 */
+	int get_halfedge_layers(Hexahedra &hex, std::vector<int> &layer) {
+		// Compute hex layers
+		DisjointSet ds(hex.ncells() * 24);
+
+		for (auto h : hex.iter_halfedges()) {
+
+			auto opp = h.opposite_f().opposite_c();
+			if (opp.active())
+				ds.merge(h, opp.opposite_f().next().next());
+				
+			opp = h.opposite_c();
+			if (opp.active()) {
+				ds.merge(h, opp.opposite_f().next().next().opposite_f());
+			}
+			
+		}
+
+		return ds.get_sets_id(layer);
 	}
 
 	void get_layer_graph(Hexahedra &hex, EdgeGraph &eg, EdgeAttribute<int> &layer, int nlayers, EdgeAttribute<int> &next_eg, EdgeAttribute<int> &prev_eg, PolyLine &layer_graph) {

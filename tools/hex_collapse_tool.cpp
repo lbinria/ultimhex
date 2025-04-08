@@ -23,25 +23,25 @@ bool HexCollapseTool::draw_object_properties() {
 	return false;
 }
 
-void HexCollapseTool::compute_layers() {
-	// Compute hex layers
-	DisjointSet ds(ctx.hex_bound->hex.ncells() * 24);
+// void HexCollapseTool::compute_layers() {
+// 	// Compute hex layers
+// 	DisjointSet ds(ctx.hex_bound->hex.ncells() * 24);
 
-	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
+// 	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
 
-		auto opp = h.opposite_f().opposite_c();
-		if (opp.active())
-			ds.merge(h, opp.opposite_f().next().next());
+// 		auto opp = h.opposite_f().opposite_c();
+// 		if (opp.active())
+// 			ds.merge(h, opp.opposite_f().next().next());
 			
-		opp = h.opposite_c();
-		if (opp.active()) {
-			ds.merge(h, opp.opposite_f().next().next().opposite_f());
-		}
+// 		opp = h.opposite_c();
+// 		if (opp.active()) {
+// 			ds.merge(h, opp.opposite_f().next().next().opposite_f());
+// 		}
 		
-	}
+// 	}
 
-	ds.get_sets_id(layers);
-}
+// 	ds.get_sets_id(layers);
+// }
 
 
 

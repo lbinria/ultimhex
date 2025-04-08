@@ -5,6 +5,7 @@
 #include "../geom_ultimaille_binding.h"
 #include "../context.h"
 #include "../gl_draw.h"
+#include "../helpers.h"
 
 
 bool PatchPadTool::draw_object_properties() {
@@ -13,6 +14,55 @@ bool PatchPadTool::draw_object_properties() {
 
 	ImGui::SliderFloat("Max angle", &threshold, 0.f, 180.f);
 	
+	if (ImGui::Button("Puff pastry 0##btn_patch_pad_tool_puff_0", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+		std::vector<int> layer;
+		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+
+		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+		helpers::puff(ctx.hex_bound->hex, *ctx.hex_bound->hex.iter_halfedges().begin(), layer, selected);
+
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+		// ctx.recompute_hex(selected);
+		ctx.view.switch_to_surface_select_mode();
+		is_puff_view = true;
+
+	}
+
+	if (ImGui::Button("Puff pastry 1##btn_patch_pad_tool_puff_1", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+		std::vector<int> layer;
+		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+
+		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+		helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev(), layer, selected);
+
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+		// ctx.recompute_hex(selected);
+		ctx.view.switch_to_surface_select_mode();
+		is_puff_view = true;
+
+	}
+
+	if (ImGui::Button("Puff pastry 2##btn_patch_pad_tool_puff_2", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+		std::vector<int> layer;
+		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+
+		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+		helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev().opposite_f().prev(), layer, selected);
+
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+		// ctx.recompute_hex(selected);
+		ctx.view.switch_to_surface_select_mode();
+		is_puff_view = true;
+
+	}
+
+
 	if (ImGui::Button("Patch selection")) {
 		compute_features();
 		// Display surface with feature lines

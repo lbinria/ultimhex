@@ -22,12 +22,17 @@ namespace helpers {
 		}
 	};
 
+	void puff(UM::Hexahedra &hex, UM::Volume::Halfedge start_h, std::vector<int> layer, CellFacetAttribute<bool> &selected);
+	void cross_puff(UM::Hexahedra &hex, std::vector<int> layer, CellFacetAttribute<bool> &selected);
+	
 	std::vector<int> get_h_layers(Hexahedra &hex);
 
 	std::vector<std::pair<int, int>> get_layer_stack_facets(Hexahedra &hex, Volume::Halfedge &selected_he);
 	void redefine_stack_layers(Hexahedra &hex, Volume::Halfedge &selected_he, int final_height);
 	int get_facets_layers(UM::Hexahedra &hex, CellFacetAttribute<int> &layer);
 	int get_layers(Hexahedra &hex, EdgeGraph &eg, EdgeAttribute<int> &layer);
+	int get_halfedge_layers(Hexahedra &hex, std::vector<int> &layer);
+
 	std::vector<int> get_cells_layer(Hexahedra &hex);
 	std::vector<UM::vec3> remap_poly(std::vector<UM::vec3> poly, int n);
 

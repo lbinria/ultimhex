@@ -4,8 +4,9 @@
 #include <geogram_gfx/third_party/imgui/imgui.h>
 #include <nicostuff/algo/framework/benjamin_API.h>
 
-#include "tool.h"
 
+#include "../helpers.h"
+#include "tool.h"
 
 struct HexCollapseTool : public Tool {
 
@@ -31,7 +32,7 @@ struct HexCollapseTool : public Tool {
 	void escape_callback() override;
 
 
-	void compute_layers();
+	// void compute_layers();
 
 	void clear() override {
 		layers.clear();
@@ -44,7 +45,9 @@ struct HexCollapseTool : public Tool {
 
 	void reset() {
 		clear();
-		compute_layers();
+
+		helpers::get_halfedge_layers(ctx.hex_bound->hex, layers);
+		// compute_layers();
 	}
 
 	private:

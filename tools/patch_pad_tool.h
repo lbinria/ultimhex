@@ -48,6 +48,7 @@ struct PatchPadTool : public Tool {
 	void clear_patches() {
 		patches.clear();
 		is_init_patches = false;
+		is_puff_view = false;
 	}
 
 	void compute_patches_for_selection();
@@ -60,7 +61,9 @@ struct PatchPadTool : public Tool {
 	bool extends_to_concave = false;
 	bool traverse = false;
 
+
 	bool is_init_patches = false;
+	bool is_puff_view = false;
 	std::vector<int> patches;
 
 

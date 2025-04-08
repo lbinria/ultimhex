@@ -219,6 +219,20 @@ struct Context {
 		mesh_gfx_.set_mesh(&mesh_);
 	}
 
+	void recompute_hex(CellFacetAttribute<bool> &selected) {
+		// Recompute hex boundary
+		hex_bound = std::make_unique<MyHexBoundary>(hex, selected);
+		
+		// Make chart segmentation & init embedding
+		tri_chart = std::make_unique<FacetAttribute<int>>(tet_bound->tri, -1);
+		quad_chart = std::make_unique<FacetAttribute<int>>(hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(tet_bound->tri, *tri_chart, hex_bound->hex, *emb_attr, *quad_chart, false);
+
+		// Recompute geo mesh
+		um_bindings::geo_mesh_from_hexboundary(*hex_bound, mesh_);
+		// Refresh view
+		mesh_gfx_.set_mesh(&mesh_);
+	}
 
 
 	GEO::vec3 click_pos;
