@@ -29,6 +29,7 @@ App::App(const std::string name) :
 		.show_volume_ = show_volume_,
 		.show_surface_ = show_surface_,
 		.show_hexes_ = show_hexes_,
+		.cells_shrink_ = cells_shrink_,
 		.current_colormap_index_ = current_colormap_index_,
 		.attribute_ = attribute_,
 		.attribute_subelements_ = attribute_subelements_,
@@ -79,7 +80,7 @@ void App::ImGui_initialize() {
         ImGui::LoadIniSettingsFromDisk("gui.ini");
     }
 
-	// set_full_screen(true);
+	set_full_screen(true);
 	// App::load("polycubified.geogram.json");
 	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
@@ -597,7 +598,7 @@ bool App::save(const std::string& filename) {
 void App::reset() {
 	// mesh_gfx_.set_mesh(nullptr);
     // mesh_.clear(false, true);
-
+	
 	// Reset all values
 	context_.gui_mode = Camera;
 	// Clear selections

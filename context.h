@@ -44,6 +44,8 @@ struct ViewBinding {
 
 	bool &show_hexes_;
 
+	float &cells_shrink_;
+
 	enum Mode {
 		None,
 		Surface,

@@ -4,12 +4,11 @@
 #include <geogram_gfx/third_party/imgui/imgui.h>
 
 #include "tool.h"
-#include "facet_selector.h"
 
 
 struct PathConstraintPaddingTool : public Tool {
 
-	PathConstraintPaddingTool(Context &ctx) : Tool(ctx), facet_selector(ctx) {}
+	PathConstraintPaddingTool(Context &ctx) : Tool(ctx) {}
 
 	std::string get_name() { return "Path constraint padding"; }
 
@@ -29,7 +28,6 @@ struct PathConstraintPaddingTool : public Tool {
 	void clear() override {
 		layer.clear();
 		last_hovered_facets.clear();
-		facet_selector.clear();
 		v_cell_facets_hovered_attr.clear();
 		mode = Select;
 	}
@@ -58,8 +56,5 @@ struct PathConstraintPaddingTool : public Tool {
 	};
 
 	Mode mode = Select;
-
-	private:
-		FacetSelector facet_selector;
 
 };

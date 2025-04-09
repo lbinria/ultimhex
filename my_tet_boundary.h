@@ -24,6 +24,59 @@ struct MyHexBoundary {
 		quad.connect();
 	}
 
+	// Doesn't works well
+	
+	// inline MyHexBoundary(Hexahedra &hex, CellAttribute<bool> &selected_cell, float shrink) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
+		
+	// 	hex2quad_verts.resize(hex.nverts(), -1);
+	// 	std::vector<int> myhex2quad_verts(hex.ncorners(), -1);
+
+		
+	// 	quad2hex_verts.resize(hex.ncorners(), -1);
+
+	// 	for (auto c : hex.iter_corners()) {
+	// 		if (!selected_cell[c.cell()])
+	// 			continue;
+			
+	// 		int off = quad.points.create_points(1);
+	// 		Hexahedron hexa = c.cell();
+	// 		quad.points[off] = c.vertex().pos() - (c.vertex().pos() - hexa.bary_verts()) * shrink;
+	// 		myhex2quad_verts[c] = off;
+	// 		quad2hex_verts[off] = c.vertex();
+	// 	}
+
+	// 	int corners[] = {
+	// 		0,4,6,2,
+	// 		1,3,7,5,
+	// 		0,1,5,4,
+	// 		2,6,7,3,
+	// 		0,2,3,1,
+	// 		4,5,6,7
+	// 	};
+
+	// 	for (auto c : hex.iter_cells()) {
+	// 		if (!selected_cell[c])
+	// 			continue;
+			
+	// 		int f_quad = quad.create_facets(6);
+
+	// 		for (int fi = 0; fi < 6; fi++) {
+	// 			auto f_hex = c.facet(fi);
+	// 			hex_facet_[f_quad + fi] = f_hex;
+	// 			quad_facet_[f_hex] = f_quad + fi;
+
+	// 			for (int lv = 0; lv < 4; lv++) {
+	// 				quad.vert(f_quad + fi, lv) = myhex2quad_verts[c * 8 + corners[fi * 4 + lv]];
+	// 			}
+	// 		}
+
+
+
+	// 	}
+
+	// 	quad.connect();
+	// }
+
 	inline MyHexBoundary(Hexahedra &hex, CellAttribute<bool> &selected_cell) : hex(hex), quad_facet_(hex), quad(), hex_facet_(quad) {
 		
 		// Extract surface of filtered cells
@@ -38,6 +91,7 @@ struct MyHexBoundary {
 			
 			is_processed[c.vertex()] = true;
 			int off = quad.points.create_points(1);
+			Hexahedron hexa = c.cell();
 			quad.points[off] = c.vertex().pos();
 			hex2quad_verts[c.vertex()] = off;
 			quad2hex_verts.push_back(c.vertex());
