@@ -10,7 +10,6 @@ struct LayerPadTool : public Tool {
 	LayerPadTool(Context &ctx) : Tool(ctx) {}
 
 	std::string get_name() { return "Layer pad tools"; }
-	// std::string get_name() override;
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -29,13 +28,7 @@ struct LayerPadTool : public Tool {
 	}
 
 	void clear() override {
-		// Clear path
-		hovered_path.clear();
-		selected_path.clear();
 	}
 
-	// Path on surface mesh to display
-	std::vector<UM::vec3> hovered_path;
-	std::vector<UM::vec3> selected_path;
 
 };
