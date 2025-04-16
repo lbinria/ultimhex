@@ -303,7 +303,12 @@ namespace BenjaminAPI {
 		// else
 		// {
 			CornerAttribute<int> feature(tri);
-			FeatureEdgeDetector(tri).dihedral_angle().threshold().remove_small_features().remove_small_features().remove_small_features().apply(feature, false);
+			// FeatureEdgeDetector(tri).dihedral_angle().threshold().remove_small_features().remove_small_features().remove_small_features().apply(feature, false);
+			// FeatureEdgeDetector(tri).dihedral_angle().threshold().remove_small_features().remove_small_features().remove_small_features().apply(feature, false);
+			FeatureEdgeDetector(tri).dihedral_angle().threshold().apply(feature, false);
+			// FeatureEdgeDetector(tri).dihedral_angle().threshold().remove_small_features().apply(feature, false);
+		
+
 			// Drop(tri, feature)._wireframe(true).apply_half_edge("features");
 
 			DisjointSet ds(tri.nfacets());
