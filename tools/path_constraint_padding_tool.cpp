@@ -32,7 +32,6 @@ void PathConstraintPaddingTool::reset() {
 	clear();
 	// Compute layers
 	int nlayers = helpers::get_facets_layers(ctx.hex_bound->hex, layers);
-	selected_layers.resize(nlayers, -1);
 }
 
 bool PathConstraintPaddingTool::draw_object_properties() {
@@ -85,7 +84,7 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 
 	
 	// if (ctx.left_mouse_pressed)
-		selected_layers[l] = f;
+		selected_layers[l].push_back(f);
 	// else 
 		// selected_layers[l] = -1;
 
@@ -96,14 +95,14 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 
 	for (auto f : ctx.hex_bound->hex.iter_facets()) {
 		// Skip facets not in a selected layer
-		if (selected_layers[layers[f]] < 0)
+		if (selected_layers[layers[f]].size() < 0)
 			continue;
 
 		// Check intersection with another selected layer
 		for (auto h : f.iter_halfedges()) {
 			bool intersect = false;
 			for (auto eh : h.iter_CCW_around_edge()) {
-				if (eh.facet() != f && selected_layers[layers[eh.facet()]] >= 0 && layers[eh.facet()] != layers[f]) {
+				if (eh.facet() != f && selected_layers[layers[eh.facet()]].size() > 0 && layers[eh.facet()] != layers[f]) {
 					intersect = true;
 					break;
 				}
@@ -125,11 +124,15 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 	// std::vector<bool> selected_layer_parts(layer_parts.size(), false);
 	CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
 	for (auto f : ctx.hex_bound->hex.iter_facets()) {
-		if (selected_layers[layers[f]] < 0)
+		if (selected_layers[layers[f]].size() < 0)
 			continue;
 
-		if (layer_parts[f] == layer_parts[selected_layers[layers[f]]]) {
-			selected[f] = true;
+		auto layer_facets = selected_layers[layers[f]];
+
+		for (auto lf : layer_facets) {
+			if (layer_parts[f] == layer_parts[lf]) {
+				selected[f] = true;
+			}
 		}
 	}
 
@@ -152,7 +155,7 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 	// CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
 	FacetAttribute<int> colors(q, -1);
 	for (auto f: ctx.hex_bound->hex.iter_facets()) {
-		if (selected_layers[layers[f]] < 0)
+		if (selected_layers[layers[f]].size() < 0)
 			continue;
 
 		q.vert(f, 0) = f.vertex(0);
@@ -175,7 +178,6 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 	ctx.view.switch_to_volume_select_mode();
 	ctx.view.show_surface_ = true;
-	// ctx.view.cells_shrink_ = 0.5f;
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
 
@@ -187,11 +189,15 @@ void PathConstraintPaddingTool::validate_callback() {
 
 	CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
 	for (auto f : ctx.hex_bound->hex.iter_facets()) {
-		if (selected_layers[layers[f]] < 0)
+		if (selected_layers[layers[f]].size() < 0)
 			continue;
 
-		if (layer_parts[f] == layer_parts[selected_layers[layers[f]]]) {
-			selected[f] = true;
+		auto layer_facets = selected_layers[layers[f]];
+
+		for (auto lf : layer_facets) {
+			if (layer_parts[f] == layer_parts[lf]) {
+				selected[f] = true;
+			}
 		}
 	}
 
@@ -215,7 +221,6 @@ void PathConstraintPaddingTool::validate_callback() {
 void PathConstraintPaddingTool::escape_callback() {
 	// Just clear selected layers
 	selected_layers.clear();
-	selected_layers.resize(layers.size(), -1);
 	layer_parts.clear();
 	
 	// Reconstruct

@@ -38,6 +38,6 @@ struct PathConstraintPaddingTool : public Tool {
 
 	std::vector<int> layers;
 	std::vector<int> layer_parts;
-	std::vector<int> selected_layers;
+	std::map<int, std::vector<int>> selected_layers;
 
 };
