@@ -43,31 +43,32 @@ bool EmbeditTool::draw_object_properties() {
 	if (!is_init && ImGui::Button("Init embedit##btn_charts_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 
 		
-		// auto &tri_chart = *ctx.tri_chart;
-		auto &quad_chart = *ctx.quad_chart;
+		// Recompute tri chart ?
 
-		// um_bindings::geo_mesh_from_tetboundary(*ctx.tet_bound, ctx.mesh_);
-		// um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, tri_chart.ptr, "charts", ctx.mesh_);
+
+		// Recompute quad chart !
+		ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
+
+		auto &quad_chart = *ctx.quad_chart;
+		auto &tri_chart = *ctx.tri_chart;
+
 
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, quad_chart.ptr, "charts", ctx.mesh_);
 
-		// // Search for min / max value of charts attribute
-		// int min = std::numeric_limits<int>::max(), max = 0;
-		// for (auto f : ctx.tet_bound->tri.iter_facets()) {
-		// 	if (tri_chart[f] < min)
-		// 		min = tri_chart[f];
-		// 	if (tri_chart[f] > max)
-		// 		max = tri_chart[f];
-		// }
-
 		// Search for min / max value of charts attribute
 		int min = std::numeric_limits<int>::max(), max = 0;
-		for (auto f : ctx.hex_bound->quad.iter_facets()) {
-			if (quad_chart[f] < min)
-				min = quad_chart[f];
-			if (quad_chart[f] > max)
-				max = quad_chart[f];
+		
+		// for (auto f : ctx.hex_bound->quad.iter_facets()) {
+		for (auto f : ctx.tet_bound->tri.iter_facets()) {
+			min = std::min(tri_chart[f], min);
+			max = std::max(tri_chart[f], max);
+
+			// if (quad_chart[f] < min)
+			// 	min = quad_chart[f];
+			// if (quad_chart[f] > max)
+			// 	max = quad_chart[f];
 		}
 
 		// Number of charts is max - min, with min included => + 1 
@@ -81,6 +82,7 @@ bool EmbeditTool::draw_object_properties() {
 		ctx.view.attribute_name_ = "charts";
 		ctx.view.attribute_min_ = min;
 		ctx.view.attribute_max_ = max;
+		// ctx.view.current_colormap_index_ = 0;
 
 		ctx.gui_mode = GUIMode::Embedit;
 		mode = Paint;
@@ -91,6 +93,52 @@ bool EmbeditTool::draw_object_properties() {
 
 	if (!is_init)
 		return false;
+
+	if (ImGui::Button("View tri##btn_view_tri_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+		// TODO refactor !
+
+		// Recompute quad chart !
+		ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
+		auto &tri_chart = *ctx.tri_chart;
+
+		BenjaminAPI::embeditinit(ctx.tet_bound->tri, tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
+
+
+		um_bindings::geo_mesh_from_tetboundary(*ctx.tet_bound, ctx.mesh_);
+		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.tet_bound->tri, tri_chart.ptr, "charts", ctx.mesh_);
+
+		// Search for min / max value of charts attribute
+		int min = std::numeric_limits<int>::max(), max = 0;
+		
+		// for (auto f : ctx.hex_bound->quad.iter_facets()) {
+		for (auto f : ctx.tet_bound->tri.iter_facets()) {
+			min = std::min(tri_chart[f], min);
+			max = std::max(tri_chart[f], max);
+		}
+
+		// Number of charts is max - min, with min included => + 1 
+		n_charts = max - min + 1;
+		std::cout << "n charts: " << n_charts << std::endl;
+
+		// Display surface with embedding attr
+		ctx.view.change_mode(ViewBinding::Mode::Surface);
+		ctx.view.attribute_subelements_ = GEO::MeshElementsFlags::MESH_FACETS;
+		ctx.view.attribute_ = "facets.charts";
+		ctx.view.attribute_name_ = "charts";
+		ctx.view.attribute_min_ = min;
+		ctx.view.attribute_max_ = max;
+	}
+
+	if (ImGui::Button("View quad##btn_view_quad_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+		// Recompute quad chart !
+		ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);
+		BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
+
+		auto &quad_chart = *ctx.quad_chart;
+
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, quad_chart.ptr, "charts", ctx.mesh_);
+	}
 
 	if (ImGui::Button("Pick##btn_charts_pick_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 		mode = Pick;
