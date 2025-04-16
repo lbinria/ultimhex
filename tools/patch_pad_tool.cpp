@@ -14,53 +14,53 @@ bool PatchPadTool::draw_object_properties() {
 
 	ImGui::SliderFloat("Max angle", &threshold, 0.f, 180.f);
 	
-	if (ImGui::Button("Puff pastry 0##btn_patch_pad_tool_puff_0", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		std::vector<int> layer;
-		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+	// if (ImGui::Button("Puff pastry 0##btn_patch_pad_tool_puff_0", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+	// 	std::vector<int> layer;
+	// 	helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
 
-		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
-		helpers::puff(ctx.hex_bound->hex, *ctx.hex_bound->hex.iter_halfedges().begin(), layer, selected);
+	// 	CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+	// 	helpers::puff(ctx.hex_bound->hex, *ctx.hex_bound->hex.iter_halfedges().begin(), layer, selected);
 
-		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
-		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-		// ctx.recompute_hex(selected);
-		ctx.view.switch_to_surface_select_mode();
-		is_puff_view = true;
+	// 	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+	// 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	// 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+	// 	// ctx.recompute_hex(selected);
+	// 	ctx.view.switch_to_surface_select_mode();
+	// 	is_puff_view = true;
 
-	}
+	// }
 
-	if (ImGui::Button("Puff pastry 1##btn_patch_pad_tool_puff_1", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		std::vector<int> layer;
-		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+	// if (ImGui::Button("Puff pastry 1##btn_patch_pad_tool_puff_1", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+	// 	std::vector<int> layer;
+	// 	helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
 
-		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
-		helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev(), layer, selected);
+	// 	CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+	// 	helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev(), layer, selected);
 
-		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
-		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-		// ctx.recompute_hex(selected);
-		ctx.view.switch_to_surface_select_mode();
-		is_puff_view = true;
+	// 	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+	// 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	// 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+	// 	// ctx.recompute_hex(selected);
+	// 	ctx.view.switch_to_surface_select_mode();
+	// 	is_puff_view = true;
 
-	}
+	// }
 
-	if (ImGui::Button("Puff pastry 2##btn_patch_pad_tool_puff_2", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		std::vector<int> layer;
-		helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
+	// if (ImGui::Button("Puff pastry 2##btn_patch_pad_tool_puff_2", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+	// 	std::vector<int> layer;
+	// 	helpers::get_halfedge_layers(ctx.hex_bound->hex, layer);
 
-		CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
-		helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev().opposite_f().prev(), layer, selected);
+	// 	CellFacetAttribute<bool> selected(ctx.hex_bound->hex, false);
+	// 	helpers::puff(ctx.hex_bound->hex, (*ctx.hex_bound->hex.iter_halfedges().begin()).opposite_f().prev().opposite_f().prev(), layer, selected);
 
-		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
-		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-		// ctx.recompute_hex(selected);
-		ctx.view.switch_to_surface_select_mode();
-		is_puff_view = true;
+	// 	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
+	// 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+	// 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+	// 	// ctx.recompute_hex(selected);
+	// 	ctx.view.switch_to_surface_select_mode();
+	// 	is_puff_view = true;
 
-	}
+	// }
 
 
 	if (ImGui::Button("Patch selection")) {
@@ -237,7 +237,6 @@ void PatchPadTool::validate_callback() {
 	// Necessary for altering hex, because hex / quad share points !
 	ctx.hex_bound->clear_surface();
 	BenjaminAPI::pad(ctx.hex_bound->hex, to_pad, *ctx.emb_attr);
-
 
 	// Clear tool
 	clear();
