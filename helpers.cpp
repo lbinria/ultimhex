@@ -217,6 +217,26 @@ namespace helpers {
 		return ds.get_sets_id(layer);
 	}
 
+	/**
+	 * Get all facet layers of hex
+	 */
+	int get_facets_layers(Hexahedra &hex, std::vector<int> &layer) {
+		// Compute hex layers
+		DisjointSet ds(hex.nfacets());
+		for (auto h : hex.iter_halfedges()) {
+
+			auto opp = h.opposite_f().opposite_c();
+			if (opp.active())
+				ds.merge(h.facet(), opp.opposite_f().facet());
+
+			opp = h.next().opposite_f().opposite_c();
+			if (opp.active())
+				ds.merge(h.facet(), opp.opposite_f().facet());
+			
+		}
+		return ds.get_sets_id(layer);
+	}
+
 	void get_layer_graph(Hexahedra &hex, EdgeGraph &eg, EdgeAttribute<int> &layer, int nlayers, EdgeAttribute<int> &next_eg, EdgeAttribute<int> &prev_eg, PolyLine &layer_graph) {
 		
 		for (auto h : hex.iter_halfedges()) {

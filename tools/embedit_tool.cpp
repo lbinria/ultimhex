@@ -102,7 +102,7 @@ bool EmbeditTool::draw_object_properties() {
 
 	if (ImGui::Button("Apply##btn_charts_apply_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 		BenjaminAPI::embeditapply(ctx.hex_bound->hex, *ctx.emb_attr, ctx.hex_bound->quad, *ctx.quad_chart, ctx.tet_bound->tri, *ctx.tri_chart);
-		BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
+		// BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
 
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		ctx.view.change_mode(ViewBinding::Mode::Volume);

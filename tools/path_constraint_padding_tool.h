@@ -9,7 +9,7 @@
 
 struct PathConstraintPaddingTool : public Tool {
 
-	PathConstraintPaddingTool(Context &ctx) : Tool(ctx), facet_selector(ctx) {}
+	PathConstraintPaddingTool(Context &ctx) : Tool(ctx) {}
 
 	std::string get_name() { return "Path constraint padding"; }
 
@@ -27,39 +27,17 @@ struct PathConstraintPaddingTool : public Tool {
 	void escape_callback() override;
 
 	void clear() override {
-		layer.clear();
-		last_hovered_facets.clear();
-		facet_selector.clear();
-		v_cell_facets_hovered_attr.clear();
-		mode = Select;
+		layers.clear();
+		layer_parts.clear();
+		selected_layers.clear();
 	}
 
-	void reset_attr();
-	void puff_view(Volume::Halfedge &h);
+	void reset();
 	void slice();
 
-	std::vector<int> layer;
-	std::vector<int> last_hovered_facets;
 
-	GEO::vector<int> v_cell_facets_hovered_attr;
-
-	float v_plane_center[3] = {0., 0., 0.};
-	
-	float v_plane_rot_x = 0.;
-	float v_plane_rot_y = 0.;
-	float v_plane_rot_z = 0.;
-	GEO::vec3 plane_center;
-	GEO::vec3 plane_rot;
-	GEO::vec3 v_plane_corners[4];
-
-	enum Mode {
-		Select,
-		Preview
-	};
-
-	Mode mode = Select;
-
-	private:
-		FacetSelector facet_selector;
+	std::vector<int> layers;
+	std::vector<int> layer_parts;
+	std::vector<int> selected_layers;
 
 };

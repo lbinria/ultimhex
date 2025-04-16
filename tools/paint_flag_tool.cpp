@@ -250,7 +250,7 @@ bool PaintFlagTool::draw_object_properties() {
 
 	ImGui::Separator();
 
-	return true;
+	return false;
 }
 
 void PaintFlagTool::draw_viewer_properties() {}
