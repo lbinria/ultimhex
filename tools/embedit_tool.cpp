@@ -127,6 +127,8 @@ bool EmbeditTool::draw_object_properties() {
 		ctx.view.attribute_name_ = "charts";
 		ctx.view.attribute_min_ = min;
 		ctx.view.attribute_max_ = max;
+
+		view_mode = ViewMode::Tri;
 	}
 
 	if (ImGui::Button("View quad##btn_view_quad_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
@@ -138,6 +140,8 @@ bool EmbeditTool::draw_object_properties() {
 
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, quad_chart.ptr, "charts", ctx.mesh_);
+
+		view_mode = ViewMode::Quad;
 	}
 
 	if (ImGui::Button("Pick##btn_charts_pick_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
@@ -149,15 +153,30 @@ bool EmbeditTool::draw_object_properties() {
 
 
 	if (ImGui::Button("Apply##btn_charts_apply_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		BenjaminAPI::embeditapply(ctx.hex_bound->hex, *ctx.emb_attr, ctx.hex_bound->quad, *ctx.quad_chart, ctx.tet_bound->tri, *ctx.tri_chart);
-		// BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
 
+		// Extract last painted charts attribute, transfert to UM
+		FacetAttribute<int> last_quad_chart(ctx.hex_bound->quad, -1);
+		GEO::Attribute<GEO::signed_index_t> charts(
+			ctx.mesh_.facets.attributes(), "charts"
+		);
+		um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(ctx.mesh_, "charts", ctx.hex_bound->quad, last_quad_chart.ptr);
+		// Transfert to volume
+		ctx.hex_bound->set_attribute_to_volume(last_quad_chart, *ctx.emb_attr);
+
+		// Apply new embedding
+		BenjaminAPI::embeditapply(ctx.hex_bound->hex, *ctx.emb_attr, ctx.hex_bound->quad, *ctx.quad_chart, ctx.tet_bound->tri, *ctx.tri_chart);
+		// Eventually smooth
+		if (auto_smooth)
+			BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
+
+		// Update view
 		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		ctx.view.change_mode(ViewBinding::Mode::Volume);
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
-
 	}
+
+	ImGui::Checkbox("Auto smooth##chk_auto_smooth_embedit_tool", &auto_smooth);
 
 	// for (int i = 0; i < n_charts; i++) {
 	// 	ImGui::PushID(i);
@@ -191,7 +210,7 @@ void EmbeditTool::hover_callback(double x, double y, int source) {
 			ctx.mesh_.facets.attributes(), "charts"
 		);
 		charts[ctx.hovered_facet] = selected_chart_color;
-		// (*ctx.tri_chart)[ctx.hovered_facet] = selected_chart_color;
+
 		(*ctx.quad_chart)[ctx.hovered_facet] = selected_chart_color;
 	}
 
@@ -199,7 +218,9 @@ void EmbeditTool::hover_callback(double x, double y, int source) {
 
 void EmbeditTool::mouse_button_callback(int button, int action, int mods, int source) {
 	if (ctx.is_facet_hovered() && mode == Pick) {
-		selected_chart_color =  (*ctx.quad_chart)[ctx.hovered_facet];
+		selected_chart_color = view_mode == ViewMode::Quad ? 
+			(*ctx.quad_chart)[ctx.hovered_facet] : 
+			(*ctx.tri_chart)[ctx.hovered_facet];
 	}
 }
 

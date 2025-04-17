@@ -29,6 +29,7 @@ struct EmbeditTool : public Tool {
 		n_charts = 0;
 		selected_chart_color = 0;
 		mode = Paint;
+		view_mode = Quad;
 		is_init = false;
 	}
 
@@ -37,8 +38,15 @@ struct EmbeditTool : public Tool {
 		Paint
 	};
 
-	Mode mode;
+	enum ViewMode {
+		Tri,
+		Quad
+	};
 
+	Mode mode;
+	ViewMode view_mode = Quad;
+
+	bool auto_smooth = false;
 	bool is_init = false;
 	int n_charts = 0;
 	int selected_chart_color = 0;
