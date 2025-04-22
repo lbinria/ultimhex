@@ -7,12 +7,13 @@
 
 #include "../helpers.h"
 #include "tool.h"
+#include "layer_selector.h"
 
-struct HexCollapseTool : public Tool {
+struct HexSplitTool : public Tool {
 
-	HexCollapseTool(Context &ctx) : Tool(ctx) {}
+	HexSplitTool(Context &ctx) : Tool(ctx), layer_selector(ctx) {}
 
-	std::string get_name() { return "Hex collapse"; }
+	std::string get_name() { return "Hex split"; }
 
 	bool draw_object_properties() override;
 	void draw_viewer_properties() override;
@@ -31,29 +32,18 @@ struct HexCollapseTool : public Tool {
 	void key_callback(int key, int scancode, int action, int mods) {}
 	void escape_callback() override;
 
+
+
 	void clear() override {
-		layers.clear();
-		last_hovered_cells.clear();
-		hovered_cells.clear();
-		selected_cells.clear();
-		selected_layer = -1;
-		hovered_h = -1;
+		layer_selector.clear();
 	}
 
-	void reset() {
-		clear();
-
-		helpers::get_halfedge_layers(ctx.hex_bound->hex, layers);
-	}
+	void reset();
 
 	private:
+	LayerSelector layer_selector;
 
-	std::vector<int> layers;
-	std::vector<int> last_hovered_cells;
-	std::vector<int> hovered_cells;
-	std::vector<int> selected_cells;
-	int selected_layer = -1;
-	int hovered_h = -1;
+
 	bool auto_smooth = false;
 
 

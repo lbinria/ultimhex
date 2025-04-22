@@ -65,7 +65,8 @@ App::App(const std::string name) :
 	hex_collapse_tool(context_),
 	smooth_tool(context_),
 	embedit_tool(context_),
-	path_constraint_padding_tool(context_)
+	path_constraint_padding_tool(context_),
+	hex_split_tool(context_)
 {
 
 }

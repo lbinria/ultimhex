@@ -50,15 +50,19 @@ void LayerSelector::highlight_selected_cells() {
 	);
 
 	// Remove last selected
-	for (auto c : selected_halfedges) {
-		if (cell_hovered_attr[c] == 2)
-			cell_hovered_attr[c] = 0;
+	for (auto hi : selected_halfedges) {
+		Volume::Halfedge h(ctx.hex_bound->hex, hi);
+
+		if (cell_hovered_attr[h.cell()] == 2)
+			cell_hovered_attr[h.cell()] = 0;
 	}
 
 	select();
 
-	for (auto c : selected_halfedges) {
-		cell_hovered_attr[c] = 2;
+	for (auto hi : selected_halfedges) {
+		Volume::Halfedge h(ctx.hex_bound->hex, hi);
+
+		cell_hovered_attr[h.cell()] = 2;
 	}
 }
 
@@ -68,5 +72,30 @@ void LayerSelector::select() {
 }
 
 void LayerSelector::clear() {
-	init();
+	GEO::Attribute<int> cell_hovered_attr(
+		ctx.mesh_.cells.attributes(), "cell_hovered"
+	);
+	
+	// Remove last selected
+	for (auto hi : selected_halfedges) {
+		Volume::Halfedge h(ctx.hex_bound->hex, hi);
+
+		if (cell_hovered_attr[h.cell()] == 2)
+			cell_hovered_attr[h.cell()] = 0;
+	}
+
+	// Remove last hovered cells
+	for (auto hi : hovered_halfedges) {
+		Volume::Halfedge h(ctx.hex_bound->hex, hi);
+
+		if (cell_hovered_attr[h.cell()] == 1)
+			cell_hovered_attr[h.cell()] = 0;
+	}
+
+
+	hovered_halfedges.clear();
+	selected_halfedges.clear();	
+	hovered_h = -1;
+	selected_layer = -1;
+	layers.clear();
 }

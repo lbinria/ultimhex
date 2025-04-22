@@ -30,6 +30,7 @@
 #include "tools/smooth_tool.h"
 #include "tools/embedit_tool.h"
 #include "tools/path_constraint_padding_tool.h"
+#include "tools/hex_split_tool.h"
 
 // std libs
 #include <optional>
@@ -104,9 +105,11 @@ protected:
 	SmoothTool smooth_tool;
 	EmbeditTool embedit_tool;
 	PathConstraintPaddingTool path_constraint_padding_tool;
+	HexSplitTool hex_split_tool;
+
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[13] = {
+	std::unique_ptr<Tool> tools[14] = {
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<FilterTool>(filter_tool), 
@@ -119,7 +122,8 @@ protected:
 		std::make_unique<HexCollapseTool>(hex_collapse_tool),
 		std::make_unique<SmoothTool>(smooth_tool),
 		std::make_unique<EmbeditTool>(embedit_tool),
-		std::make_unique<PathConstraintPaddingTool>(path_constraint_padding_tool)
+		std::make_unique<PathConstraintPaddingTool>(path_constraint_padding_tool),
+		std::make_unique<HexSplitTool>(hex_split_tool),
 	};
 
 	enum MeshVolumeType {

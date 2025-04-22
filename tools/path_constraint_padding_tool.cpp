@@ -42,9 +42,11 @@ bool PathConstraintPaddingTool::draw_object_properties() {
 		// int nlayers = helpers::get_facets_layers(ctx.hex_bound->hex, layers);
 		// selected_layers.resize(nlayers, -1);
 
+		// Update view
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
 		ctx.view.switch_to_volume_select_mode();
-		
-		ctx.view.cells_shrink_ = 0.5f;
+		ctx.view.cells_shrink_ = 0.2f;
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
 		ctx.gui_mode = PathConstraintPadding;

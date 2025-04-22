@@ -32,7 +32,8 @@ enum GUIMode {
 	HexCollapse = 9,
 	Smooth = 10,
 	Embedit = 11,
-	PathConstraintPadding = 12
+	PathConstraintPadding = 12,
+	HexSplit = 13,
 };
 
 struct ViewBinding {
