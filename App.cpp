@@ -56,7 +56,6 @@ App::App(const std::string name) :
 	camera_tool(context_),
 	hover_tool(context_),
 	filter_tool(context_),
-	layer_pad_tool(context_),
 	bloc_pad_tool(context_),
 	patch_pad_tool(context_),
 	new_bloc_pad_tool(context_),
@@ -333,22 +332,21 @@ void App::draw_viewer_properties() {
 	ImGui::Checkbox("Show features", &show_features);
 
 
-	ImGui::TextUnformatted("View mode");
-	for (int i = 0; i < IM_ARRAYSIZE(context_.view.modes); i++)
-	{
-		bool isSelected = (context_.view.current_mode == i);
-		if (ImGui::Selectable(context_.view.modes[i], isSelected))
-		{
-			context_.view.change_mode(i);
-		}
+	// ImGui::TextUnformatted("View mode");
+	// for (int i = 0; i < IM_ARRAYSIZE(context_.view.modes); i++)
+	// {
+	// 	bool isSelected = (context_.view.current_mode == i);
+	// 	if (ImGui::Selectable(context_.view.modes[i], isSelected))
+	// 	{
+	// 		context_.view.change_mode(i);
+	// 	}
 
-		if (isSelected)
-			ImGui::SetItemDefaultFocus();
-	}
+	// 	if (isSelected)
+	// 		ImGui::SetItemDefaultFocus();
+	// }
 
-	ImGui::Separator();
+	// ImGui::Separator();
 
-	// tools[context_.gui_mode]->draw_viewer_properties();
 	for (auto &tool : tools) {
 		tool->draw_viewer_properties();
 	}
@@ -596,10 +594,7 @@ bool App::save(const std::string& filename) {
 	return SimpleMeshApplication::save(filename);
 }
 
-void App::reset() {
-	// mesh_gfx_.set_mesh(nullptr);
-    // mesh_.clear(false, true);
-	
+void App::reset() {	
 	// Reset all values
 	context_.gui_mode = Camera;
 	// Clear selections

@@ -33,6 +33,11 @@ struct BlocPadTool : public Tool {
 	void switch_view();
 
 	void clear() override {
+		// Reset mesh
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
+		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
+		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
+
 		step = 0;
 		last_hovered_f = -1;
 		patches.clear();
@@ -51,6 +56,7 @@ struct BlocPadTool : public Tool {
 			cell_facets_hovered_attr[f] = 0;
 	}
 
+	bool is_init = false;
 	int select_mode = 0;
 	int step = 0;
 	int last_hovered_f;

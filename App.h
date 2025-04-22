@@ -22,7 +22,6 @@
 #include "tools/hover_tool.h"
 #include "tools/layer_stack_redefinition_tool.h"
 #include "tools/paint_flag_tool.h"
-#include "tools/layer_pad_tool.h"
 #include "tools/bloc_pad_tool.h"
 #include "tools/patch_pad_tool.h"
 #include "tools/polycubify_tool.h"
@@ -96,7 +95,6 @@ protected:
 	HoverTool hover_tool;
 	FilterTool filter_tool;
 	PaintFlagTool paint_flag_tool;
-	LayerPadTool layer_pad_tool;
 	BlocPadTool bloc_pad_tool;
 	PatchPadTool patch_pad_tool;
 	LayerPad2 new_bloc_pad_tool;
@@ -109,12 +107,11 @@ protected:
 
 
 	// std::size_t nb_tools = std::size(GUIMode::Camera);
-	std::unique_ptr<Tool> tools[14] = {
+	std::unique_ptr<Tool> tools[13] = {
 		std::make_unique<CameraTool>(camera_tool), 
 		std::make_unique<HoverTool>(hover_tool), 
 		std::make_unique<FilterTool>(filter_tool), 
 		std::make_unique<PaintFlagTool>(paint_flag_tool), 
-		std::make_unique<LayerPadTool>(layer_pad_tool), 
 		std::make_unique<BlocPadTool>(bloc_pad_tool),
 		std::make_unique<PatchPadTool>(patch_pad_tool),
 		std::make_unique<LayerPad2>(new_bloc_pad_tool),
@@ -156,13 +153,6 @@ protected:
 
 	// TODO rename
 	Context context_;
-
-	// TOOD remove
-	// UM::vec3 posAb;
-	// UM::vec3 posBb;
-	// UM::vec3 posN;
-	// int he_n = 0;
-	// std::vector<std::pair<int, UM::vec3>> flag_dirs;
 
 	UM::vec2 last_mouse_pos;
 

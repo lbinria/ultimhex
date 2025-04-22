@@ -20,20 +20,19 @@
 #include <optional>
 
 enum GUIMode {
-	Camera = 0,
-	Hover = 1,
-	Filter = 2,
-	Painting = 3,
-	LayerPadding = 4,
-	BlocPadding = 5,
-	PatchPadding = 6,
-	NewBlocPadding = 7,
-	Polycubify = 8,
-	HexCollapse = 9,
-	Smooth = 10,
-	Embedit = 11,
-	PathConstraintPadding = 12,
-	HexSplit = 13,
+	Camera,
+	Hover, 
+	Filter, 
+	Painting, 
+	BlocPadding,
+	PatchPadding, 
+	NewBlocPadding,
+	Polycubify,
+	HexCollapse,
+	Smooth,
+	Embedit,
+	PathConstraintPadding,
+	HexSplit
 };
 
 struct ViewBinding {
@@ -82,6 +81,18 @@ struct ViewBinding {
 
 	void change_mode(int i) {
 		change_mode((ViewBinding::Mode)i);
+	}
+
+	void switch_to_volume() {
+		change_mode(ViewBinding::Mode::Volume);
+		attribute_ = "";
+		attribute_name_ = "";
+	}
+
+	void switch_to_surface() {
+		change_mode(ViewBinding::Mode::Surface);
+		attribute_ = "";
+		attribute_name_ = "";
 	}
 
 	void switch_to_volume_select_mode() {

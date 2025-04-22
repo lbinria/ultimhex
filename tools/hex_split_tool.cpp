@@ -22,9 +22,9 @@ bool HexSplitTool::draw_object_properties() {
 		ctx.gui_mode = HexSplit;
 		reset();
 		
-		ctx.view.attribute_subelements_ = GEO::MeshElementsFlags::MESH_NONE;
-		ctx.view.cells_shrink_ = 0.0f;
 		ctx.view.switch_to_volume_select_mode();
+		ctx.view.cells_shrink_ = 0.0f;
+
 		return true;
 	}
 

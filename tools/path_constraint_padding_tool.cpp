@@ -38,15 +38,12 @@ bool PathConstraintPaddingTool::draw_object_properties() {
 
 	if (ImGui::Button("Init##path_constraint_padding_tool_init")) {
 		reset();
-		// // Get layers
-		// int nlayers = helpers::get_facets_layers(ctx.hex_bound->hex, layers);
-		// selected_layers.resize(nlayers, -1);
 
 		// Update view
-		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
-		um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-		ctx.view.switch_to_volume_select_mode();
+		ctx.view.switch_to_volume();
 		ctx.view.cells_shrink_ = 0.2f;
+		ctx.mesh_gfx_.unset_filters();
+		ctx.view.show_vertices_ = false;
 		ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
 		ctx.gui_mode = PathConstraintPadding;
@@ -178,7 +175,7 @@ void PathConstraintPaddingTool::mouse_button_callback(int button, int action, in
 	// Update view
 	ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex, selected);
 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-	ctx.view.switch_to_volume_select_mode();
+	ctx.view.switch_to_volume();
 	ctx.view.show_surface_ = true;
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
 
@@ -212,7 +209,7 @@ void PathConstraintPaddingTool::validate_callback() {
 
 	// Update view
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-	ctx.view.switch_to_volume_select_mode();
+	ctx.view.switch_to_volume();
 	ctx.mesh_gfx_.unset_filters();
 	ctx.view.show_vertices_ = false;
 
@@ -231,7 +228,7 @@ void PathConstraintPaddingTool::escape_callback() {
 
 	// Update view
 	ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-	ctx.view.switch_to_volume_select_mode();
+	ctx.view.switch_to_volume();
 	ctx.mesh_gfx_.unset_filters();
 	ctx.view.show_vertices_ = false;
 }

@@ -9,37 +9,6 @@
 bool EmbeditTool::draw_object_properties() {
 
 
-	// if(ImGui::Button("Embedit##btn_embedit_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-
-
-	// 	um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-
-	// 	FacetAttribute<int> surf_emb_attr(ctx.hex_bound->quad, -1);
-	// 	ctx.hex_bound->set_attribute_to_surface(*ctx.emb_attr, surf_emb_attr);
-	// 	um_bindings::geo_attr_from_um_attr2<GEO::MESH_FACETS>(ctx.hex_bound->quad, surf_emb_attr.ptr, "emb", ctx.mesh_);
-
-	// 	// Search for min / max value of embedding attribute
-	// 	int min = std::numeric_limits<int>::max(), max = 0;
-	// 	for (auto f : ctx.hex_bound->quad.iter_facets()) {
-	// 		if (surf_emb_attr[f] < min)
-	// 			min = surf_emb_attr[f];
-	// 		if (surf_emb_attr[f] > max)
-	// 			max = surf_emb_attr[f];
-	// 	}
-
-	// 	// Display surface with embedding attr
-	// 	ctx.view.change_mode(ViewBinding::Mode::Surface);
-	// 	ctx.view.attribute_subelements_ = GEO::MeshElementsFlags::MESH_FACETS;
-	// 	ctx.view.attribute_ = "facets.emb";
-	// 	ctx.view.attribute_name_ = "emb";
-	// 	ctx.view.attribute_min_ = min;
-	// 	ctx.view.attribute_max_ = max;
-
-	// 	ctx.gui_mode = GUIMode::Embedit;
-
-	// 	return true;
-	// }
-
 	if (!is_init && ImGui::Button("Init embedit##btn_charts_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 
 		
@@ -60,15 +29,9 @@ bool EmbeditTool::draw_object_properties() {
 		// Search for min / max value of charts attribute
 		int min = std::numeric_limits<int>::max(), max = 0;
 		
-		// for (auto f : ctx.hex_bound->quad.iter_facets()) {
 		for (auto f : ctx.tet_bound->tri.iter_facets()) {
 			min = std::min(tri_chart[f], min);
 			max = std::max(tri_chart[f], max);
-
-			// if (quad_chart[f] < min)
-			// 	min = quad_chart[f];
-			// if (quad_chart[f] > max)
-			// 	max = quad_chart[f];
 		}
 
 		// Number of charts is max - min, with min included => + 1 
@@ -76,13 +39,16 @@ bool EmbeditTool::draw_object_properties() {
 		std::cout << "n charts: " << n_charts << std::endl;
 
 		// Display surface with embedding attr
-		ctx.view.change_mode(ViewBinding::Mode::Surface);
+		ctx.view.switch_to_surface();
 		ctx.view.attribute_subelements_ = GEO::MeshElementsFlags::MESH_FACETS;
 		ctx.view.attribute_ = "facets.charts";
 		ctx.view.attribute_name_ = "charts";
 		ctx.view.attribute_min_ = min;
 		ctx.view.attribute_max_ = max;
 		// ctx.view.current_colormap_index_ = 0;
+		ctx.view.cells_shrink_ = 0.0f;
+		ctx.mesh_gfx_.unset_filters();
+		ctx.view.show_vertices_ = false;
 
 		ctx.gui_mode = GUIMode::Embedit;
 		mode = Paint;
@@ -110,7 +76,6 @@ bool EmbeditTool::draw_object_properties() {
 		// Search for min / max value of charts attribute
 		int min = std::numeric_limits<int>::max(), max = 0;
 		
-		// for (auto f : ctx.hex_bound->quad.iter_facets()) {
 		for (auto f : ctx.tet_bound->tri.iter_facets()) {
 			min = std::min(tri_chart[f], min);
 			max = std::max(tri_chart[f], max);
