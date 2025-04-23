@@ -40,7 +40,6 @@ void BlocPadTool::switch_view() {
 	ctx.view.switch_to_surface_select_mode();
 	ctx.view.cells_shrink_ = 0.0f;
 	ctx.view.show_vertices_ = false;
-
 	ctx.mesh_gfx_.unset_filters();
 }
 

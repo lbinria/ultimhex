@@ -14,6 +14,7 @@ bool HexCollapseTool::draw_object_properties() {
 		ctx.gui_mode = HexCollapse;
 		reset();
 		ctx.view.switch_to_volume_select_mode();
+		ctx.view.cells_shrink_ = 0.0f;
 
 		return true;
 	}
@@ -22,28 +23,6 @@ bool HexCollapseTool::draw_object_properties() {
 
 	return false;
 }
-
-// void HexCollapseTool::compute_layers() {
-// 	// Compute hex layers
-// 	DisjointSet ds(ctx.hex_bound->hex.ncells() * 24);
-
-// 	for (auto h : ctx.hex_bound->hex.iter_halfedges()) {
-
-// 		auto opp = h.opposite_f().opposite_c();
-// 		if (opp.active())
-// 			ds.merge(h, opp.opposite_f().next().next());
-			
-// 		opp = h.opposite_c();
-// 		if (opp.active()) {
-// 			ds.merge(h, opp.opposite_f().next().next().opposite_f());
-// 		}
-		
-// 	}
-
-// 	ds.get_sets_id(layers);
-// }
-
-
 
 void HexCollapseTool::draw_viewer_properties() {}
 
@@ -161,16 +140,6 @@ void HexCollapseTool::validate_callback() {
 		BenjaminAPI::smooth(ctx.hex_bound->hex, *ctx.emb_attr, ctx.tet_bound->tri, *ctx.tri_chart);
 
 	ctx.recompute_hex();
-
-	// ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
-	// um_bindings::geo_mesh_from_hexboundary(*ctx.hex_bound, ctx.mesh_);
-	// ctx.mesh_gfx_.set_mesh(&ctx.mesh_);
-
-	// // Make chart segmentation & init embedding
-	// ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
-	// ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);
-	// BenjaminAPI::embeditinit(ctx.tet_bound->tri, *ctx.tri_chart, ctx.hex_bound->hex, *ctx.emb_attr, *ctx.quad_chart, false);
-
 
 	reset();
 }

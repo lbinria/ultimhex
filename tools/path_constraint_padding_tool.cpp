@@ -234,5 +234,5 @@ void PathConstraintPaddingTool::escape_callback() {
 }
 
 bool PathConstraintPaddingTool::is_compatible() { 
-	return true;
+	return ctx.mesh_metadata.cell_type == MESH_HEX;
 }

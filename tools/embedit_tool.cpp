@@ -61,7 +61,6 @@ bool EmbeditTool::draw_object_properties() {
 		return false;
 
 	if (ImGui::Button("View tri##btn_view_tri_embedit_tool", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-		// TODO refactor !
 
 		// Recompute quad chart !
 		ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
@@ -186,6 +185,11 @@ void EmbeditTool::mouse_button_callback(int button, int action, int mods, int so
 		selected_chart_color = view_mode == ViewMode::Quad ? 
 			(*ctx.quad_chart)[ctx.hovered_facet] : 
 			(*ctx.tri_chart)[ctx.hovered_facet];
+	}
+
+	if (mode == Paint) {
+		// Tranfert painted attribute
+		um_bindings::um_attr_from_geo_attr<GEO::MESH_FACETS>(ctx.mesh_, "charts", ctx.hex_bound->quad, (*ctx.quad_chart).ptr);
 	}
 }
 

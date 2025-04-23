@@ -19,6 +19,9 @@ void PolycubifyTool::run_nicostuff() {
 		ctx.emb_attr = std::make_unique<CellFacetAttribute<int>>(ctx.hex, -1);
 		BenjaminAPI::polycubify(ctx.tet, tet_flag, ctx.hex, nhex_wanted, *ctx.emb_attr);
 
+		// Make hex bound from hex
+		ctx.hex_bound = std::make_unique<MyHexBoundary>(ctx.hex);
+
 		// Make chart segmentation & init embedding
 		ctx.tri_chart = std::make_unique<FacetAttribute<int>>(ctx.tet_bound->tri, -1);
 		ctx.quad_chart = std::make_unique<FacetAttribute<int>>(ctx.hex_bound->quad, -1);

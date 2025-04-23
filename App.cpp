@@ -81,7 +81,7 @@ void App::ImGui_initialize() {
     }
 
 	set_full_screen(true);
-	App::load("polycubified.geogram.json");
+	// App::load("polycubified.geogram.json");
 	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B10.step");
@@ -278,20 +278,28 @@ void App::draw_viewer_properties() {
 					return;
 				}
 
-				// TODO refactor this
-				MeshIOFlags flags;
-				if(!mesh_load(out_filename, mesh_, flags)) {
-					reset();
-					return;
-				}
+				// // TODO refactor this
+				// MeshIOFlags flags;
+				// if(!mesh_load(out_filename, mesh_, flags)) {
+				// 	reset();
+				// 	return;
+				// }
+
+
 
 				reset();
+
+				read_by_extension(out_filename, context_.tet);
+				context_.tet.connect();
+
+				context_.tet_bound = std::make_unique<TetBoundary>(context_.tet);
+				um_bindings::geo_mesh_from_tetboundary(*context_.tet_bound, context_.mesh_);
 
 				normalize_mesh();
 
 				// Init UM tet from GEO mesh
 				context_.mesh_metadata.cell_type = MESH_TET;
-				um_bindings::um_tet_from_geo_mesh(mesh_, context_.tet);
+				um_bindings::um_tet_from_geo_mesh(context_.mesh_, context_.tet);
 				context_.tet.connect();
 
 				is_loading = false;
@@ -787,6 +795,7 @@ void App::labeling_visu_mode_transition() {
     show_vertices_ = false;
 	// show_volume_ = true;
 	// show_surface_ = true;
+	cells_shrink_ = 0.0f;
 	show_hexes_ = true;
 	
 	current_colormap_index_ = COLORMAP_FLAGGING;
