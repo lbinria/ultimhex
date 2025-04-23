@@ -81,7 +81,7 @@ void App::ImGui_initialize() {
     }
 
 	set_full_screen(true);
-	// App::load("polycubified.geogram.json");
+	App::load("polycubified.geogram.json");
 	// App::load("/home/tex/Projects/mambo/Basic/B16.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B0.step");
 	// App::load("/home/tex/Projects/mambo/Basic/B10.step");
