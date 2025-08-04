@@ -18,9 +18,9 @@ Ray glup_primary_ray() {
     );
     near = GLUP.inverse_modelviewprojection_matrix * near ;
     vec4 far = near + GLUP.inverse_modelviewprojection_matrix[2] ;
-    near.xyz /= near.w ;
-    far.xyz /= far.w ;
-    return Ray(near.xyz, far.xyz-near.xyz) ;
+    near.xyz /= near.w;
+    far.xyz /= far.w;
+    return Ray(near.xyz, far.xyz-near.xyz);
 }
 
 // Updates fragment depth from a point in world space

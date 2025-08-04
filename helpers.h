@@ -43,4 +43,32 @@ namespace helpers {
 	void layer_along(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Facet&)> f);
 	void loop_along(UM::Hexahedra &hex, UM::Volume::Halfedge &start_he, std::function<void(UM::Volume::Halfedge& /* cur_he */, bool/* on_border */)> f);
 
+
+	// Given a reference cell, a halfedge, return combinatorial coordinates of the 8 corners of the hex cell
+	inline std::array<std::pair<int, int>, 8> get_hex_corners(Hexahedra &m, int hi) {
+		Volume::Halfedge h(m, hi);
+		auto c = h.cell();
+
+		std::vector<int> facets = {
+			h.prev().opposite_f().facet(), 
+			h.next().opposite_f().facet()
+		};
+
+		std::array<std::pair<int, int>, 8> corners;
+		for (int lc = 0; lc < 8; ++lc) {
+			for (int i = 0; i < facets.size(); ++i) {
+				for (int lv = 0; lv < 4; ++lv) {
+					// auto f = facets[i];
+					auto f = Volume::Facet(m, facets[i]);
+					if (c.corner(lc) == f.corner(lv)) {
+						corners[lc] = {i, lv};
+						break;
+					}
+				}
+			}
+		}
+
+		return corners;
+	}
+
 }

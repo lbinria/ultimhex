@@ -9,14 +9,15 @@ struct LayerSelection {
 
 struct HalfedgeBag {
 	
-	HalfedgeBag(std::vector<Volume::Halfedge> &halfedges) : halfedges(halfedges) {}
-	HalfedgeBag(const HalfedgeBag &other) : halfedges(other.halfedges) {}
+	HalfedgeBag(Volume &m, std::vector<int> halfedges) : m(m), halfedges(halfedges) {}
+	HalfedgeBag(const HalfedgeBag &other) : m(m), halfedges(other.halfedges) {}
 
 	// TODO improve by returning a std::vector<Volume::Facet>
 	std::vector<int> get_facets_indexes() {
 		std::unordered_set<int> unique_facets;
 
-		for (auto h : halfedges) {
+		for (auto hi : halfedges) {
+			Volume::Halfedge h(m, hi);
 			unique_facets.insert(h.prev().opposite_f().facet());
 		}
 
@@ -26,8 +27,20 @@ struct HalfedgeBag {
 	std::vector<std::pair<int, int >> get_facets_indexes2() {
 		std::set<std::pair<int, int>> unique_facets;
 
-		for (auto h : halfedges) {
+		for (auto hi : halfedges) {
+			Volume::Halfedge h(m, hi);
 			unique_facets.insert({h.prev().opposite_f().facet(), h.next().opposite_f().facet()});
+		}
+
+		return std::vector(unique_facets.begin(), unique_facets.end());
+	}
+
+	std::vector<std::array<int, 3>> get_cells_and_facets() {
+		std::set<std::array<int, 3>> unique_facets;
+
+		for (auto hi : halfedges) {
+			Volume::Halfedge h(m, hi);
+			unique_facets.insert({h.cell(), h.prev().opposite_f().facet(), h.next().opposite_f().facet()});
 		}
 
 		return std::vector(unique_facets.begin(), unique_facets.end());
@@ -43,11 +56,11 @@ struct HalfedgeBag {
 		return facets;
 	}
 
-	// TODO improve by returning a std::vector<Volume::Cell>
 	std::vector<int> get_cells_indexes() {
 		std::unordered_set<int> unique_cells;
 
-		for (auto h : halfedges) {
+		for (auto hi : halfedges) {
+			Volume::Halfedge h(m, hi);
 			unique_cells.insert(h.cell());
 		}
 
@@ -55,7 +68,8 @@ struct HalfedgeBag {
 	}
 
 	private:
-	std::vector<Volume::Halfedge> &halfedges;
+	Volume &m;
+	std::vector<int> halfedges;
 };
 
 struct FacetBag {
@@ -157,7 +171,7 @@ struct LayerSelector {
 	void highlight_selected_cells();
 	void clear();
 
-	const std::vector<int>& get_selected_halfedges() { return selected_halfedges; }
+	const std::vector<int> get_selected_halfedges() { return selected_halfedges; }
 	const std::vector<int>& get_hovered_halfedges() { return hovered_halfedges; }
 	const int get_selected_layer() { return selected_layer; }
 

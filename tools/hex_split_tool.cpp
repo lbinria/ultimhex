@@ -61,21 +61,15 @@ void HexSplitTool::scroll_callback(double xoffset, double yoffset) {
 
 void HexSplitTool::validate_callback() {
 	
-	const auto &s_halfedges = layer_selector.get_selected_halfedges();
+	auto selected_halfedges = layer_selector.get_selected_halfedges();
 
-	std::vector<Volume::Halfedge> selected_halfedges;
-	for (auto hi : s_halfedges) {
-		selected_halfedges.push_back(Volume::Halfedge(ctx.hex_bound->hex, hi));
-	}
-
-	HalfedgeBag h_bag(selected_halfedges);
-	auto selected_facets = h_bag.get_facets_indexes();
-	auto selected_facets2 = h_bag.get_facets_indexes2();
+	HalfedgeBag h_bag(ctx.hex, selected_halfedges);
+	auto selected_facets = h_bag.get_facets_indexes();	
 
 	FacetBag f_bag(ctx.hex, selected_facets);
 	auto selected_edges = f_bag.get_edges();
 
-	int n_layers = 1;
+	const int n_layers = 2;
 
 	int n_points = selected_edges.size();
 	int n_cells = selected_facets.size();
@@ -84,74 +78,70 @@ void HexSplitTool::validate_callback() {
 
 	// Modify mesh
 	int v_off = ctx.hex_bound->hex.points.create_points(n_points);
-	int c_off = ctx.hex_bound->hex.create_cells(n_cells * (n_layers + 1));
+	int c_off = ctx.hex_bound->hex.create_cells(n_cells * n_layers);
 
-	std::vector<int> edge_2_pts_indexes(ctx.hex.nverts(), -1);
+	std::vector<std::vector<int>> polys(ctx.hex.nverts(), std::vector<int>(n_layers + 1, -1));
 
 	for (int i = 0; i < static_cast<int>(selected_edges.size()); ++i) {
 		auto e = Volume::Halfedge(ctx.hex, selected_edges[i]);
 		ctx.hex_bound->hex.points[v_off + i] = (e.from().pos() + e.to().pos()) / 2.0;
-		edge_2_pts_indexes[e.from()] = v_off + i;
+
+		polys[e.from()][0] = e.from();
+		polys[e.from()][1] = v_off + i;
+		polys[e.from()][2] = e.to();
 	}
 
+	std::vector<int> count(ctx.hex.ncells(), false);
 
-	int llv[4] = {0,1,3,2};
-	int llv2[4] = {2,3,1,0};
-
-	for (int ci = 0; ci < static_cast<int>(selected_facets2.size()); ++ci) {
-		auto start_f = Volume::Facet(ctx.hex, selected_facets2[ci].first);
-		auto end_f = Volume::Facet(ctx.hex, selected_facets2[ci].second);
-		
-		for (int lv = 0; lv < 4; ++lv) {
-			ctx.hex_bound->hex.vert(c_off + ci * 2, llv[lv]) = start_f.halfedge(lv).from();
-		}
-
-		for (int lv = 0; lv < 4; ++lv) {
-			auto h = start_f.halfedge(lv);
-			auto oh = h.opposite_f().next();
-			ctx.hex_bound->hex.vert(c_off + ci * 2, llv[lv] + 4) = edge_2_pts_indexes[oh.from()];
-			ctx.hex_bound->hex.vert(c_off + ci * 2 + 1, llv[lv]) = edge_2_pts_indexes[oh.from()];
-
-		}
-
-		for (int lv = 0; lv < 4; ++lv) {
-			ctx.hex_bound->hex.vert(c_off + ci * 2 + 1, llv2[lv] + 4) = end_f.halfedge(lv).to();
-		}
-	}
-
-
-	std::vector<bool> cells_to_kill(ctx.hex.ncells(), false);
-	auto selected_cells = h_bag.get_cells_indexes();
-	for (auto c : selected_cells) {
-		cells_to_kill[c] = true;
-	}
-
-	// Update embedding
+	auto selected_c_f = h_bag.get_cells_and_facets();
 	auto &emb_attr = *ctx.emb_attr;
-	{
-		bool done = false;
-		while (!done) {
-			done = true;
-			for (auto f : ctx.hex.iter_facets()) {
-				// If cell is to kill and facet has an embedding (>= 0)
-				if (emb_attr[f] < 0 || !cells_to_kill[f.cell()]) 
-					continue;
-				
-				// We move its embedding to the opposite interior facet
-				auto f_next = f.halfedge(0).opposite_f().next().next().opposite_f().facet().opposite();
-				
-				if (f_next.active()) {
-					std::swap(emb_attr[f], emb_attr[f_next]);
-					done = false;
+	for (int i = 0; i < n_cells; ++i) {
+
+		Volume::Cell c(ctx.hex, selected_c_f[i][0]);
+		Volume::Facet sf(ctx.hex, selected_c_f[i][1]);
+
+		for (int lv = 0; lv < 4; ++lv) {
+			int flc = 0;
+			for (int lc = 0; lc < 8; ++lc) {
+				if (c.vertex(lc) == polys[sf.vertex(lv)][0]) {
+					flc = lc;
+					break;
 				}
 			}
+			int flc2 = 0;
+			for (int lc = 0; lc < 8; ++lc) {
+				if (c.vertex(lc) == polys[sf.vertex(lv)][2]) {
+					flc2 = lc;
+					break;
+				}
+			}
+			// First hex
+			ctx.hex_bound->hex.vert(c_off + i * n_layers, flc) = polys[sf.vertex(lv)][0];
+			ctx.hex_bound->hex.vert(c_off + i * n_layers, flc2) = polys[sf.vertex(lv)][1];
+			// Second hex
+			ctx.hex_bound->hex.vert(c_off + i * n_layers + 1, flc) = polys[sf.vertex(lv)][1];
+			ctx.hex_bound->hex.vert(c_off + i * n_layers + 1, flc2) = polys[sf.vertex(lv)][2];
 		}
+
+		// Update embedding
+		Volume::Cell new_cell_0(ctx.hex, c_off + i * n_layers);
+		Volume::Cell new_cell_1(ctx.hex, c_off + i * n_layers + 1);
+		
+		for (int lf = 0; lf < 6; ++lf) {
+			emb_attr[new_cell_0.facet(lf)] = emb_attr[c.facet(lf)];
+			emb_attr[new_cell_1.facet(lf)] = emb_attr[c.facet(lf)];
+		}
+
+		++count[c];
 	}
 
+	std::vector<bool> cells_to_kill(ctx.hex.ncells(), false);
+	for (auto cf : selected_c_f) {
+		cells_to_kill[cf[0]] = true;
+	}
 
 	ctx.hex.disconnect();
 	ctx.hex.delete_cells(cells_to_kill);
-	ctx.hex.delete_isolated_vertices();
 	// Recompute mesh
 	ctx.hex.connect();
 	// Recompute layers
@@ -162,10 +152,6 @@ void HexSplitTool::validate_callback() {
 
 	// Clear
 	clear();
-
-
-	// write_by_extension("hex_split.geogram", ctx.hex_bound->hex, {});
-
 }
 
 bool HexSplitTool::is_compatible() { 
